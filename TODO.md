@@ -1,11 +1,20 @@
+High priority
+=============
+
+- add Python 3 support
+
+- create unit tests
+
+-------------------------------------------------------------------------------
+
 General
 =======
 
-- Python 3 support (high priority).
+- figure out a way to automatically add function signatures to docstrings for functions defined in Cython modules
+  - in the current docstrings, the "def" has been simply manually copy'n'pasted into the docstring,
+    causing unnecessary duplication and introducing a potential source of errors in documentation.
 
-- figure out a better way to add function signatures to docstrings for Cython functions
-  - these do not appear automatically for functions defined in Cython modules
-  - this is currently done by simply copy'n'pasting the "def" into the docstring, causing unnecessary duplication and a potential source of errors in documentation.
+- move examples/sudoku_lhs into a separate proper library.
 
 Documentation
 =============
@@ -24,20 +33,14 @@ Documentation
 utils.lapackdrivers
 ===================
 
- - create proper unit tests
-
- - add option to return also the orthogonal matrices U and V in svd()
+ - add option to return also the orthogonal matrices U and V in svd() (currently this routine is only useful to commpute the 2-norm condition number)
 
 fitter
 ======
 
- - remove commented-out code (esp. in wlsqm.fitter.impl.preprocess_A())
-
  - fix TODOs in setup.py
 
  - upload to PyPi
-
- - create proper unit tests
 
  - API professionalism:
    - make ExpertSolver instances copyable
@@ -47,11 +50,12 @@ fitter
    - use DTYPE and DTYPE_t instead of "double"/"np.float64" directly, to allow compiling a version with complex number support
 
  - test the 3D support more thoroughly
-   - wlsqm2_poly.pyx: make sure evaluate_taylor_series_3D(), evaluate_polynomial_3D() are bug-free
-   - wlsqm2_eval.pyx: make sure interpolate_model_3D() is bug-free
+   - wlsqm/fitter/polyeval.pyx: make really, really sure taylor_3D(), general_3D() are bug-free
+   - wlsqm/fitter/interp.pyx:   make really, really sure interpolate_3D() is bug-free
    - write a unit test:
      - generate random SymPy functions (from a preset seed to make the test repeatable), differentiate them symbolically,
-       fit models of orders 0, 1, 2, 3, 4 and compare all up to 34 derivatives with the exact result
+       fit models of orders 0, 1, 2, 3, 4 and compare all up to 34 derivatives with the exact result (the worst case should be within
+       approx. 100*machine_epsilon at least for the function value itself).
 
  - profile performance, see http://stackoverflow.com/questions/28301931/how-to-profile-cython-functions-line-by-line
 

@@ -1,4 +1,0 @@
-- Currently only for manual testing; make these into proper unit tests using pytest or similar.
-
-- Split sudoku_lhs into a separate library.
-
