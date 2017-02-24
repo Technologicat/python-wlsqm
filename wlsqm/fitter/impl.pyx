@@ -681,7 +681,7 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
 
         # original matrix
         S = <double*>malloc( nr*sizeof(double) )  # bypass the custom allocator; debug mode is not used in production code where memory fragmentation may matter
-        drivers.svd_c( Acopy, nr, nr, S )  # result goes into S; Acopy becomes nonsense
+        drivers.svd_c( Acopy, nr, nr, S )  # result goes into S; Acopy is destroyed (overwritten)
         case.cond_orig   = S[0] / S[nr-1]
 
         # scaled matrix
