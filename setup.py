@@ -142,12 +142,13 @@ with file('wlsqm/__init__.py') as f:
         print "WARNING: Version information not found, using placeholder '%s'" % (version)
 
 
-# TODO: add url, download_url (this project has no real homepage...)
+# TODO: add download_url
 setup(
     name = "wlsqm",
     version = version,
     author = "Juha Jeronen",
     author_email = "juha.jeronen@jyu.fi",
+    url = "https://github.com/Technologicat/python-wlsqm",
 
     description = "WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.",
     long_description = DESC,
