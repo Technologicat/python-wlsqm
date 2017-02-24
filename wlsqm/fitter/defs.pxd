@@ -4,10 +4,10 @@
 #
 # C-level definitions for Cython.
 #
-# This file contains only the declarations; the actual values are set in wlsqm2_defs.pyx.
+# This file contains only the declarations; the actual values are set in the .pyx source for wlsqm.fitter.defs.
 #
 # The suffix of _c means "visible at the C level in Cython"; it is used to distinguish
-# the typed C constants from the Python-accessible objects also defined in wlsqm2_defs.pyx.
+# the typed C constants from the Python-accessible objects also defined in the .pyx source.
 #
 # JJ 2016-11-30
 

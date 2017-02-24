@@ -19,7 +19,7 @@
 from cython cimport view
 
 # See the infrasructure module for the definition of Case.
-cimport wlsqm.wlsqm2.wlsqm2_infra as infra
+cimport wlsqm.fitter.infra as infra
 
 ####################################################
 # Distance matrix (c) generation

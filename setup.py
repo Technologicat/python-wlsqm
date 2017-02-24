@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+#
+"""Distutils-based setup script for WLSQM.
+
+Requires Cython.
+
+JJ 2017-02-24
+"""
 
 from __future__ import absolute_import
 
@@ -74,20 +81,20 @@ def ext_math(extName):
 # Utility modules
 #########################################################
 
-ext_module_ptrwrap = ext("wlsqm.utils.ptrwrap")                    # Pointer wrapper for Cython/Python integration
-ext_module_lapackdrivers = ext_math("wlsqm.utils.lapackdrivers")   # Simple Python interface to LAPACK for solving many independent linear equation systems efficiently in parallel. Built on top of scipy.linalg.cython_lapack.
+ext_module_ptrwrap       = ext(     "wlsqm.utils.ptrwrap")        # Pointer wrapper for Cython/Python integration
+ext_module_lapackdrivers = ext_math("wlsqm.utils.lapackdrivers")  # Simple Python interface to LAPACK for solving many independent linear equation systems efficiently in parallel. Built on top of scipy.linalg.cython_lapack.
 
 #########################################################
 # WLSQM (Weighted Least SQuares Meshless method)
 #########################################################
 
-ext_module_wlsqm2_defs   = ext(     "wlsqm.wlsqm2.wlsqm2_defs")    # definitions (named constants)
-ext_module_wlsqm2_infra  = ext(     "wlsqm.wlsqm2.wlsqm2_infra")   # memory allocation infrastructure
-ext_module_wlsqm2_impl   = ext_math("wlsqm.wlsqm2.wlsqm2_impl")    # low-level routines (implementation)
-ext_module_wlsqm2_poly   = ext_math("wlsqm.wlsqm2.wlsqm2_poly")    # evaluation of Taylor expansions and general polynomials
-ext_module_wlsqm2_eval   = ext_math("wlsqm.wlsqm2.wlsqm2_eval")    # interpolation of fitted model
-ext_module_wlsqm2_fitter = ext_math("wlsqm.wlsqm2.fitter")         # simple API
-ext_module_wlsqm2_expert = ext_math("wlsqm.wlsqm2.wlsqm2_expert")  # advanced API
+ext_module_defs     = ext(     "wlsqm.fitter.defs")      # definitions (named constants)
+ext_module_infra    = ext(     "wlsqm.fitter.infra")     # memory allocation infrastructure
+ext_module_impl     = ext_math("wlsqm.fitter.impl")      # low-level routines (implementation)
+ext_module_polyeval = ext_math("wlsqm.fitter.polyeval")  # evaluation of Taylor expansions and general polynomials
+ext_module_interp   = ext_math("wlsqm.fitter.interp")    # interpolation of fitted model
+ext_module_simple   = ext_math("wlsqm.fitter.simple")    # simple API
+ext_module_expert   = ext_math("wlsqm.fitter.expert")    # advanced API
 
 #########################################################
 
@@ -145,20 +152,20 @@ setup(
 
     ext_modules = cythonize( [ ext_module_lapackdrivers,
                                ext_module_ptrwrap,
-                               ext_module_wlsqm2_defs,
-                               ext_module_wlsqm2_infra,
-                               ext_module_wlsqm2_impl,
-                               ext_module_wlsqm2_poly,
-                               ext_module_wlsqm2_eval,
-                               ext_module_wlsqm2_fitter,
-                               ext_module_wlsqm2_expert ],
+                               ext_module_defs,
+                               ext_module_infra,
+                               ext_module_impl,
+                               ext_module_polyeval,
+                               ext_module_interp,
+                               ext_module_simple,
+                               ext_module_expert ],
 
                              include_path = my_include_dirs,
 
                              gdb_debug = debug ),
 
-    packages = ["wlsqm", "wlsqm.utils", "wlsqm.wlsqm2"],  # packages must be declared so that  python -m setup build  will copy .py files
+    packages = ["wlsqm", "wlsqm.utils", "wlsqm.fitter"],  # packages must be declared so that  python -m setup build  will copy .py files
     package_data={'wlsqm.utils': ['*.pxd'],  # note: paths relative to each package
-                  'wlsqm.wlsqm2': ['*.pxd']},
+                  'wlsqm.fitter': ['*.pxd']},
 )
 

@@ -30,10 +30,10 @@ from cython cimport view  # for usage, see http://cython.readthedocs.io/en/lates
 
 cimport wlsqm.utils.ptrwrap as ptrwrap
 
-cimport wlsqm.wlsqm2.wlsqm2_defs as defs         # C constants
-cimport wlsqm.wlsqm2.wlsqm2_infra as infra       # centralized memory allocation infrastructure
-cimport wlsqm.wlsqm2.wlsqm2_impl as impl         # low-level routines (implementation)
-cimport wlsqm.wlsqm2.wlsqm2_eval as wlsqm2_eval  # model interpolation
+cimport wlsqm.fitter.defs   as defs    # C constants
+cimport wlsqm.fitter.infra  as infra   # centralized memory allocation infrastructure
+cimport wlsqm.fitter.impl   as impl    # low-level routines (implementation)
+cimport wlsqm.fitter.interp as interp  # model interpolation
 
 # for model interpolation
 import numpy as np
@@ -88,10 +88,10 @@ If you need to do that, destroy the old ExpertSolver instance and create a new o
 dimension        : in, number of space dimensions (1, 2 or 3)
 nk               : in, array of shape (ncases,), the number of neighbor points (the "xk"s) to be used in the fitting, for each problem instance (dtype np.int32)
 order            : in, array of shape (ncases,), the order of the surrogate polynomial to be fitted for each problem instance (0,1,2,3 or 4) (dtype np.int32)
-knowns           : in, array of shape (ncases,), the knowns bitmask for each problem instance (see wlsqm2_defs) (dtype np.int64)
-weighting_method : in, array of shape (ncases,), the weighting method to use for each problem instance; each entry must be one of the constants wlsqm2_defs.WEIGHT_* (dtype np.int32)
+knowns           : in, array of shape (ncases,), the knowns bitmask for each problem instance (see wlsqm.fitter.defs) (dtype np.int64)
+weighting_method : in, array of shape (ncases,), the weighting method to use for each problem instance; each entry must be one of the constants wlsqm.fitter.defs.WEIGHT_* (dtype np.int32)
 ncases           : in, number of problem instances
-algorithm        : in, one of the ALGO_* constants in wlsqm2_defs
+algorithm        : in, one of the ALGO_* constants in wlsqm.fitter.defs
 do_sens          : in, boolean: whether to perform sensitivity analysis. If False, then in the solve() step, "sens" can be None.
 max_iter         : in. If algorithm == ALGO_ITERATIVE, the maximum number of refinement iterations to perform. Unused if algorithm == ALGO_BASIC.
 ntasks           : in, number of threads to use for computation
@@ -129,7 +129,7 @@ host             : in, ExpertSolver instance to use as host for guest mode. (Def
         elif algorithm == defs.ALGO_ITERATIVE_c:
             iterative = 1
         else:
-            raise ValueError("Unknown algorithm specifier %d; see wlsqm2_defs.pxd for valid specifiers ALGO_*" % algorithm)
+            raise ValueError("Unknown algorithm specifier %d; see wlsqm.fitter.defs for valid specifiers ALGO_*" % algorithm)
 
         if ntasks < 1:
             raise ValueError("ntasks must be >= 1, got %d" % ntasks)
@@ -264,8 +264,8 @@ Releases the memory managed by the custom allocator."""
 
 Return value: tuple (currently_used_bytes, buffer_total_size_bytes)
 
-(Implementation detail: if everything is working correctly, these values are the same - the constructor calls wlsqm2_infra.CaseManager_commit(), which will allocate the memory.
- The buffer is made exactly as large as it needs to be, by calling wlsqm2_infra.Case_determine_sizes() for the managed wlsqm2_infra.Case instances.)
+(Implementation detail: if everything is working correctly, these values are the same - the constructor calls wlsqm.fitter.infra.CaseManager_commit(), which will allocate the memory.
+ The buffer is made exactly as large as it needs to be, by calling wlsqm.fitter.infra.Case_determine_sizes() for the managed wlsqm.fitter.infra.Case instances.)
 """
         # get the manager
         cdef ptrwrap.PointerWrapper pw  = <ptrwrap.PointerWrapper>(self.manager_pw)
@@ -440,7 +440,7 @@ This function multi-threads automatically using self.ntasks threads.
 
 fk   : in, (self.ncases,max(self.nk)) array of function values at the neighbor points for each problem instance.
        The points xk must be in the same order as they were when prepare() was called.
-fi   : in/out, (self.ncases,max(number_of_dofs)) array of knowns and unknowns. See wlsqm2.fit_?D().
+fi   : in/out, (self.ncases,max(number_of_dofs)) array of knowns and unknowns. See wlsqm.fitter.simple.fit_?D() for a description.
        on input:  those elements must be filled for each problem instance i that correspond to the bitmask self.knowns[i]
        on output: the unknown elements will be filled in (leaving the knowns untouched).
 sens : out. If self.do_sens = True, (self.ncases,max(self.nk),max(number_of_dofs)) array for sensitivity information.
@@ -673,9 +673,9 @@ r    : averaging radius for mode='continuous'. (No default, because no sane defa
 
 diff : Interpolate a derivative of the function instead of the function value itself. (The default is to interpolate the function value.)
 
-       One of the constants i3_* (in 3D), i2_* (in 2D) or i1_* (in 1D) in wlsqm2_defs.
+       One of the constants i3_* (in 3D), i2_* (in 2D) or i1_* (in 1D) in wlsqm.fitter.defs.
 
-       See wlsqm2_eval.interpolate_fit() for details.
+       See wlsqm.fitter.interp.interpolate_fit() for details.
 
 I    : If mode='nearest': override which local model to use for each point in x, skipping the search for the nearest local model,
        thus making the interpolation run significantly faster.
@@ -735,10 +735,8 @@ Return value: tuple (out, I_out) where
 
 
 ####################################################
-# Internal helpers for ExpertSolver
+# Internal C-level helpers for ExpertSolver
 ####################################################
-
-# Mostly C level.
 
 cdef void expert_prepare_one_3D( infra.Case* case, double *pxi, double[::view.generic,::view.contiguous] xk, int debug ) nogil:
     # update the position of the origin of the fit for this problem instance
@@ -828,24 +826,24 @@ cdef void expert_interpolate_nearest( int dimension, xi_tree, infra.CaseManager*
         if dimension == 3:
             if ntasks > 1:
                 for m in cython.parallel.prange(nx, num_threads=ntasks):
-                    wlsqm2_eval.interpolate_model_3D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
+                    interp.interpolate_3D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
             else:
                 for m in range(nx):
-                    wlsqm2_eval.interpolate_model_3D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
+                    interp.interpolate_3D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
         elif dimension == 2:
             if ntasks > 1:
                 for m in cython.parallel.prange(nx, num_threads=ntasks):
-                    wlsqm2_eval.interpolate_model_2D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
+                    interp.interpolate_2D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
             else:
                 for m in range(nx):
-                    wlsqm2_eval.interpolate_model_2D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
+                    interp.interpolate_2D( manager.cases[I[m]], xManyD[m:m+1,:], &out[m], diff )
         else: # dimension == 1:
             if ntasks > 1:
                 for m in cython.parallel.prange(nx, num_threads=ntasks):
-                    wlsqm2_eval.interpolate_model_1D( manager.cases[I[m]], x1D[m:m+1], &out[m], diff )
+                    interp.interpolate_1D( manager.cases[I[m]], x1D[m:m+1], &out[m], diff )
             else:
                 for m in range(nx):
-                    wlsqm2_eval.interpolate_model_1D( manager.cases[I[m]], x1D[m:m+1], &out[m], diff )
+                    interp.interpolate_1D( manager.cases[I[m]], x1D[m:m+1], &out[m], diff )
 
 
 cdef void expert_interpolate_continuous( int dimension, xi, xi_tree, infra.CaseManager* manager, x, double[::1] out, int diff, r ):  # TODO/FIXME: always single-threaded for now
@@ -910,20 +908,20 @@ cdef void expert_interpolate_continuous( int dimension, xi, xi_tree, infra.CaseM
             li = L[i]
 #            li = idxs[m,i]
             if dimension == 3:
-                wlsqm2_eval.interpolate_model_3D( manager.cases[li], xManyD[m:m+1,:], &value, diff )
+                interp.interpolate_3D( manager.cases[li], xManyD[m:m+1,:], &value, diff )
                 # compute distance from x[m] to self.xi[L[i],:]
                 dx = xManyD[m,0] - xiManyD[li,0]
                 dy = xManyD[m,1] - xiManyD[li,1]
                 dz = xManyD[m,2] - xiManyD[li,2]
                 d2 = dx*dx + dy*dy + dz*dz
             elif dimension == 2:
-                wlsqm2_eval.interpolate_model_2D( manager.cases[li], xManyD[m:m+1,:], &value, diff )
+                interp.interpolate_2D( manager.cases[li], xManyD[m:m+1,:], &value, diff )
                 # compute distance from x[m] to self.xi[L[i],:]
                 dx = xManyD[m,0] - xiManyD[li,0]
                 dy = xManyD[m,1] - xiManyD[li,1]
                 d2 = dx*dx + dy*dy
             else: # dimension == 1:
-                wlsqm2_eval.interpolate_model_1D( manager.cases[li], x1D[m:m+1], &value, diff )
+                interp.interpolate_1D( manager.cases[li], x1D[m:m+1], &value, diff )
                 dx = x1D[m] - xi1D[li]
                 d2 = dx*dx
 

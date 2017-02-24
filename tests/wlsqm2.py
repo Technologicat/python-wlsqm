@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-"""Testing script for wlsqm2, doubles as a usage example.
+"""Testing script for wlsqm, doubles as a usage example.
 
 -JJ 2016-11-10
 """
@@ -19,7 +19,7 @@ import pylab as pl
 import mpl_toolkits.mplot3d.axes3d as p3
 
 try:
-    import wlsqm.wlsqm2.fitter as wlsqm2
+    import wlsqm
 except ImportError:
     print "WLSQM not found; is it installed?"
     from sys import exit
@@ -75,7 +75,7 @@ def testmany2d():
     knowns = 1  # function value is known
 
     fit_order = 4
-    weighting_method = wlsqm2.WEIGHT_CENTER
+    weighting_method = wlsqm.WEIGHT_CENTER
 
     max_iter = 10  # for iterative fitting method
 
@@ -116,7 +116,7 @@ def testmany2d():
 
     print "evaluating example function"
     with SimpleTimer(label=("    done in ")) as s:
-        no = wlsqm2.number_of_dofs( dimension=2, order=fit_order )
+        no = wlsqm.number_of_dofs( dimension=2, order=fit_order )
         fi = np.empty( (npoints,no), dtype=np.float64 )
         fi[:,0] = f( S[:,0], S[:,1] )  # fi[i,0] contains the function value at point S[i,:]
 
@@ -147,22 +147,22 @@ def testmany2d():
     knowns_array    = knowns           * np.ones( (npoints,), dtype=np.int64 )
     wm_array        = weighting_method * np.ones( (npoints,), dtype=np.int32 )
     with SimpleTimer(label=("    done in ")) as s:
-#        max_iterations_taken = wlsqm2.fit_2D_many( xk=S[hoods], fk=fi[hoods,0], nk=nk,
+#        max_iterations_taken = wlsqm.fit_2D_many( xk=S[hoods], fk=fi[hoods,0], nk=nk,
 #                                                   xi=S, fi=fi,
 #                                                   sens=None, do_sens=False,
 #                                                   order=fit_order_array, knowns=knowns_array, weighting_method=wm_array,
 #                                                   debug=False )
-        max_iterations_taken = wlsqm2.fit_2D_many_parallel( xk=S[hoods], fk=fi[hoods,0], nk=nk,
+        max_iterations_taken = wlsqm.fit_2D_many_parallel( xk=S[hoods], fk=fi[hoods,0], nk=nk,
                                                             xi=S, fi=fi,
                                                             sens=None, do_sens=False,
                                                             order=fit_order_array, knowns=knowns_array, weighting_method=wm_array,
                                                             ntasks=ntasks, debug=False )
-#        max_iterations_taken = wlsqm2.fit_2D_iterative_many( xk=S[hoods], fk=fi[hoods,0], nk=nk,
+#        max_iterations_taken = wlsqm.fit_2D_iterative_many( xk=S[hoods], fk=fi[hoods,0], nk=nk,
 #                                                             xi=S, fi=fi,
 #                                                             sens=None, do_sens=False,
 #                                                             order=fit_order_array, knowns=knowns_array, weighting_method=wm_array,
 #                                                             max_iter=max_iter, debug=False )
-#        max_iterations_taken = wlsqm2.fit_2D_iterative_many_parallel( xk=S[hoods], fk=fi[hoods,0], nk=nk,
+#        max_iterations_taken = wlsqm.fit_2D_iterative_many_parallel( xk=S[hoods], fk=fi[hoods,0], nk=nk,
 #                                                            xi=S, fi=fi,
 #                                                            sens=None, do_sens=False,
 #                                                            order=fit_order_array, knowns=knowns_array, weighting_method=wm_array,
@@ -178,7 +178,7 @@ def testmany2d():
     print "fitting %d local surrogate models of order %d, expert mode" % (npoints, fit_order)
     print "    init"
     with SimpleTimer(label=("        done in ")) as s:
-        solver = wlsqm2.ExpertSolver( dimension=2, nk=nk, order=fit_order_array, knowns=knowns_array, weighting_method=wm_array, algorithm=wlsqm2.ALGO_BASIC, do_sens=False, max_iter=max_iter, ntasks=ntasks, debug=False )
+        solver = wlsqm.ExpertSolver( dimension=2, nk=nk, order=fit_order_array, knowns=knowns_array, weighting_method=wm_array, algorithm=wlsqm.ALGO_BASIC, do_sens=False, max_iter=max_iter, ntasks=ntasks, debug=False )
     print "    prepare"
     with SimpleTimer(label=("        done in ")) as s:
         solver.prepare( xi=S, xk=S[hoods] )
@@ -307,8 +307,8 @@ def test3d():
     #
     fit_order = 4  # 0 (constant), 1 (linear), 2 (quadratic), 3 (cubic) or 4 (quartic)
 
-#    weighting_method = wlsqm2.WEIGHT_UNIFORM  # best overall fit for function values
-    weighting_method = wlsqm2.WEIGHT_CENTER  # emphasize center to improve derivatives at the point xi
+#    weighting_method = wlsqm.WEIGHT_UNIFORM  # best overall fit for function values
+    weighting_method = wlsqm.WEIGHT_CENTER  # emphasize center to improve derivatives at the point xi
 
     max_iter = 100  # maximum number of refinement iterations for iterative fitting
 
@@ -319,7 +319,7 @@ def test3d():
     # Bitmask of what we know at point xi. In this example, just set the bits;
     # the data (from expr) will be automatically inserted into fi[].
     #
-    # See the constants b3_* in wlsqm2_defs.pxd.
+    # See the constants b3_* in wlsqm.fitter.defs.
     #
     knowns = 1
 
@@ -361,7 +361,7 @@ def test3d():
               "DX4", "DX3DY", "DX2DY2", "DXDY3", "DY4", "DY3DZ", "DY2DZ2", "DYDZ3", "DZ4", "DXDZ3", "DX2DZ2", "DX3DZ", "DX2DYDZ", "DXDY2DZ", "DXDYDZ2" ]
     print "legend: %s" % ("\t".join(labels))
     knowns_str = ""
-    for j in range(wlsqm2.SIZE3):  # SIZE3 = maximum size of c matrix for 3D case
+    for j in range(wlsqm.SIZE3):  # SIZE3 = maximum size of c matrix for 3D case
         if j > 0:
             knowns_str += '\t'
         if knowns & (1 << j):
@@ -502,8 +502,8 @@ def test3d():
     # set knowns *at point xi*
     #
     # we use nan to spot unfilled entries
-    fi = np.nan * np.empty( (wlsqm2.SIZE3,), dtype=np.float64 )  # F, DX, DY, DZ, ... at point xi
-    for d in range(wlsqm2.SIZE3):
+    fi = np.nan * np.empty( (wlsqm.SIZE3,), dtype=np.float64 )  # F, DX, DY, DZ, ... at point xi
+    for d in range(wlsqm.SIZE3):
         if knowns & (1 << d):
             fi[d] = funcs[d]( xi[0], xi[1], xi[2] )  # fill in the known value  # TODO: add noise here too?
 
@@ -516,17 +516,17 @@ def test3d():
     # is valid); hence we pre-fill by nan.
     #
     if do_sens:
-        sens = np.nan * np.empty( (nk,wlsqm2.SIZE3), dtype=np.float64 )
+        sens = np.nan * np.empty( (nk,wlsqm.SIZE3), dtype=np.float64 )
     else:
         sens = None
 
-    # fit the surrogate model (see wlsqm2.pyx for detailed documentation)
+    # fit the surrogate model (see wlsqm.fitter.simple for detailed documentation)
     #
     if debug:
         print  # blank line before debug info
 
-    iterations_taken = wlsqm2.fit_3D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
-#    iterations_taken = wlsqm2.fit_3D( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method )
+    iterations_taken = wlsqm.fit_3D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
+#    iterations_taken = wlsqm.fit_3D( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method )
 
     print "refinement iterations taken: %d" % iterations_taken
 
@@ -554,7 +554,7 @@ def test3d():
     #########################
 
     # surrogate model - the returned fi[] are actually the coefficients of a polynomial
-    model    = wlsqm2.lambdify_fit( xi, fi, dimension=3, order=fit_order )  # lambda x,y : ...
+    model    = wlsqm.lambdify_fit( xi, fi, dimension=3, order=fit_order )  # lambda x,y : ...
 
     print
     print "function values at neighbor points:"
@@ -623,8 +623,8 @@ def test2d():
     #
     fit_order = 4  # 0 (constant), 1 (linear), 2 (quadratic), 3 (cubic) or 4 (quartic)
 
-#    weighting_method = wlsqm2.WEIGHT_UNIFORM  # best overall fit for function values
-    weighting_method = wlsqm2.WEIGHT_CENTER  # emphasize center to improve derivatives at the point xi
+#    weighting_method = wlsqm.WEIGHT_UNIFORM  # best overall fit for function values
+    weighting_method = wlsqm.WEIGHT_CENTER  # emphasize center to improve derivatives at the point xi
 
     max_iter = 100  # maximum number of refinement iterations for iterative fitting
 
@@ -673,7 +673,7 @@ def test2d():
     labels = ["F", "DX", "DY", "DX2", "DXDY", "DY2", "DX3", "DX2DY", "DXDY2", "DY3", "DX4", "DX3DY", "DX2DY2", "DXDY3", "DY4"]
     print "legend: %s" % ("\t".join(labels))
     knowns_str = ""
-    for j in range(wlsqm2.SIZE2):  # SIZE2 = maximum size of c matrix for 2D case
+    for j in range(wlsqm.SIZE2):  # SIZE2 = maximum size of c matrix for 2D case
         if j > 0:
             knowns_str += '\t'
         if knowns & (1 << j):
@@ -782,8 +782,8 @@ def test2d():
     # set knowns *at point xi*
     #
     # we use nan to spot unfilled entries
-    fi = np.nan * np.empty( (wlsqm2.SIZE2,), dtype=np.float64 )  # F, DX, DY, DX2, DXDY, DY2, DX3, DX2DY, DXDY2, DY3 at point xi
-    for d in range(wlsqm2.SIZE2):
+    fi = np.nan * np.empty( (wlsqm.SIZE2,), dtype=np.float64 )  # F, DX, DY, DX2, DXDY, DY2, DX3, DX2DY, DXDY2, DY3 at point xi
+    for d in range(wlsqm.SIZE2):
         if knowns & (1 << d):
             fi[d] = funcs[d]( xi[0], xi[1] )  # fill in the known value  # TODO: add noise here too?
 
@@ -796,15 +796,15 @@ def test2d():
     # is valid); hence we pre-fill by nan.
     #
     if do_sens:
-        sens = np.nan * np.empty( (nk,wlsqm2.SIZE2), dtype=np.float64 )
+        sens = np.nan * np.empty( (nk,wlsqm.SIZE2), dtype=np.float64 )
     else:
         sens = None
 
-    # fit the surrogate model (see wlsqm2.pyx for detailed documentation)
+    # fit the surrogate model (see wlsqm.fitter.simple for detailed documentation)
     #
     if debug:
         print  # blank line before debug info
-    iterations_taken = wlsqm2.fit_2D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
+    iterations_taken = wlsqm.fit_2D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
     print "refinement iterations taken: %d" % iterations_taken
 
     # check exact solution and relative error
@@ -836,7 +836,7 @@ def test2d():
     W    = f(X,Y)
 
     # surrogate model - the returned fi[] are actually the coefficients of a polynomial
-    model = wlsqm2.lambdify_fit( xi, fi, dimension=2, order=fit_order )  # lambda x,y : ...
+    model = wlsqm.lambdify_fit( xi, fi, dimension=2, order=fit_order )  # lambda x,y : ...
     xx2   = np.linspace(xi[0] - r, xi[0] + r, nvis)
     yy2   = np.linspace(xi[1] - r, xi[1] + r, nvis)
     X2,Y2 = np.meshgrid(xx2, yy2)
@@ -851,7 +851,7 @@ def test2d():
 #    X2lin = np.reshape(X2, -1)
 #    Y2lin = np.reshape(Y2, -1)
 #    temp_x = np.array( [ (x,y) for x,y in zip(X2lin,Y2lin) ] )
-#    out = wlsqm2.interpolate_fit( xi, fi, dimension=2, order=fit_order, x=temp_x )
+#    out = wlsqm.interpolate_fit( xi, fi, dimension=2, order=fit_order, x=temp_x )
 #    out = np.reshape( out, shp )
 #    print
 #    print "difference between Python and C API model interpolation:"
@@ -996,8 +996,8 @@ def test1d():
     #
     fit_order = 4  # 0 (constant), 1 (linear), 2 (quadratic), 3 (cubic) or 4 (quartic)
 
-#    weighting_method = wlsqm2.WEIGHT_UNIFORM  # best overall fit for function values
-    weighting_method = wlsqm2.WEIGHT_CENTER  # emphasize center to improve derivatives at the point xi
+#    weighting_method = wlsqm.WEIGHT_UNIFORM  # best overall fit for function values
+    weighting_method = wlsqm.WEIGHT_CENTER  # emphasize center to improve derivatives at the point xi
 
     max_iter = 100  # maximum number of refinement iterations for iterative fitting
 
@@ -1044,7 +1044,7 @@ def test1d():
     labels = ["F", "DX", "DX2", "DX3", "DX4"]
     print "legend: %s" % ("\t".join(labels))
     knowns_str = ""
-    for j in range(wlsqm2.SIZE1):  # SIZE1 = maximum size of c matrix for 1D case
+    for j in range(wlsqm.SIZE1):  # SIZE1 = maximum size of c matrix for 1D case
         if j > 0:
             knowns_str += '\t'
         if knowns & (1 << j):
@@ -1111,8 +1111,8 @@ def test1d():
     # set knowns *at point xi*
     #
     # we use nan to spot unfilled entries
-    fi = np.nan * np.empty( (wlsqm2.SIZE1,), dtype=np.float64 )
-    for d in range(wlsqm2.SIZE1):
+    fi = np.nan * np.empty( (wlsqm.SIZE1,), dtype=np.float64 )
+    for d in range(wlsqm.SIZE1):
         if knowns & (1 << d):
             fi[d] = funcs[d]( xi )  # fill in the known value  # TODO: add noise here too?
 
@@ -1125,7 +1125,7 @@ def test1d():
     # is valid); hence we pre-fill by nan.
     #
     if do_sens:
-        sens = np.nan * np.empty( (nk,wlsqm2.SIZE1), dtype=np.float64 )
+        sens = np.nan * np.empty( (nk,wlsqm.SIZE1), dtype=np.float64 )
     else:
         sens = None
 
@@ -1150,7 +1150,7 @@ def test1d():
     #
     if debug:
         print  # blank line before debug info
-    iterations_taken = wlsqm2.fit_1D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
+    iterations_taken = wlsqm.fit_1D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
     print "refinement iterations taken: %d" % iterations_taken
 
     # check exact solution and relative error
@@ -1181,7 +1181,7 @@ def test1d():
     ww   = f(xx)
 
     # surrogate model - the returned fi[] are actually the coefficients of a polynomial
-    model = wlsqm2.lambdify_fit( xi, fi, dimension=1, order=fit_order )  # lambda x : ...
+    model = wlsqm.lambdify_fit( xi, fi, dimension=1, order=fit_order )  # lambda x : ...
     xx2   = np.linspace(xi - r, xi + r, nvis)
     ww2   = model(xx2)
 
@@ -1190,16 +1190,16 @@ def test1d():
 #    #
 #    # Note that for the C API, the points x to which to interpolate the model must be formatted as x[:] = (xk).
 #    #
-#    out = wlsqm2.interpolate_fit( xi, fi, dimension=1, order=fit_order, x=xx2 )
+#    out = wlsqm.interpolate_fit( xi, fi, dimension=1, order=fit_order, x=xx2 )
 #    print
 #    print "difference between Python and C API model interpolation:"
 #    print out - ww2  # should be close to zero
 
     print
     print "function values (and derivatives) at neighbor points:"
-    flags = [ wlsqm2.i1_F, wlsqm2.i1_X, wlsqm2.i1_X2, wlsqm2.i1_X3, wlsqm2.i1_X4 ]
+    flags = [ wlsqm.i1_F, wlsqm.i1_X, wlsqm.i1_X2, wlsqm.i1_X3, wlsqm.i1_X4 ]
     for label,func,flag in zip(labels,funcs,flags):
-        m   = wlsqm2.lambdify_fit( xi, fi, dimension=1, order=fit_order, diff=flag )  # using diff=..., derivatives of the model can be lambdified, too
+        m   = wlsqm.lambdify_fit( xi, fi, dimension=1, order=fit_order, diff=flag )  # using diff=..., derivatives of the model can be lambdified, too
         fxk = func( xk )
         mxk = m( xk )
         print label
@@ -1269,7 +1269,7 @@ def main():
     test2d()
     test1d()
     testmany2d()
-#    wlsqm2.test_pointer_wrappers()
+#    wlsqm.test_pointer_wrappers()
     print
     pl.show()
 

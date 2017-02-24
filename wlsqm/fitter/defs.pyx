@@ -18,14 +18,14 @@ In the source code, the suffix of _c means "visible at the C level in Cython"; i
 
 Naming scheme:
 
-    ALGO_*   = algorithms for the solve step (advanced API / wlsqm2_expert).
+    ALGO_*   = algorithms for the solve step (for advanced API in wlsqm.fitter.expert).
     WEIGHT_* = weighting methods for the error (data - predicted) in least-squares fitting.
 
     i1_* = integer, 1D case
     i2_* = integer, 2D case
     i3_* = integer, 3D case
 
-        The i?_* constants are the human-readable names of the DOF indices in the "fi" array (see the wlsqm2 module).
+        The i?_* constants are the human-readable names for the DOF indices in the "fi" array (see docstrings in wlsqm.fitter.simple).
 
     b1_* = bitmask, 1D case
     b2_* = bitmask, 2D case
@@ -41,20 +41,20 @@ Naming scheme:
         ("maximum possible" because if order < 4, then only lower-degree DOFs will exist.)
 
     F  = function value
-    X  = "times x" (coefficients) or "differentiate by x" (see wlsqm2_eval module)
+    X  = "times x" (coefficients) or "differentiate by x" (see wlsqm.fitter.interp)
     X2 = "times x**2" or "differentiate twice by x"
     Y, Z respectively
 
 Examples:
 
     i2_F   = 2D case, function value
-    i2_X2Y = 2D case, coefficient of the X**2 * Y term in the polynomial; or request differentiation twice by x and once by y to compute d3f/dx2dy (see wlsqm2_eval module)
+    i2_X2Y = 2D case, coefficient of the X**2 * Y term in the polynomial; or request differentiation twice by x and once by y to compute d3f/dx2dy (see wlsqm.fitter.interp)
 
         IMPORTANT: the DOF values returned by the fitter are "partially baked" such that the DOF value directly corresponds to the value of the corresponding derivative.
                    This is for convenience of evaluating derivatives at the model reference point.
 
                    E.g. fi[:,i2_X2] is the coefficient of d2f/dx2 in a Taylor series expansion of f around the reference point xi.
-                   (The ":" is here meant to refer to the reference point xi for all local models; see  wlsqm2.fit_2D_many()  for a description of the "fi" array.)
+                   (The ":" is here meant to refer to the reference point xi for all local models; see  wlsqm.fitter.simple.fit_2D_many()  for a description of the "fi" array.)
 
 JJ 2016-11-30
 """

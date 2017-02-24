@@ -58,7 +58,7 @@ cdef struct BufferSizes:
     int ipiv       # pivot information of LU factored A (needed by solver)
 
     int fi         # coefficients of the fit; essentially, the function value and derivatives at the origin of the fit
-    int fi2        # work space for coefficients for interpolating derivatives of the model (wlsqm2_eval.pyx) to a general point
+    int fi2        # work space for coefficients for interpolating derivatives of the model (wlsqm.fitter.interp) to a general point
 
     int wrk        # solver work space for RHS (or zero in managed mode)
 
@@ -131,7 +131,7 @@ cdef struct Case:
     int dimension         # number of space dimensions
     int order             # degree of polynomial to be fitted
     long long knowns      # knowns bitmask
-    int weighting_method  # weighting: uniform or emphasize center region (see wlsqm2_defs.pyx)
+    int weighting_method  # weighting: uniform or emphasize center region (see wlsqm.fitter.defs)
     int no                # number of DOFs in original (unreduced) system
     int nr                # number of DOFs in reduced system
     int nk                # number of neighbor points used in fit
@@ -161,7 +161,7 @@ cdef struct Case:
     double* col_scale
     int* ipiv
 
-    # condition number (for wlsqm2_impl.preprocess_A() debug mode)
+    # condition number (for wlsqm.fitter.impl.preprocess_A() debug mode)
     double cond_orig
     double cond_scaled
 
@@ -171,7 +171,7 @@ cdef struct Case:
     # and the other elements store derivatives at the same point.
     #
     double* fi
-    double* fi2  # work space for coefficients for evaluating derivatives of the model (wlsqm2_eval.pyx) at a general point
+    double* fi2  # work space for coefficients for evaluating derivatives of the model (wlsqm.fitter.interp) at a general point
 
     # RHS work space for solver
     double* wrk
@@ -184,7 +184,7 @@ cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, 
 cdef double* Case_get_wrk( Case* self, int taskid ) nogil
 cdef double* Case_get_fk_tmp( Case* self, int taskid ) nogil
 cdef double* Case_get_fi_tmp( Case* self, int taskid ) nogil
-cdef void Case_make_weights( Case* self, double max_d2 ) nogil  # mainly for use by wlsqm2_impl.make_c_nd()
+cdef void Case_make_weights( Case* self, double max_d2 ) nogil  # mainly for use by wlsqm.fitter.impl.make_c_nd()
 cdef void Case_set_fi( Case* self, double* fi ) nogil
 cdef void Case_get_fi( Case* self, double* out ) nogil
 #cdef void Case_determine_sizes( Case* self, BufferSizes* sizes ) nogil  # private

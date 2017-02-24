@@ -28,9 +28,9 @@ from numpy.linalg import cond  # only needed for debug mode
 
 cimport wlsqm.utils.lapackdrivers as drivers
 
-cimport wlsqm.wlsqm2.wlsqm2_defs as defs         # C constants
-cimport wlsqm.wlsqm2.wlsqm2_infra as infra       # centralized memory allocation infrastructure
-cimport wlsqm.wlsqm2.wlsqm2_eval as wlsqm2_eval  # interpolation of fitted model
+cimport wlsqm.fitter.defs   as defs    # C constants
+cimport wlsqm.fitter.infra  as infra   # centralized memory allocation infrastructure
+cimport wlsqm.fitter.interp as interp  # interpolation of fitted model
 
 ####################################################
 # Distance matrix (c) generation
@@ -645,7 +645,7 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
     cdef double* Acopy = <double*>0
     if debug:
 #        with gil:
-#            print "wlsqm2.preprocess_A(): debug mode, will print scaling and condition number information"
+#            print "wlsqm.fitter.impl.preprocess_A(): debug mode, will print scaling and condition number information"
 
         Acopy = <double*>malloc( nr*nr*sizeof(double) )  # bypass the custom allocator; debug mode is not used in production code where memory fragmentation may matter
         drivers.copygeneral_c( Acopy, A, nr, nr )
@@ -911,7 +911,7 @@ cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.gene
 # TODO/FIXME: This function is identical to solve() except the signature. We do this senseless code duplication because solve_iterative() needs a version with raw pointers to contiguous C-level buffers to avoid GIL.
 #
 # TODO/FIXME: Memoryviews can be *accessed* without the GIL; the problem is that *creating* memoryview objects requires the GIL. The function solve_iterative() can't afford to do that,
-# TODO/FIXME: because it is a low-level function that may be (and actually is; see wlsqm2_expert.pyx) called from an OpenMP parallel loop with the GIL released.
+# TODO/FIXME: because it is a low-level function that may be (and actually is; see the .pyx source for wlsqm.fitter.expert) called from an OpenMP parallel loop with the GIL released.
 #
 # Note that this version allows one to use a separate array fi, which is not necessarily the one stored in the Case instance. solve_iterative() uses this feature to compute the iterative updates.
 #
@@ -1082,7 +1082,7 @@ cdef int solve_iterative( infra.Case* case, double[::view.generic] fk, double[::
         #
         # This sets up the new target for fitting (i.e. remaining error at the points xk).
         #
-        wlsqm2_eval.interpolate_model_nD( case, xkManyD, xk1D, wrk_fk, DIFF )  # only either *ManyD or *1D are used, depending on case.dimension
+        interp.interpolate_nD( case, xkManyD, xk1D, wrk_fk, DIFF )  # only either *ManyD or *1D are used, depending on case.dimension
         for k in range(nk):
             wrk_fk[k] = fk[k] - wrk_fk[k]  # overwrite wrk_fk a second time, now with the remaining error
 

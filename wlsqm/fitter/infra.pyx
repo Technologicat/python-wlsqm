@@ -39,7 +39,7 @@ from __future__ import absolute_import
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
 
-cimport wlsqm.wlsqm2.wlsqm2_defs as defs
+cimport wlsqm.fitter.defs as defs  # C constants
 
 # use GCC's intrinsics for counting the number of set bits in an int
 #
@@ -522,7 +522,7 @@ cdef void CaseManager_del( CaseManager* self ) nogil:
 #          and no local copies will be created.
 #
 #          This can be used to save both memory and time when different fields (in an IBVP problem) live on the exact same geometry.
-#          "Geometry" includes both xi,yi.zi (point "xi") and the neighbor set (points "xk"; see wlsqm2_impl.make_c_?D()).
+#          "Geometry" includes both xi,yi.zi (point "xi") and the neighbor set (points "xk"; see wlsqm.fitter.impl.make_c_?D()).
 #
 #          Thus, the host Case instance must have the exact same parameters (and geometry!) as the Case instance being created.
 #          "Parameters" include  dimension, order, nk, knowns, weighting_method.
@@ -565,7 +565,7 @@ cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, 
     if host == <Case*>0:
         self.geometry_owned = 1
 
-        # set condition numbers to nan until computed (only computed if wlsqm2_impl.prepare() is called with the debug flag set!)
+        # set condition numbers to nan until computed (only computed if wlsqm.fitter.impl.prepare() is called with the debug flag set!)
         self.cond_orig   = nan
         self.cond_scaled = nan
 

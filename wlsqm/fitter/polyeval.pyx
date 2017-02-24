@@ -27,7 +27,7 @@ from __future__ import absolute_import
 cdef extern from "<math.h>" nogil:
     double fma(double x, double y, double z)
 
-cimport wlsqm.wlsqm2.wlsqm2_defs as defs # C constants
+cimport wlsqm.fitter.defs as defs  # C constants
 
 ####################################################
 # Polynomial evaluation
@@ -47,7 +47,7 @@ cimport wlsqm.wlsqm2.wlsqm2_defs as defs # C constants
 #
 # order : in, the order of the expansion (0,1,2,3 or 4)
 # fi    : in, coefficient array ("order" determines the number of entries, no separate size parameter needed)
-#         The ordering of the coefficients follows the numbering of the i3_* constants in wlsqm2_defs.pyx.
+#         The ordering of the coefficients follows the numbering of the i3_* constants in wlsqm.fitter.defs.
 #         Here fi[ i3_F_c ] is f at xi, fi[ i3_X ] is df/fx at xi, fi[ i3_Y ] is df/dy at xi, fi[ i3_X2 ] is d2f/dx2 at xi, ...
 # xi    : in, origin of the model, x component
 # yi    : in, origin of the model, y component
@@ -57,7 +57,7 @@ cimport wlsqm.wlsqm2.wlsqm2_defs as defs # C constants
 #
 # Return value: 0 on success, anything else indicates failure
 #
-cdef int evaluate_taylor_expansion_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -338,7 +338,7 @@ cdef int evaluate_taylor_expansion_3D( int order, double* fi, double xi, double 
 #
 # Now fi[ i3_F_c ] is the constant term, fi[ i3_X ] is the coefficient of (x - xi), fi[ i3_Y ] is the coefficient of (y - yi), fi[ i3_X2 ] is the coefficient of (x - xi)**2, ...
 #
-cdef int evaluate_polynomial_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int general_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
     if order not in [0,1,2,3,4]:
         return -1
 #        with gil:
@@ -516,7 +516,7 @@ cdef int evaluate_polynomial_3D( int order, double* fi, double xi, double yi, do
 #
 # order : in, the order of the expansion (0,1,2,3 or 4)
 # fi    : in, coefficient array ("order" determines the number of entries, no separate size parameter needed)
-#         The ordering of the coefficients follows the numbering of the i2_* constants in wlsqm2_defs.pyx.
+#         The ordering of the coefficients follows the numbering of the i2_* constants in wlsqm.fitter.defs.
 #         Here fi[ i2_F_c ] is f at xi, fi[ i2_X ] is df/fx at xi, fi[ i2_Y ] is df/dy at xi, fi[ i2_X2 ] is d2f/dx2 at xi, ...
 # xi    : in, origin of the model, x component
 # yi    : in, origin of the model, y component
@@ -525,7 +525,7 @@ cdef int evaluate_polynomial_3D( int order, double* fi, double xi, double yi, do
 #
 # Return value: 0 on success, anything else indicates failure
 #
-cdef int evaluate_taylor_expansion_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -718,7 +718,7 @@ cdef int evaluate_taylor_expansion_2D( int order, double* fi, double xi, double 
 #
 # Now fi[ i2_F_c ] is the constant term, fi[ i2_X ] is the coefficient of (x - xi), fi[ i2_Y ] is the coefficient of (y - yi), fi[ i2_X2 ] is the coefficient of (x - xi)**2, ...
 #
-cdef int evaluate_polynomial_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
     if order not in [0,1,2,3,4]:
         return -1
 #        with gil:
@@ -842,7 +842,7 @@ cdef int evaluate_polynomial_2D( int order, double* fi, double xi, double yi, do
 #
 # order : in, the order of the expansion (0,1,2,3 or 4)
 # fi    : in, coefficient array ("order" determines the number of entries, no separate size parameter needed)
-#         The ordering of the coefficients follows the numbering of the i1_* constants in wlsqm2_defs.pyx.
+#         The ordering of the coefficients follows the numbering of the i1_* constants in wlsqm.fitter.defs.
 #         Here fi[ i1_F_c ] is f at xi, fi[ i1_X ] is df/dx at xi, fi[ i1_X2 ] is d2f/dx2 at xi, ...
 # xi    : in, origin of the model
 # x     : in, the points where to evaluate the Taylor expansion
@@ -850,7 +850,7 @@ cdef int evaluate_polynomial_2D( int order, double* fi, double xi, double yi, do
 #
 # Return value: 0 on success, anything else indicates failure
 #
-cdef int evaluate_taylor_expansion_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil:
+cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -933,7 +933,7 @@ cdef int evaluate_taylor_expansion_1D( int order, double* fi, double xi, double[
 #
 # Now fi[ i1_F_c ] is the constant term, fi[ i1_X ] is the coefficient of (x - xi), fi[ i2_X2 ] is the coefficient of (x - xi)**2, ...
 #
-cdef int evaluate_polynomial_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil:
+cdef int general_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil:
     if order not in [0,1,2,3,4]:
         return -1
 #        with gil:

@@ -2,7 +2,7 @@
 #
 # WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.
 #
-# Cython declarations for the main module. See wlsqm2.pyx for documentation.
+# Cython declarations for the main module. See the .pyx source for wlsqm.fitter.simple for documentation.
 #
 # JJ 2016-11-07
 
@@ -17,7 +17,7 @@
 # cython: cdivision   = True
 
 # This module contains "driver" routines in the LAPACK sense.
-# The low-level "expert" routines are provided in wlsqm2_impl.pyx.
+# The low-level C routines are contained in wlsqm.fitter.impl.
 
 from cython cimport view  # for usage, see http://cython.readthedocs.io/en/latest/src/userguide/memoryviews.html#specifying-more-general-memory-layouts
 

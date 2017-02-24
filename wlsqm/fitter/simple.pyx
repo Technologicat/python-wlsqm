@@ -11,7 +11,7 @@
 # cython: cdivision   = True
 """WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.
 
-This module contains the simple API. For advanced features, see the module wlsqm2_expert.
+This module contains the simple API. For advanced features, see the module wlsqm.fitter.expert.
 
 JJ 2016-11-07
 """
@@ -34,11 +34,11 @@ from libc.stdlib cimport malloc, free
 cimport cython.parallel
 cimport openmp
 
-from libc.math cimport fabs   as c_abs
+from libc.math cimport fabs as c_abs
 
-cimport wlsqm.wlsqm2.wlsqm2_defs as defs    # C constants
-cimport wlsqm.wlsqm2.wlsqm2_infra as infra  # centralized memory allocation infrastructure
-cimport wlsqm.wlsqm2.wlsqm2_impl as impl    # low-level routines (implementation)
+cimport wlsqm.fitter.defs  as defs   # C constants
+cimport wlsqm.fitter.infra as infra  # centralized memory allocation infrastructure
+cimport wlsqm.fitter.impl  as impl   # low-level routines (implementation)
 
 ####################################################
 # Python API
@@ -59,9 +59,9 @@ The data type of xk, fk, xi, fi and sens must be np.float64.
 xk : in, (nk,3) array of neighbor point coordinates
 fk : in, (nk,) array of function values at the neighbor points
 xi : in, (3,) array, coordinates of the point xi
-fi : in/out: if order=4, (35,) array containing (f, ...) at point xi (see wlsqm2_defs)
-             if order=3, (20,) array containing (f, ...) at point xi (see wlsqm2_defs)
-             if order=2, (10,) array containing (f, ...) at point xi (see wlsqm2_defs)
+fi : in/out: if order=4, (35,) array containing (f, ...) at point xi (see wlsqm.fitter.defs)
+             if order=3, (20,) array containing (f, ...) at point xi (see wlsqm.fitter.defs)
+             if order=2, (10,) array containing (f, ...) at point xi (see wlsqm.fitter.defs)
              if order=1, (4,)  array containing (f, dfdx, dfdy, dfdz) at point xi
              if order=0, (1,)  array containing (f) at point xi
      on input:  those elements must be filled that correspond to the bitmask "knowns".
@@ -81,7 +81,7 @@ order  : in, order of the surrogate polynomial. Can be 0, 1, 2, 3 or 4.
          of the lower-order derivatives.
 
 knowns : in, bitmask describing what is known about the function at the point xi.
-         See the b3_* (bitmask, 3D case) constants in wlsqm2_defs.
+         See the b3_* (bitmask, 3D case) constants in wlsqm.fitter.defs.
 
 debug  : in, boolean. If debug is True, print row scale and condition number information to stdout.
 
@@ -133,7 +133,7 @@ xk:     [j,k,m] = problem_instance_index, neighbor_point_index, x_y_or_z
 fk:     [j,k]
 nk:     [j] (dtype np.int32)
 xi:     [j,m]
-fi:     [j,n] = problem_instance_index, DOF_number (of original unreduced system; see constants i?_* in wlsqm2_defs)
+fi:     [j,n] = problem_instance_index, DOF_number (of original unreduced system; see constants i?_* in wlsqm.fitter.defs)
 sens:   [j,k,n]
 order:  [j] (dtype np.int32)
 knowns: [j] (dtype np.int64)
@@ -297,7 +297,7 @@ xk:     [j,k,m] = problem_instance_index, neighbor_point_index, x_or_y
 fk:     [j,k]
 nk:     [j] (dtype np.int32)
 xi:     [j,m]
-fi:     [j,n] = problem_instance_index, DOF_number (of original unreduced system; see constants i?_* in wlsqm2_defs)
+fi:     [j,n] = problem_instance_index, DOF_number (of original unreduced system; see constants i?_* in wlsqm.fitter.defs)
 sens:   [j,k,n]
 order:  [j] (dtype np.int32)
 knowns: [j] (dtype np.int64)
@@ -458,7 +458,7 @@ xk:     [j,k] = problem_instance_index, neighbor_point_index
 fk:     [j,k]
 nk:     [j] (dtype np.int32)
 xi:     [j]
-fi:     [j,n] = problem_instance_index, DOF_number (of original unreduced system; see constants i?_* in wlsqm2_defs)
+fi:     [j,n] = problem_instance_index, DOF_number (of original unreduced system; see constants i?_* in wlsqm.fitter.defs)
 sens:   [j,k,n]
 order:  [j] (dtype np.int32)
 knowns: [j] (dtype np.int64)
@@ -646,7 +646,7 @@ cdef int generic_fit_iterative( int dimension, double[::view.generic,::view.cont
 # nk:      [j]
 # xiManyD: [j,m]
 # xi1D:    [j]
-# fi:      [j,n] = case, DOF_number (of original unreduced system; see constants i?_* in wlsqm2_defs)
+# fi:      [j,n] = case, DOF_number (of original unreduced system; see constants i?_* in wlsqm.fitter.defs)
 # sens:    [j,k,n]
 # order:   [j]
 # knowns:  [j]
@@ -767,7 +767,7 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
 # nk:      [j]
 # xiManyD: [j,m]
 # xi1D:    [j]
-# fi:      [j,n] = case, DOF_number (of original unreduced system; see constants i?_* in wlsqm2_defs)
+# fi:      [j,n] = case, DOF_number (of original unreduced system; see constants i?_* in wlsqm.fitter.defs)
 # sens:    [j,k,n]
 # order:   [j]
 # knowns:  [j]

@@ -3,6 +3,8 @@ General
 
 - Python 3 support (high priority).
 
+- add function signatures to docstrings (these do not appear automatically for Cython modules)
+
 Documentation
 =============
 
@@ -24,19 +26,10 @@ utils.lapackdrivers
 
  - add option to return also the orthogonal matrices U and V in svd()
 
-wlsqm2
+fitter
 ======
 
- - convert existing file and function comments to docstrings in wlsqm2_eval.pyx (rest already done)
-
- - rename modules sensibly
-   - wlsqm2 --> fitter
-   - wlsqm2_eval --> interp
-   - wlsqm2_expert --> expert
-   - wlsqm2_infra --> infra
-   - wlsqm2_defs --> defs
-   - wlsqm2_impl --> impl
-   - wlsqm2_poly --> polyeval (evaluate_taylor_expansion_?D --> taylor_?D; evaluate_polynomial_?D --> generic_?D)
+ - remove commented-out code (esp. in wlsqm.fitter.impl.preprocess_A())
 
  - fix TODOs in setup.py
 
