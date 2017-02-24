@@ -50,7 +50,10 @@ cimport wlsqm.fitter.impl  as impl   # low-level routines (implementation)
 
 def fit_3D( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
             double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b3_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int debug=0 ):
-    """Fit one local model to 3D scalar data.
+    """def fit_3D( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
+            double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b3_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int debug=0 ):
+
+Fit one local model to 3D scalar data.
 
 All arrays must be allocated by caller!
 
@@ -97,10 +100,13 @@ Return value:
     return iterations_taken
 
 def fit_3D_iterative( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
-            double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b3_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
-    """Fit one local model to 3D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+                      double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b3_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
+    """def fit_3D_iterative( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
+                      double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b3_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
 
-For parameters, see fit_3D(). In addition:
+Fit one local model to 3D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_3D(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 
@@ -116,7 +122,11 @@ Return value:
 def fit_3D_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                  double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
                  double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug=0 ):
-    """Fit many local models to 3D scalar data.
+    """def fit_3D_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                 double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug=0 ):
+
+Fit many local models to 3D scalar data.
 
 Each local model uses a different reference point xi, and different neighbor points xk.
 
@@ -149,11 +159,15 @@ Return value:
 
 
 def fit_3D_iterative_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
-    """Fit many local models to 3D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+                           double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
+    """def fit_3D_iterative_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                           double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
 
-For parameters, see fit_3D_many(). In addition:
+Fit many local models to 3D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_3D_many(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 
@@ -169,9 +183,13 @@ Return value:
 def fit_3D_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                           double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
-    """Fit many local models to 3D scalar data; multi-threaded.
+    """def fit_3D_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                          double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
 
-For parameters, see fit_3D_many(). In addition:
+Fit many local models to 3D scalar data; multi-threaded.
+
+For a description of parameters, see fit_3D_many(). In addition:
 
 ntasks : in, number of threads for OpenMP
 
@@ -183,12 +201,17 @@ Return value:
         iterations_taken = generic_fit_basic_many_parallel( 3, xk, None, fk, nk, xi, None, fi, sens, do_sens, order, knowns, weighting_method, ntasks, debug )
     return iterations_taken
 
-def fit_3D_iterative_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
-    """Fit many local models to 3D scalar data; multi-threaded. Algorithm with iterative refinement to mitigate roundoff.
 
-For parameters, see fit_3D_many(). In addition:
+def fit_3D_iterative_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                                    double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                                    double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
+    """def fit_3D_iterative_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                                    double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                                    double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
+
+Fit many local models to 3D scalar data; multi-threaded. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_3D_many(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 ntasks   : in, number of threads for OpenMP
@@ -208,7 +231,10 @@ Return value:
 
 def fit_2D( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
             double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b2_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int debug=0 ):
-    """Fit one local model to 2D scalar data.
+    """def fit_2D( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
+            double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b2_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int debug=0 ):
+
+Fit one local model to 2D scalar data.
 
 All arrays must be allocated by caller!
 
@@ -256,10 +282,13 @@ Return value:
 
 
 def fit_2D_iterative( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
-            double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b2_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
-    """Fit one local model to 2D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+                      double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b2_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
+    """def fit_2D_iterative( double[::view.generic,::view.contiguous] xk, double[::view.generic] fk, double[::1] xi, double[::1] fi,
+                      double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b2_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
 
-For parameters, see fit_2D(). In addition:
+Fit one local model to 2D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_2D(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 
@@ -280,7 +309,11 @@ Return value:
 def fit_2D_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                  double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
                  double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug=0 ):
-    """Fit many local models to 2D scalar data.
+    """def fit_2D_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                 double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug=0 ):
+
+Fit many local models to 2D scalar data.
 
 Each local model uses a different reference point xi, and different neighbor points xk.
 
@@ -313,11 +346,15 @@ Return value:
 
 
 def fit_2D_iterative_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
-    """Fit many local models to 2D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+                           double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
+    """def fit_2D_iterative_many( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                           double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
 
-For parameters, see fit_2D_many(). In addition:
+Fit many local models to 2D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_2D_many(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 
@@ -333,9 +370,13 @@ Return value:
 def fit_2D_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                           double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
-    """Fit many local models to 2D scalar data; multi-threaded.
+    """def fit_2D_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                          double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
 
-For parameters, see fit_2D_many(). In addition:
+Fit many local models to 2D scalar data; multi-threaded.
+
+For a description of parameters, see fit_2D_many(). In addition:
 
 ntasks : in, number of threads for OpenMP
 
@@ -349,11 +390,15 @@ Return value:
 
 
 def fit_2D_iterative_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
-    """Fit many local models to 2D scalar data; multi-threaded. Algorithm with iterative refinement to mitigate roundoff.
+                                    double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                                    double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
+    """def fit_2D_iterative_many_parallel( double[::view.generic,::view.generic,::view.contiguous] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                                    double[::view.generic,::view.contiguous] xi, double[::view.generic,::view.contiguous] fi,
+                                    double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
 
-For parameters, see fit_2D_many(). In addition:
+Fit many local models to 2D scalar data; multi-threaded. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_2D_many(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 ntasks   : in, number of threads for OpenMP
@@ -374,7 +419,10 @@ Return value:
 # Basic algorithm, one problem instance.
 def fit_1D( double[::view.generic] xk, double[::view.generic] fk, double xi, double[::1] fi,
             double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b1_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int debug=0 ):
-    """Fit one local model to 1D scalar data.
+    """def fit_1D( double[::view.generic] xk, double[::view.generic] fk, double xi, double[::1] fi,
+            double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b1_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int debug=0 ):
+
+Fit one local model to 1D scalar data.
 
 All arrays must be allocated by caller!
 
@@ -422,10 +470,13 @@ Return value:
 
 
 def fit_1D_iterative( double[::view.generic] xk, double[::view.generic] fk, double xi, double[::1] fi,
-            double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b1_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
-    """Fit one local model to 1D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+                      double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b1_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
+    """def fit_1D_iterative( double[::view.generic] xk, double[::view.generic] fk, double xi, double[::1] fi,
+                      double[::view.generic,::view.contiguous] sens, int do_sens=0, int order=2, long long knowns=defs.b1_F_c, int weighting_method=defs.WEIGHT_CENTER_c, int max_iter=10, int debug=0 ):
 
-For parameters, see fit_1D(). In addition:
+Fit one local model to 1D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_1D(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 
@@ -441,7 +492,11 @@ Return value:
 def fit_1D_many( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                  double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
                  double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug=0 ):
-    """Fit many local models to 1D scalar data.
+    """def fit_1D_many( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                 double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug=0 ):
+
+Fit many local models to 1D scalar data.
 
 Each local model uses a different reference point xi, and different neighbor points xk.
 
@@ -474,11 +529,15 @@ Return value:
 
 
 def fit_1D_iterative_many( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
-    """Fit many local models to 1D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+                           double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
+    """def fit_1D_iterative_many( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                           double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                           double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int debug=0 ):
 
-For parameters, see fit_1D_many(). In addition:
+Fit many local models to 1D scalar data. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_1D_many(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 
@@ -492,11 +551,15 @@ Return value:
 
 
 def fit_1D_many_parallel( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
-    """Fit many local models to 1D scalar data; multi-threaded.
+                          double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
+    """def fit_1D_many_parallel( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                          double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks=8, int debug=0 ):
 
-For parameters, see fit_1D_many(). In addition:
+Fit many local models to 1D scalar data; multi-threaded.
+
+For a description of parameters, see fit_1D_many(). In addition:
 
 ntasks : in, number of threads for OpenMP
 
@@ -510,11 +573,15 @@ Return value:
 
 
 def fit_1D_iterative_many_parallel( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
-                 double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
-                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
-    """Fit many local models to 1D scalar data; multi-threaded. Algorithm with iterative refinement to mitigate roundoff.
+                                    double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                                    double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
+    """def fit_1D_iterative_many_parallel( double[::view.generic,::view.generic] xk, double[::view.generic,::view.generic] fk, int[::view.generic] nk,
+                                    double[::view.generic] xi, double[::view.generic,::view.contiguous] fi,
+                                    double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter=10, int ntasks=8, int debug=0 ):
 
-For parameters, see fit_1D_many(). In addition:
+Fit many local models to 1D scalar data; multi-threaded. Algorithm with iterative refinement to mitigate roundoff.
+
+For a description of parameters, see fit_1D_many(). In addition:
 
 max_iter : in, maximum number of fitting iterations to take.
 ntasks   : in, number of threads for OpenMP

@@ -3,7 +3,9 @@ General
 
 - Python 3 support (high priority).
 
-- add function signatures to docstrings (these do not appear automatically for Cython modules)
+- figure out a better way to add function signatures to docstrings for Cython functions
+  - these do not appear automatically for functions defined in Cython modules
+  - this is currently done by simply copy'n'pasting the "def" into the docstring, causing unnecessary duplication and a potential source of errors in documentation.
 
 Documentation
 =============

@@ -35,7 +35,7 @@ Naming scheme (in shellglob notation):
   *s = multiple RHS (but with the same LHS for all).
        These are one-shot deals that reuse the matrix factorization internally.
        However, the pivot information is not returned, so the matrix A
-       is destroyed (filled with nonsense) during the call.
+       is destroyed (overwritten) during the call.
 
   m* = multiple LHS (a separate single RHS for each)
        These simply loop over the problem instances.
@@ -81,11 +81,14 @@ cdef inline int cimax(int a, int b) nogil:
 
 
 ##############################################################################################################
-# Helpers
+# Parallelization helper
 ##############################################################################################################
 
 def distribute_items( int nitems, int ntasks ):  # Python wrapper
-    """Distribute work items (numbered 0, 1, ..., nitems-1) across ntasks tasks, assuming equal workload per item."""
+    """def distribute_items( int nitems, int ntasks ):
+
+Distribute work items (numbered 0, 1, ..., nitems-1) across ntasks tasks, assuming equal workload per item.
+"""
     cdef int[::1] blocksizes = np.empty( (ntasks,), dtype=np.int32 )
     cdef int[::1] baseidxs   = np.empty( (ntasks,), dtype=np.int32 )
     distribute_items_c( nitems, ntasks, &blocksizes[0], &baseidxs[0] )  # ntasks usually very small, no point in "with nogil:"
@@ -115,10 +118,17 @@ cdef void distribute_items_c( int nitems, int ntasks, int* blocksizes, int* base
         baseidxs[k] = baseidxs[k-1] + blocksizes[k-1]
 
 
-def copygeneral( double[::1,:] O, double[::1,:] I ):
-    """Copy a Fortran-contiguous array I into a Fortran-contiguous array O.
+##############################################################################################################
+# Matrix handling helpers
+##############################################################################################################
 
-O must have the same shape as I, and must have been allocated by the caller."""
+def copygeneral( double[::1,:] O, double[::1,:] I ):
+    """def copygeneral( double[::1,:] O, double[::1,:] I ):
+
+Copy a Fortran-contiguous rank-2 array I into a Fortran-contiguous rank-2 array O.
+
+O must have the same shape as I, and must have been allocated by the caller.
+"""
     cdef int ncols=I.shape[0], nrows=I.shape[1]
     with nogil:
         copygeneral_c( &O[0,0], &I[0,0], nrows, ncols )
@@ -126,16 +136,19 @@ O must have the same shape as I, and must have been allocated by the caller."""
 cdef void copygeneral_c( double* O, double* I, int nrows, int ncols ) nogil:
     cdef int nelems=ncols*nrows
     cdef int e  # element storage offset as counted from the beginning of the matrix
-    for e in range(nelems):
+    for e in range(nelems):  # TODO: maybe we could even memcpy(&O[0], &I[0], nelems*sizeof(double))?
         O[e] = I[e]
 
 
 def copysymmu( double[::1,:] O, double[::1,:] I ):
-    """Copy the upper triangle (including the diagonal) of a square Fortran-contiguous array I into a square Fortran-contiguous array O.
+    """def copysymmu( double[::1,:] O, double[::1,:] I ):
+
+Copy the upper triangle (including the diagonal) of a square Fortran-contiguous rank-2 array I into a square Fortran-contiguous rank-2 array O.
 
 The strict lower triangles of I and O are not referenced.
 
-O must have the same shape as I, and must have been allocated by the caller."""
+O must have the same shape as I, and must have been allocated by the caller.
+"""
     cdef int ncols=I.shape[0], nrows=I.shape[1]
     with nogil:
         copysymmu_c( &O[0,0], &I[0,0], nrows, ncols )
@@ -151,7 +164,13 @@ cdef void copysymmu_c( double* O, double* I, int nrows, int ncols ) nogil:
 
 
 def symmetrize( double[::1,:] A ):
-    """Symmetrize a square Fortran-contiguous array in-place."""
+    """def symmetrize( double[::1,:] A ):
+
+Symmetrize a square Fortran-contiguous rank-2 array in-place.
+
+This is a fast Cython implementation of:
+    A = 0.5 * (A + A.T)
+"""
     cdef int ncols=A.shape[0], nrows=A.shape[1]  # cols, rows
     with nogil:
         symmetrize_c( &A[0,0], nrows, ncols )
@@ -160,15 +179,25 @@ cdef void symmetrize_c( double* A, int nrows, int ncols ) nogil:
     cdef int i, j
     cdef double tmp
 
-    for j in range(1,ncols):  # column (skipping first column)
-        for i in range(j):  # row (strict upper triangle only)
-            tmp = 0.5 * (A[i + j*nrows] + A[j+ i*nrows])  # A[i,j] + A[j,i]
+    # loop over strict upper triangle only
+    for j in range(1,ncols):  # column
+        for i in range(j):    # row
+            tmp = 0.5 * (A[i + j*nrows] + A[j + i*nrows])  # A[i,j] + A[j,i]
             A[i + j*nrows] = tmp
             A[j + i*nrows] = tmp
 
 
 def msymmetrize( double[::1,:,:] A ):
-    """Symmetrize many square Fortran-contiguous arrays in-place, single-threaded."""
+    """def msymmetrize( double[::1,:,:] A ):
+
+Symmetrize many square Fortran-contiguous arrays in-place, single-threaded.
+
+A : a Fortran-contiguous rank-3 array, shape (N,n,n).
+
+This is a fast Cython implementation of:
+    for j in range(N):
+        A[j,:,:] = 0.5 * (A[j,:,:] + A[j,:,:].T)
+"""
     cdef int ncols=A.shape[0], nrows=A.shape[1], nlhs=A.shape[2]  # cols, rows, arrays
     with nogil:
         msymmetrize_c( &A[0,0,0], nrows, ncols, nlhs )
@@ -179,15 +208,22 @@ cdef void msymmetrize_c( double* A, int nrows, int ncols, int nlhs ) nogil:
     cdef double tmp
 
     for k in range(nlhs):
-        for j in range(1,ncols):  # column (skipping first column)
-            for i in range(j):  # row (strict upper triangle only)
+        # loop over strict upper triangle only
+        for j in range(1,ncols):  # column
+            for i in range(j):    # row
                 tmp = 0.5 * ( A[i + nrows*j + nelems*k] + A[j + nrows*i + nelems*k] )  # A[i,j,k] + A[j,i,k]
                 A[i + nrows*j + nelems*k] = tmp
                 A[j + nrows*i + nelems*k] = tmp
 
 
 def msymmetrizep( double[::1,:,:] A, int ntasks ):
-    """Symmetrize many square Fortran-contiguous arrays in-place, multi-threaded."""
+    """def msymmetrizep( double[::1,:,:] A, int ntasks ):
+
+Symmetrize many square Fortran-contiguous arrays in-place, multi-threaded.
+
+A      : a Fortran-contiguous rank-3 array, shape (N,n,n).
+ntasks : number of threads for OpenMP
+"""
     cdef int ncols=A.shape[0], nrows=A.shape[1], nlhs=A.shape[2]  # cols, rows, arrays
     with nogil:
         msymmetrizep_c( &A[0,0,0], nrows, ncols, nlhs, ntasks )
@@ -198,8 +234,9 @@ cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks 
     cdef double tmp
 
     for k in cython.parallel.prange(nlhs, num_threads=ntasks):
-        for j in range(1,ncols):  # column (skipping first column)
-            for i in range(j):  # row (strict upper triangle only)
+        # loop over strict upper triangle only
+        for j in range(1,ncols):  # column
+            for i in range(j):    # row
                 tmp = 0.5 * ( A[i + nrows*j + nelems*k] + A[j + nrows*i + nelems*k] )  # A[i,j,k] + A[j,i,k]
                 A[i + nrows*j + nelems*k] = tmp
                 A[j + nrows*i + nelems*k] = tmp
@@ -260,7 +297,9 @@ class ScalingAlgo:  # enum (TODO: use real enum type for Python 3.4+)
     ALGO_SCALGM    = 5
 
 def do_rescale( double[::1,:] A, int algo ):
-    """Generic dispatcher for matrix scaling (preconditioning) routines.
+    """def do_rescale( double[::1,:] A, int algo ):
+
+Generic dispatcher for matrix scaling (preconditioning) routines.
 
 Scaling is useful to reduce the condition number of A, giving more correct digits in the numerical solution
 of a linear equation system involving A.
@@ -322,7 +361,9 @@ Return value: tuple (row_scale, col_scale), where
 # return value: tuple (row_scale, col_scale) of rank-1 arrays
 #
 def rescale_columns( double[::1,:] A ):
-    """Algorithm: column scaling only.
+    """def rescale_columns( double[::1,:] A ):
+
+Algorithm: column scaling only.
 
 Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
 
@@ -354,7 +395,9 @@ cdef int rescale_columns_c( double* A, int nrows, int ncols, double* row_scale, 
 
 
 def rescale_rows( double[::1,:] A ):
-    """Algorithm: row scaling only
+    """def rescale_rows( double[::1,:] A ):
+
+Algorithm: row scaling only
 
 Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
 
@@ -384,18 +427,20 @@ cdef int rescale_rows_c( double* A, int nrows, int ncols, double* row_scale, dou
 
 
 def rescale_twopass( double[::1,:] A ):
-    """Naive two-pass rescale of columns first, then rows.
+    """def rescale_twopass( double[::1,:] A ):
+
+Naive two-pass rescale of columns first, then rows.
 
 Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
 
 Destroys symmetry, but is simple and fast (no iteration needed).
 
-- we scale the columns of A, producing a column-scaled matrix A'
-- then we scale the rows of A', producing A''
-- after the second step the columns are no longer balanced, so A'' will *not* be doubly stochastic
+  - we scale the columns of A, producing a column-scaled matrix A'
+  - then we scale the rows of A', producing A''
+  - after the second step the columns are no longer balanced, so A'' will *not* be doubly stochastic
 
 If one wants a doubly stochastic matrix, iterative approaches are possible.
-See rescale_ruiz2001_c() and rescale_scalgm_c().
+See rescale_ruiz2001() and rescale_scalgm().
 """
 
     return do_rescale( A, ScalingAlgo.ALGO_TWOPASS )
@@ -426,7 +471,9 @@ cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, 
 
 
 def rescale_ruiz2001( double[::1,:] A ):
-    """Simultaneous row and column iterative scaling using algorithm of Ruiz (2001).
+    """def rescale_ruiz2001( double[::1,:] A ):
+
+Simultaneous row and column iterative scaling using algorithm of Ruiz (2001).
 
 Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
 
@@ -513,7 +560,9 @@ cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale,
 
 
 def rescale_scalgm( double[::1,:] A ):
-    """Simultaneous row and column iterative scaling using the SCALGM algorithm of Chiang and Chandler (2008).
+    """def rescale_scalgm( double[::1,:] A ):
+
+Simultaneous row and column iterative scaling using the SCALGM algorithm of Chiang and Chandler (2008).
 
 Preserves matrix symmetry, at the cost of requiring an iterative process to find the scaling factors.
 
@@ -739,7 +788,9 @@ cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, d
 ##############################################################################################################
 
 cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) nogil except -1:
-    """Tridiagonal solver example from:
+    """cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) nogil except -1:
+
+Tridiagonal solver example from:
 
 Henriksen, Ian. Circumventing The Linker: Using SciPy’s BLAS and LAPACK Within Cython. PROC. OF THE 14th PYTHON IN SCIENCE CONF. (SCIPY 2015), 49-52.
 http://conference.scipy.org/proceedings/scipy2015/pdfs/ian_henriksen.pdf
@@ -749,7 +800,7 @@ in the routines for general and symmetric matrices.
 
 For the parameters, see a,b,c,x of LAPACK's DGTSV.
 
-In the Cython source (lapackdrivers.pyx), for the double[::1] syntax, see "Typed Memoryviews" in Cython documentation:
+For the double[::1] syntax, see "Typed Memoryviews" in Cython documentation:
 http://cython.readthedocs.io/en/latest/src/userguide/memoryviews.html
 
 For the "except -1", see:
@@ -767,7 +818,9 @@ http://docs.cython.org/en/latest/src/reference/language_basics.html#error-and-ex
 ##############################################################################################################
 
 def symmetric2x2( double[::1,:] A, double[::1] b ):
-    """Solve a symmetric 2x2 system.
+    """def symmetric2x2( double[::1,:] A, double[::1] b ):
+
+Solve a symmetric 2x2 system.
 
 This is provided for completeness; the special case of a 2x2 matrix is fastest to just compute directly.
 
@@ -802,13 +855,15 @@ cdef int symmetric2x2_c( double* A, double* b ) nogil except -1:
 
 
 def symmetric( double[::1,:] A, double[::1] b ):
-    """Solve a symmetric system.
+    """def symmetric( double[::1,:] A, double[::1] b ):
+
+Solve a symmetric system.
 
 Only the upper triangle of A is used.
 
 A : symmetric matrix as Fortran-contiguous rank-2 arraylike, shape (n,n)
     in  : matrix A
-    out : the UDUT factorization of A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : rank-1 arraylike, shape (n,)
     in  : RHS
     out : solution x to  A*x = b
@@ -822,7 +877,9 @@ cdef int symmetric_c( double* A, double* b, int n ) nogil except -1:
 
 
 def symmetricfactor( double[::1,:] A ):
-    """Compute the UDUT factorization only.
+    """def symmetricfactor( double[::1,:] A ):
+
+Compute the UDUT factorization only.
 
 A : symmetric matrix as Fortran-contiguous rank-2 arraylike, shape (n,n)
     in  : matrix A
@@ -841,7 +898,9 @@ cdef int symmetricfactor_c( double* A, int* ipiv, int n ) nogil except -1:
     return msymmetricfactor_c( A, ipiv, n, 1 )
 
 def symmetricfactored( double[::1,:] A, int[::1] ipiv, double[::1] b ):
-    """Solve a symmetric system using an already factored A and its pivot array.
+    """def symmetricfactored( double[::1,:] A, int[::1] ipiv, double[::1] b ):
+
+Solve a symmetric system using an already factored A and its pivot array.
 
 Caveat:
     The solution is computed by LAPACK's DSYTRS, which uses level 2 BLAS, so the performance is not optimal.
@@ -872,13 +931,15 @@ cdef int symmetricfactored_c( double* A, int* ipiv, double* b, int n ) nogil exc
 
 
 def symmetrics( double[::1,:] A, double[::1,:] b ):
-    """Like symmetric(); single-threaded for multiple RHS.
+    """def symmetrics( double[::1,:] A, double[::1,:] b ):
+
+Like symmetric(); single-threaded for multiple RHS.
 
 Uses LAPACK's multiple RHS functionality. Factorizes A only once.
 
 A : shape (n, n)
     in  : matrix A
-    out : the UDUT factorization of A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : shape (n, nrhs)
     in  : RHSs
     out : solutions x to  A*x = b  for each RHS
@@ -914,7 +975,9 @@ cdef int symmetrics_c( double* A, double* b, int n, int nrhs ) nogil except -1:
 
 
 def symmetricsp( double[::1,:] A, double[::1,:] b, int ntasks ):
-    """Like symmetric(); multi-threaded for multiple RHS.
+    """def symmetricsp( double[::1,:] A, double[::1,:] b, int ntasks ):
+
+Like symmetric(); multi-threaded for multiple RHS.
 
 Divides into parallel tasks, then uses LAPACK's multiple RHS functionality.
 Factorizes A once per thread (this is done internally by LAPACK's DSYSV).
@@ -978,13 +1041,15 @@ cdef int symmetricsp_c( double* A, double* b, int n, int nrhs, int ntasks ) nogi
 
 
 def msymmetric( double[::1,:,:] A, double[::1,:] b ):
-    """Like symmetric(), single-threaded for multiple LHS, one RHS per each LHS.
+    """def msymmetric( double[::1,:,:] A, double[::1,:] b ):
+
+Like symmetric(), single-threaded for multiple LHS, one RHS per each LHS.
 
 Uses a loop at the C level in Cython.
 
 A : shape (n, n, nlhs)
     in  : matrices A
-    out : the UDUT factorization of each A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : shape (n, nlhs)
     in  : RHSs (one for each LHS)
     out : solutions x to  A*x = b  for each RHS
@@ -1022,13 +1087,15 @@ cdef int msymmetric_c( double* A, double* b, int n, int nlhs ) nogil except -1:
 
 
 def msymmetricp( double[::1,:,:] A, double[::1,:] b, int ntasks ):
-    """Like symmetric(), multi-threaded for multiple LHS, one RHS per each LHS.
+    """def msymmetricp( double[::1,:,:] A, double[::1,:] b, int ntasks ):
+
+Like symmetric(), multi-threaded for multiple LHS, one RHS per each LHS.
 
 Uses a parallel loop at the C level in Cython.
 
 A : shape (n, n, nlhs)
     in  : matrices A
-    out : the UDUT factorization of each A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : shape (n, nlhs)
     in  : RHSs (one for each LHS)
     out : solutions x to  A*x = b  for each RHS
@@ -1066,7 +1133,9 @@ cdef int msymmetricp_c( double* A, double* b, int n, int nlhs, int ntasks ) nogi
 
 
 def msymmetricfactor( double[::1,:,:] A, int[::1,:] ipiv ):
-    """Compute the UDUT factorization only. Multiple symmetric LHS, single-threaded.
+    """def msymmetricfactor( double[::1,:,:] A, int[::1,:] ipiv ):
+
+Compute the UDUT factorization only. Multiple symmetric LHS, single-threaded.
 
 A : shape (n, n, nlhs)
     in  : symmetric matrices A (only upper triangle of each is used)
@@ -1101,7 +1170,9 @@ cdef int msymmetricfactor_c( double* A, int* ipiv, int n, int nlhs ) nogil excep
 
 
 def msymmetricfactored( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b ):
-    """Solve multiple symmetric systems using already factored A and their pivot arrays. Single-threaded.
+    """def msymmetricfactored( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b ):
+
+Solve multiple symmetric systems using already factored A and their pivot arrays. Single-threaded.
 
 Caveat:
     The solution is computed by LAPACK's DSYTRS, which uses level 2 BLAS, so the performance is not optimal.
@@ -1138,7 +1209,9 @@ cdef int msymmetricfactored_c( double* A, int* ipiv, double* b, int n, int nlhs 
 
 
 def msymmetricfactorp( double[::1,:,:] A, int[::1,:] ipiv, int ntasks ):
-    """Compute the UDUT factorization only. Multiple symmetric LHS, multi-threaded.
+    """def msymmetricfactorp( double[::1,:,:] A, int[::1,:] ipiv, int ntasks ):
+
+Compute the UDUT factorization only. Multiple symmetric LHS, multi-threaded.
 
 A : shape (n, n, nlhs)
     in  : symmetric matrices A (only upper triangle of each is used)
@@ -1178,7 +1251,9 @@ cdef int msymmetricfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks 
 
 
 def msymmetricfactoredp( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b, int ntasks ):
-    """Solve multiple symmetric systems using already factored A and their pivot arrays. Multi-threaded.
+    """def msymmetricfactoredp( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b, int ntasks ):
+
+Solve multiple symmetric systems using already factored A and their pivot arrays. Multi-threaded.
 
 Caveat:
     The solution is computed by LAPACK's DSYTRS, which uses level 2 BLAS, so the performance is not optimal.
@@ -1220,7 +1295,9 @@ cdef int msymmetricfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs
 ##############################################################################################################
 
 def general2x2( double[::1,:] A, double[::1] b ):
-    """Solve a general 2x2 system.
+    """def general2x2( double[::1,:] A, double[::1] b ):
+
+Solve a general 2x2 system.
 
 This is provided for completeness; the special case of a 2x2 matrix is fastest to just compute directly.
 
@@ -1252,11 +1329,13 @@ cdef int general2x2_c( double* A, double* b ) nogil except -1:
 
 
 def general( double[::1,:] A, double[::1] b ):
-    """Solve a general system.
+    """def general( double[::1,:] A, double[::1] b ):
+
+Solve a general system.
 
 A : general matrix as Fortran-contiguous rank-2 arraylike, shape (n,n)
     in  : matrix A
-    out : the LU factorization of A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : rank-1 arraylike, shape (n,)
     in  : RHS
     out : solution x to  A*x = b
@@ -1270,7 +1349,9 @@ cdef int general_c( double* A, double* b, int n ) nogil except -1:
 
 
 def generalfactor( double[::1,:] A ):
-    """Compute the LU factorization only.
+    """def generalfactor( double[::1,:] A ):
+
+Compute the LU factorization only.
 
 A : symmetric matrix as Fortran-contiguous rank-2 arraylike, shape (n,n)
     in  : matrix A
@@ -1293,7 +1374,9 @@ cdef int generalfactor_c( double* A, int* ipiv, int n ) nogil except -1:
 # b is overwritten with the solution.
 #
 def generalfactored( double[::1,:] A, int[::1] ipiv, double[::1] b ):
-    """Solve a general system using an already factored A and its pivot array.
+    """def generalfactored( double[::1,:] A, int[::1] ipiv, double[::1] b ):
+
+Solve a general system using an already factored A and its pivot array.
 
 A : general matrix as Fortran-contiguous rank-2 arraylike, shape (n,n)
     in  : the LU factorization of A
@@ -1316,13 +1399,15 @@ cdef int generalfactored_c( double* A, int* ipiv, double* b, int n ) nogil excep
 
 
 def generals( double[::1,:] A, double[::1,:] b ):
-    """Like general(); single-threaded for multiple RHS.
+    """def generals( double[::1,:] A, double[::1,:] b ):
+
+Like general(); single-threaded for multiple RHS.
 
 Uses LAPACK's multiple RHS functionality. Factorizes A only once.
 
 A : shape (n, n)
     in  : matrix A
-    out : the LU factorization of A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : shape (n, nrhs)
     in  : RHSs
     out : solutions x to  A*x = b  for each RHS
@@ -1349,7 +1434,9 @@ cdef int generals_c( double* A, double* b, int n, int nrhs ) nogil except -1:
 
 
 def generalsp( double[::1,:] A, double[::1,:] b, int ntasks ):
-    """Like general(); multi-threaded for multiple RHS.
+    """def generalsp( double[::1,:] A, double[::1,:] b, int ntasks ):
+
+Like general(); multi-threaded for multiple RHS.
 
 Divides into parallel tasks, then uses LAPACK's multiple RHS functionality.
 Factorizes A once per thread (this is done internally by LAPACK's DGESV).
@@ -1398,13 +1485,15 @@ cdef int generalsp_c( double* A, double* b, int n, int nrhs, int ntasks ) nogil 
 
 
 def mgeneral( double[::1,:,:] A, double[::1,:] b ):
-    """Like general(), single-threaded for multiple LHS, one RHS per each LHS.
+    """def mgeneral( double[::1,:,:] A, double[::1,:] b ):
+
+Like general(), single-threaded for multiple LHS, one RHS per each LHS.
 
 Uses a loop at the C level in Cython.
 
 A : shape (n, n, nlhs)
     in  : matrices A
-    out : the LU factorization of each A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : shape (n, nlhs)
     in  : RHSs (one for each LHS)
     out : solutions x to  A*x = b  for each RHS
@@ -1426,13 +1515,15 @@ cdef int mgeneral_c( double* A, double* b, int n, int nlhs ) nogil except -1:
 
 
 def mgeneralp( double[::1,:,:] A, double[::1,:] b, int ntasks ):
-    """Like general(), multi-threaded for multiple LHS, one RHS per each LHS.
+    """def mgeneralp( double[::1,:,:] A, double[::1,:] b, int ntasks ):
+
+Like general(), multi-threaded for multiple LHS, one RHS per each LHS.
 
 Uses a parallel loop at the C level in Cython.
 
 A : shape (n, n, nlhs)
     in  : matrices A
-    out : the LU factorization of each A (but no pivot information given, so useless)
+    out : destroyed (overwritten)
 b : shape (n, nlhs)
     in  : RHSs (one for each LHS)
     out : solutions x to  A*x = b  for each RHS
@@ -1455,7 +1546,9 @@ cdef int mgeneralp_c( double* A, double* b, int n, int nlhs, int ntasks ) nogil 
 
 
 def mgeneralfactor( double[::1,:,:] A, int[::1,:] ipiv ):
-    """Compute the LU factorization only. Multiple general LHS, single-threaded.
+    """def mgeneralfactor( double[::1,:,:] A, int[::1,:] ipiv ):
+
+Compute the LU factorization only. Multiple general LHS, single-threaded.
 
 A : shape (n, n, nlhs)
     in  : general matrices A
@@ -1479,7 +1572,9 @@ cdef int mgeneralfactor_c( double* A, int* ipiv, int n, int nlhs ) nogil except 
 
 
 def mgeneralfactored( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b ):
-    """Solve multiple general systems using already factored A and their pivot arrays. Single-threaded.
+    """def mgeneralfactored( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b ):
+
+Solve multiple general systems using already factored A and their pivot arrays. Single-threaded.
 
 A: shape (n, n, nlhs)
     in  : LU factorization of each A
@@ -1507,7 +1602,9 @@ cdef int mgeneralfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) 
 
 
 def mgeneralfactorp( double[::1,:,:] A, int[::1,:] ipiv, int ntasks ):
-    """Compute the LU factorization only. Multiple general LHS, multi-threaded.
+    """def mgeneralfactorp( double[::1,:,:] A, int[::1,:] ipiv, int ntasks ):
+
+Compute the LU factorization only. Multiple general LHS, multi-threaded.
 
 A : shape (n, n, nlhs)
     in  : general matrices A
@@ -1532,7 +1629,9 @@ cdef int mgeneralfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) 
 
 
 def mgeneralfactoredp( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b, int ntasks ):
-    """Solve multiple general systems using already factored A and their pivot arrays. Multi-threaded.
+    """def mgeneralfactoredp( double[::1,:,:] A, int[::1,:] ipiv, double[::1,:] b, int ntasks ):
+
+Solve multiple general systems using already factored A and their pivot arrays. Multi-threaded.
 
 A: shape (n, n, nlhs)
     in  : LU factorization of each A
@@ -1565,14 +1664,16 @@ cdef int mgeneralfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, 
 ##############################################################################################################
 
 def svd( double[::1,:] A ):
-    """Singular value decomposition of general A.
+    """def svd( double[::1,:] A ):
+
+Singular value decomposition of general A.
 
 Currently this gets the singular values only, ignoring the orthogonal matrices U and V.
 This is mainly useful for estimating the 2-norm condition number of A, as S[0] / S[-1].
 
 A : general matrix as Fortran-contiguous rank-2 arraylike, shape (n,n)
     in  : matrix A
-    out : destroyed (overwritten with nonsense)
+    out : destroyed (overwritten)
 
 Return value:
     S, a rank-1 array of shape (n,) containing the singular values, sorted so that S(i) >= S(i+1).

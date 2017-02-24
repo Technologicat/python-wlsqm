@@ -49,7 +49,9 @@ import scipy.spatial
 # As for the other helpers in infra, the reduced DOFs are an internal thing, not visible outside the module.
 #
 def number_of_dofs( int dimension, int order ):
-    """Return the number of DOFs (degrees of freedom) for given dimension (1,2,3) and fitting order (0,1,2,3,4).
+    """def number_of_dofs( int dimension, int order ):
+
+Return the number of DOFs (degrees of freedom) for given dimension (1,2,3) and fitting order (0,1,2,3,4).
 
 This can be used to help allocate "fi" arrays of the correct size without wasting memory on unused DOFs."""
     return infra.number_of_dofs( dimension, order )
@@ -83,7 +85,10 @@ If you need to do that, destroy the old ExpertSolver instance and create a new o
 
     def __init__(self, int dimension, int[::view.generic] nk, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method,
                                       int algorithm=defs.ALGO_BASIC_c, int do_sens=False, int max_iter=10, int ntasks=1, int debug=False, host=None):
-        """Constructor.
+        """def __init__(self, int dimension, int[::view.generic] nk, int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method,
+                                      int algorithm=defs.ALGO_BASIC_c, int do_sens=False, int max_iter=10, int ntasks=1, int debug=False, host=None):
+
+Constructor.
 
 dimension        : in, number of space dimensions (1, 2 or 3)
 nk               : in, array of shape (ncases,), the number of neighbor points (the "xk"s) to be used in the fitting, for each problem instance (dtype np.int32)
@@ -240,7 +245,9 @@ host             : in, ExpertSolver instance to use as host for guest mode. (Def
 
     # Release the CaseManager instance (automatically releasing also the managed Case instances).
     def __del__(self):
-        """Destructor.
+        """def __del__(self):
+
+Destructor.
 
 Releases the memory managed by the custom allocator."""
         # Retrieve the wrapped pointer for the CaseManager.
@@ -260,7 +267,9 @@ Releases the memory managed by the custom allocator."""
 
 
     def memory_used(self):
-        """Report amount of memory (in bytes) allocated by the custom allocator.
+        """def memory_used(self):
+
+Report amount of memory (in bytes) allocated by the custom allocator.
 
 Return value: tuple (currently_used_bytes, buffer_total_size_bytes)
 
@@ -278,7 +287,9 @@ Return value: tuple (currently_used_bytes, buffer_total_size_bytes)
 
 
     def prepare(self, xi, xk):
-        """Prepare geometry, generating, preconditioning (scaling) and LU factorizing the problem matrix for each problem instance.
+        """def prepare(self, xi, xk):
+
+Prepare geometry, generating, preconditioning (scaling) and LU factorizing the problem matrix for each problem instance.
 
 This function multi-threads automatically using self.ntasks threads.
 
@@ -396,7 +407,9 @@ Data from self.nk (see __init__()) is used to determine the number of entries in
 
 
     def conds(self):
-        """Return an array containing the 2-norm condition number of the (scaled) problem matrix for each problem instance.
+        """def conds(self):
+
+Return an array containing the 2-norm condition number of the (scaled) problem matrix for each problem instance.
 
 The returned array has shape (self.ncases,) and dtype np.float64.
 
@@ -432,7 +445,9 @@ computation is internally done during prepare()). Otherwise calling this raises 
 
 
     def solve(self, double[::view.generic,::view.generic] fk, double[::view.generic,::view.contiguous] fi, double[::view.generic,::view.generic,::view.contiguous] sens=None):
-        """Using the current geometry, fit the model to the given data.
+        """def solve(self, double[::view.generic,::view.generic] fk, double[::view.generic,::view.contiguous] fi, double[::view.generic,::view.generic,::view.contiguous] sens=None):
+
+Using the current geometry, fit the model to the given data.
 
 Note that the knowns bitmasks (and certain other settings) have already been set up in the constructor.
 
@@ -621,7 +636,9 @@ where order is the array that was passed to __init__().
 
 
     def prep_interpolate(self):
-        """Prepare the global patched model for performing interpolation.
+        """def prep_interpolate(self):
+
+Prepare the global patched model for performing interpolation.
 
 This will construct a kdtree out of the set of points "xi" and cache it, allowing fast lookups.
 
@@ -646,7 +663,9 @@ after calling solve().
     # TODO: continuous mode: add option to use the k closest local models?
     #
     def interpolate(self, x, mode='nearest', r=None, int diff=0, I=None):
-        """Interpolate the global model or one of its derivatives.
+        """def interpolate(self, x, mode='nearest', r=None, int diff=0, I=None):
+
+Interpolate the global model or one of its derivatives.
 
 The model must be solve()'d first.
 

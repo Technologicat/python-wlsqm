@@ -30,7 +30,9 @@ cimport wlsqm.fitter.polyeval as polyeval  # evaluation of Taylor expansions and
 ####################################################
 
 def interpolate_fit( xi, double[::1] fi, int dimension, int order, x, int diff=0 ):
-    """Interpolate the fit to given points x.
+    """def interpolate_fit( xi, double[::1] fi, int dimension, int order, x, int diff=0 ):
+
+Interpolate the fit to given points x.
 
 This calls the C API to interpolate the model; thus the result is guaranteed to be identical
 to the internal model interpolation performed during fitting with iterative refinement.
@@ -142,7 +144,9 @@ Return value : rank-1 array, function value at each x.
 
 
 def lambdify_fit( xi, fi, dimension, order, diff=0 ):  # Python only
-    """Create a Python lambda that interpolates a fitted surrogate model.
+    """def lambdify_fit( xi, fi, dimension, order, diff=0 ):
+
+Create a Python lambda that interpolates a fitted surrogate model.
 
 If dimension = 3, the output is lambda x,y,z : ... that interpolates the model to (x,y,z).
 If dimension = 2, the output is lambda x,y   : ... that interpolates the model to (x,y).

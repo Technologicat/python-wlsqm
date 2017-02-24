@@ -6,7 +6,7 @@
 #   *s = multiple RHS (but with the same LHS for all).
 #        These are one-shot deals that reuse the matrix factorization internally.
 #        However, the pivot information is not returned, so the matrix A
-#        is destroyed (filled with nonsense) during the call.
+#        is destroyed (overwritten) during the call.
 #
 #   m* = multiple LHS (a separate single RHS for each)
 #        These simply loop over the problem instances.
