@@ -188,7 +188,7 @@ def testmany2d():
             solver.solve( fk=fi[hoods,0], fi=fi, sens=None )
 
     # DEBUG
-    print "max_iterations_taken: %d" % (max_iterations_taken)
+    print "max corrective iterations taken: %d" % (max_iterations_taken)
     # see that we got the derivatives at each point
     if fit_order > 0:  # no derivatives if piecewise constant fit
         print dfdx( S[:,0], S[:,1] ) - fi[:,1]
