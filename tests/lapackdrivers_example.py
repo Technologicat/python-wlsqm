@@ -17,7 +17,7 @@ from numpy.linalg import solve as numpy_solve  # for comparison purposes
 import pylab as pl
 
 try:
-    import wlsqm.lapackdrivers as drivers
+    import wlsqm.utils.lapackdrivers as drivers
 except ImportError:
     print "WLSQM not found; is it installed?"
     from sys import exit
@@ -85,8 +85,7 @@ def main():
     n = 5
     A = np.random.sample( (n,n) )
     A = np.array( A, dtype=np.float64, order='F' )
-    drivers.symmetrize( A )
-#    A = 0.5 * (A + A.T)  # symmetrize
+    drivers.symmetrize( A )  # fast Cython implementation of  A = 0.5 * (A + A.T)
     b = np.random.sample( (n,) )
 
     # test that it works

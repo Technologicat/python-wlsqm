@@ -25,7 +25,7 @@ except ImportError:
     from sys import exit
     exit(1)
 
-from . import sudoku_lhs
+import sudoku_lhs
 
 
 # from various scripts, e.g. miniprojects/misc/tworods/main2.py
