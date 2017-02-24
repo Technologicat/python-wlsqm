@@ -1,0 +1,72 @@
+General
+=======
+
+- Python 3 support (high priority).
+
+Documentation
+=============
+
+- Update the documentation:
+   1) Emphasize surrogate models / response surface modeling (the Taylor series based intuition is misleading, as it severely overestimates the error).
+   2) Introduce the weighting factors w[k]. Change the definition of the total squared error G to be the weighted total squared error,
+      where each neighbor point x[k] has its own weight w[k]. The end result is basically just to weight, in each sum over k, each term by w[k].
+      See wlsqm2_impl.pyx.
+   3) Add a comment about matrix scaling, which drastically improves the condition number. Include a short comment on how to use the row and column scaling arrays.
+      Cite the algorithm papers (see lapackdrivers.pyx).
+   4) Add a comment about iterative refinement to reduce effects of roundoff (this technique is rather standard in least-squares fitting).
+      (FMA in interpolate_model_?D(), used to compute (data - model), may also mitigate roundoff, since it computes  op1*op2 + op3  rounding only the end result.)
+   5) Combine the pieces into a single document (see README for a listing of the pieces).
+
+utils.lapackdrivers
+===================
+
+ - create proper unit tests
+
+ - add option to return also the orthogonal matrices U and V in svd()
+
+wlsqm2
+======
+
+ - convert existing file and function comments to docstrings in wlsqm2_eval.pyx (rest already done)
+
+ - rename modules sensibly
+   - wlsqm2 --> fitter
+   - wlsqm2_eval --> interp
+   - wlsqm2_expert --> expert
+   - wlsqm2_infra --> infra
+   - wlsqm2_defs --> defs
+   - wlsqm2_impl --> impl
+   - wlsqm2_poly --> polyeval (evaluate_taylor_expansion_?D --> taylor_?D; evaluate_polynomial_?D --> generic_?D)
+
+ - fix TODOs in setup.py
+
+ - upload to PyPi
+
+ - create proper unit tests
+
+ - API professionalism:
+   - make ExpertSolver instances copyable
+     - needs a copy() method that deep-copies also the C-level stuff (re-running the memory allocation fandango)
+     - infra.case needs a Case_copy() method, because Case contains pointers
+   - make ExpertSolver instances pickleable (need to save/load the C-level stuff)
+   - use DTYPE and DTYPE_t instead of "double"/"np.float64" directly, to allow compiling a version with complex number support
+
+ - test the 3D support more thoroughly
+   - wlsqm2_poly.pyx: make sure evaluate_taylor_series_3D(), evaluate_polynomial_3D() are bug-free
+   - wlsqm2_eval.pyx: make sure interpolate_model_3D() is bug-free
+   - write a unit test:
+     - generate random SymPy functions (from a preset seed to make the test repeatable), differentiate them symbolically,
+       fit models of orders 0, 1, 2, 3, 4 and compare all up to 34 derivatives with the exact result
+
+ - profile performance, see http://stackoverflow.com/questions/28301931/how-to-profile-cython-functions-line-by-line
+
+ - fix various small TODOs and FIXMEs in the code (low priority)
+
+ - maybe: ExpertSolver: fix the silly slicing requirement in model interpolation: make it possible to interpolate the model to a single point without a memoryview
+   - but profile the performance first to check whether this actually causes a problem
+   - multiple points require the memoryview, because in the general case the input is non-contiguous (a sliced array)
+
+ - maybe: reduce code duplication between driver and expert mode
+   - split generic_fit_basic_many() (and its friends) into prepare and solve stages, implement the driver in terms of calling these stages
+   - re-use the same stages in ExpertSolver
+
