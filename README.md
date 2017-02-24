@@ -35,7 +35,7 @@ Currently only Python 2.7 is supported, but this may change in the future. Autom
 
 - Speed:
   - Performance-critical parts are implemented in Cython, and the GIL is released during computation.
-  - LAPACK is used directly via [SciPy's Cython-level bindings](https://docs.scipy.org/doc/scipy/reference/linalg.cython_lapack.html) (see the `ntasks` parameter in various API functions). This is especially useful when many (1e4 or more) local models are being fitted, as the solver loop does not require holding the GIL.
+  - LAPACK is used directly via [SciPy's Cython-level bindings](https://docs.scipy.org/doc/scipy/reference/linalg.cython_lapack.html) (see the `ntasks` parameter in various API functions in `wlsqm`). This is especially useful when many (1e4 or more) local models are being fitted, as the solver loop does not require holding the GIL.
   - OpenMP is used for parallelization over the independent local problems (also in the linear solver step).
   - The polynomial evaluation code has been manually optimized to reduce the number of FLOPS required.
 
