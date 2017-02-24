@@ -644,9 +644,6 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
     #
     cdef double* Acopy = <double*>0
     if debug:
-#        with gil:
-#            print "wlsqm.fitter.impl.preprocess_A(): debug mode, will print scaling and condition number information"
-
         Acopy = <double*>malloc( nr*nr*sizeof(double) )  # bypass the custom allocator; debug mode is not used in production code where memory fragmentation may matter
         drivers.copygeneral_c( Acopy, A, nr, nr )
 
@@ -664,8 +661,6 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
     #
     # We can't use dgecon() (which would use the factorized A), because we want the 2-norm condition number and dgecon() only supports 1-norm and infinity-norm.
     #
-#    cdef double cond_orig, cond_scaled, r, acc, acc1, acc2
-#    cdef int nrows, ncols, j, m
     cdef double* S = <double*>0
     cdef double cond_orig, cond_scaled
     cdef int j
@@ -690,59 +685,6 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
         case.cond_scaled = S[0] / S[nr-1]
 
         free( <void*>S )
-
-        # TODO: make another debug mode that acts like the old one
-#        with gil:
-#            print "Matrix scaling: %d iterations taken" % (iterations_taken)
-
-#            nrows = nr
-#            ncols = nr
-
-#            print "Final row A''[j,:] norms after scaling (0-based, eliminated rows omitted)"
-#            print "\tj\tl1\t\tl2\t\tlinf"
-#            for j in xrange(nrows):  # row
-#                acc1 = 0.
-#                acc2 = 0.
-#                acc  = 0.
-#                for m in xrange(ncols):  # col
-#                    # l1
-#                    acc1 += c_abs( A[j + nrows*m] )
-
-#                    # l2
-#                    acc2 += A[j + nrows*m] * A[j + nrows*m]  # | A[j,m] |**2
-
-#                    # l-infinity
-#                    if c_abs(A[j + nrows*m]) > acc:
-#                        acc = c_abs(A[j + nrows*m])
-#                print "\t%d\t%0.10g\t%0.10g\t%0.10g" % (r2o[j], acc1, sqrt(acc2), acc)  # row number, norm
-
-#            print "Final column A''[:,m] norms after scaling (0-based, eliminated columns omitted)"
-#            print "\tm\tl1\t\tl2\t\tlinf"
-#            for m in xrange(ncols):  # col
-#                acc1 = 0.
-#                acc2 = 0.
-#                acc  = 0.
-#                for j in xrange(nrows):  # row
-#                    # l1
-#                    acc1 += c_abs( A[j + nrows*m] )
-
-#                    # l2
-#                    acc2 += A[j + nrows*m] * A[j + nrows*m]  # | A[j,m] |**2
-
-#                    # l-infinity
-#                    if c_abs(A[j + nrows*m]) > acc:
-#                        acc = c_abs(A[j + nrows*m])
-#                print "\t%d\t%0.10g\t%0.10g\t%0.10g" % (r2o[m], acc1, sqrt(acc2), acc)  # col number, norm
-
-#            if Acopy != <double*>0:
-#                cond_orig   = cond( <double[:nrows:1,:ncols]>Acopy )
-#                cond_scaled = cond( <double[:nrows:1,:ncols]>A )
-#                r           = cond_scaled / cond_orig
-#                print "cond(A): orig = %0.6g, scaled = %0.6g; r = s/o = %0.6g, improvement 1/r = %0.6g (~%0.3g digits))" % (cond_orig, cond_scaled, r, 1./r, log10(1./r))
-#            else:
-#                cond_scaled = cond( <double[:nrows:1,:ncols]>A )
-#                print "cond(A): scaled = %0.6g" % (cond_scaled)
-#            print asanyarray( <double[:nrows:1,:ncols]>A )  # DEBUG
 
     # Compute LU factorization of scaled A.
     #
