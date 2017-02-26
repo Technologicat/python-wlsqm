@@ -161,7 +161,6 @@ setup(
                     "Intended Audience :: Developers",
                     "Intended Audience :: Science/Research",
                     "License :: OSI Approved :: BSD License",
-                    "Natural Language :: English",
                     "Operating System :: POSIX :: Linux",
                     "Programming Language :: Cython",
                     "Programming Language :: Python",
