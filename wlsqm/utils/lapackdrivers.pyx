@@ -365,7 +365,7 @@ def rescale_columns( double[::1,:] A ):
 
 Algorithm: column scaling only.
 
-Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
+Do not call this directly; instead, use do_rescale(). This function is exported only to make its docstring visible.
 
   - changes the "size of units" of the elements of x
     - so the caller must undo this when reading "x" after solving the linear equation system.
@@ -399,7 +399,7 @@ def rescale_rows( double[::1,:] A ):
 
 Algorithm: row scaling only
 
-Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
+Do not call this directly; instead, use do_rescale(). This function is exported only to make its docstring visible.
 
   - changes the scaling of the RHS
     - so the caller must scale "b" by the same factor, too
@@ -431,7 +431,7 @@ def rescale_twopass( double[::1,:] A ):
 
 Naive two-pass rescale of columns first, then rows.
 
-Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
+Do not call this directly; instead, use do_rescale(). This function is exported only to make its docstring visible.
 
 Destroys symmetry, but is simple and fast (no iteration needed).
 
@@ -475,11 +475,11 @@ def rescale_ruiz2001( double[::1,:] A ):
 
 Simultaneous row and column iterative scaling using algorithm of Ruiz (2001).
 
-Do not call this directly; instead, use do_rescale(). This function is exported onlyt to make its docstring visible.
+Do not call this directly; instead, use do_rescale(). This function is exported only to make its docstring visible.
 
 Preserves matrix symmetry, at the cost of requiring an iterative process to find the scaling factors.
 
-The rows and columns are equilibriated in the l-infinity norm (maximum absolute value of element).
+The rows and columns are equilibrated in the l-infinity norm (maximum absolute value of element).
 
 Reference:
     Daniel Ruiz, A Scaling Algorithm to Equilibrate Both Rows and Columns Norms in Matrices. Report RAL-TR-2001-034. 2001.
@@ -566,7 +566,7 @@ Simultaneous row and column iterative scaling using the SCALGM algorithm of Chia
 
 Preserves matrix symmetry, at the cost of requiring an iterative process to find the scaling factors.
 
-The rows and columns are equilibriated in the l-infinity norm (maximum absolute value of element).
+The rows and columns are equilibrated in the l-infinity norm (maximum absolute value of element).
 The result is the same as by Ruiz (2001) (see rescale_ruiz2001()); both algorithms are provided,
 because they may exhibit different performance.
 
