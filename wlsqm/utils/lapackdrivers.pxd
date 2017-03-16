@@ -67,6 +67,7 @@ cdef void apply_scaling_c( double* A, int nrows, int ncols, double* row_scale, d
 cdef int rescale_columns_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
 cdef int rescale_rows_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
 cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil  # scale columns, then rows
+cdef int rescale_dgeequ_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
 
 # symmetry-preserving methods (iterative)
 cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil

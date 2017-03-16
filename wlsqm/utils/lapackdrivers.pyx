@@ -70,7 +70,7 @@ from libc.stdlib cimport malloc, free
 import numpy as np
 
 from scipy.linalg.cython_lapack cimport dgtsv,    dsysv, dsytrf, dsytrs,    dgesv, dgetrf, dgetrs
-from scipy.linalg.cython_lapack cimport dgesvd
+from scipy.linalg.cython_lapack cimport dgeequ, dgesvd
 
 # fast inline min/max for C code
 #
@@ -295,6 +295,7 @@ class ScalingAlgo:  # enum (TODO: use real enum type for Python 3.4+)
     ALGO_TWOPASS   = 3
     ALGO_RUIZ2001  = 4
     ALGO_SCALGM    = 5
+    ALGO_DGEEQU    = 6
 
 def do_rescale( double[::1,:] A, int algo ):
     """def do_rescale( double[::1,:] A, int algo ):
@@ -344,6 +345,8 @@ Return value: tuple (row_scale, col_scale), where
         scaler = rescale_ruiz2001_c
     elif algo == ScalingAlgo.ALGO_SCALGM:
         scaler = rescale_scalgm_c
+    elif algo == ScalingAlgo.ALGO_DGEEQU:
+        scaler = rescale_dgeequ_c
     else:
         raise ValueError("Unknown algorithm identifier, got %d" % (algo))
 
@@ -467,6 +470,31 @@ cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, 
             acc += tmp*tmp  # | A[j,m] |**2
         row_scale[j] /= sqrt(acc)  # update row scaling by euclidean norm of A[j,:] (in old scaling)
 
+    return 1
+
+
+def rescale_dgeequ( double[::1,:] A ):
+    """def rescale_dgeequ( double[::1,:] A ):
+
+Scaling using DGEEQU from LAPACK.
+
+Do not call this directly; instead, use do_rescale(). This function is exported only to make its docstring visible.
+
+Destroys symmetry, but is simple and fast (no iteration needed).
+
+Similar to twopass, but uses the l-infinity norm.
+
+See:
+    http://www.netlib.org/lapack/explore-3.1.1-html/dgeequ.f.html
+"""
+    return do_rescale( A, ScalingAlgo.ALGO_DGEEQU )
+
+# FIXME: Unfortunately, we must ignore exceptions to fit the rescale_func_ptr signature.
+cdef int rescale_dgeequ_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+    # SUBROUTINE DGEEQU( M, N, A, LDA, R, C, ROWCND, COLCND, AMAX, INFO )
+    cdef double rowcnd, colcnd, amax
+    cdef int info
+    dgeequ( &nrows, &ncols, A, &nrows, row_scale, col_scale, &rowcnd, &colcnd, &amax, &info )
     return 1
 
 
