@@ -1,6 +1,14 @@
 High priority
 =============
 
+- add Topics to GitHub page
+
+- switch from distutils to setuptools (required for PyPI)
+
+- use a semantic versioning scheme
+
+- upload to PyPI (preferably using a digital signature)
+
 - add Python 3 support
 
 - create unit tests
@@ -35,8 +43,6 @@ fitter
 ======
 
  - fix TODOs in `setup.py`
-
- - upload to PyPi
 
  - API professionalism:
    - make `wlsqm.fitter.expert.ExpertSolver` instances copyable
