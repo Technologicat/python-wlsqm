@@ -27,10 +27,10 @@ The bounding box of the x data is automatically used as the bounds of the genera
 
 Parameters:
     x : rank-2 array, dtype np.float64
-        Point cloud, one point per row. P[i,:] = (xi,yi)
+        Point cloud, one point per row. x[i,:] = (xi,yi)
 
     F : rank-1 array, dtype np.float64
-        The corresponding function values. F[i] = F( P[i,:] )
+        The corresponding function values. F[i] = F( x[i,:] )
 
     nvis : int
         Number of points per axis in the generated regular grid.
