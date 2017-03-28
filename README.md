@@ -66,6 +66,23 @@ where the relevant files are:
 The documentation is slightly out of date; see TODO.md for details on what needs updating and how.
 
 
+## Experiencing crashes?
+
+Check that you are loading the same BLAS your LAPACK and SciPy link against::
+    shopt -s globstar
+    ldd /usr/lib/**/*lapack*.so | grep blas
+    ldd $(dirname $(python -c "import scipy; print(scipy.__file__)"))/linalg/cython_lapack.so | grep blas
+
+In Debian-based Linux, you can change the active BLAS implementation by::
+    sudo update-alternatives --config libblas.so
+    sudo update-alternatives --config libblas.so.3
+
+This may (or may not) be different from what NumPy links against::
+    ldd $(dirname $(python -c "import numpy; print(numpy.__file__)"))/core/multiarray.so | grep blas
+
+WLSQM itself does not link against LAPACK or BLAS; it utilizes the `cython_lapack` module of SciPy.
+
+
 ## License
 
 BSD (see LICENSE.md). Copyright 2016-2017 Juha Jeronen and University of Jyväskylä.
