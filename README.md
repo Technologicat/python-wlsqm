@@ -49,7 +49,7 @@ Currently only Python 2.7 is supported, but this may change in the future. Autom
 
 ## Documentation
 
-For usage examples, see [examples/wlsqm_example.py](examples/wlsqm_example.py).
+For usage examples, see [examples/wlsqm_example.py](examples/wlsqm_example.py) for a tour, and [examples/expertsolver_example.py](examples/expertsolver_example.py) for a minimal example concentrating specifically on `ExpertSolver`.
 
 For the technical details, see the docstrings and comments in the code itself.
 
