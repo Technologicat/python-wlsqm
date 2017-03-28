@@ -103,7 +103,6 @@ Return value:
 
     # make a flat list of grid points (rank-2 array, one point per row)
     #
-    shp  = np.shape(X)  # remember old shape so that we can restore it for the result at the end
     Xlin = np.reshape(X, -1)
     Ylin = np.reshape(Y, -1)
     xout = np.empty( (len(Xlin), 2), dtype=np.float64 )
@@ -113,12 +112,12 @@ Return value:
     # Using the model, interpolate onto the regular grid
     #
     solver.prep_interpolate()  # prepare global model
-    Z,dummy = solver.interpolate( xout, mode='nearest' )  # use the nearest local model; fast, surprisingly accurate
-                                                          # if a reasonable number of points (and continuous-looking
-                                                          # although technically has jumps over Voronoi cell boundaries)
-    Z = np.reshape( Z, shp )  # reshape output into the same meshgrid shape as X and Y
+    Z,mi = solver.interpolate( xout, mode='nearest' )  # use the nearest local model; fast, surprisingly accurate
+                                                       # if a reasonable number of points (and continuous-looking
+                                                       # although technically has jumps over Voronoi cell boundaries)
+    # when mode="nearest", "mi" is an array containing the index of the local model (which belongs to x[mi,:]) used for each evaluation
 
-    return (X,Y,Z)
+    return (X, Y, np.reshape( Z, X.shape ))
 
 
 def plot_wireframe( data, figno=None ):
