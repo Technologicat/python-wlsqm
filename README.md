@@ -63,7 +63,7 @@ where the relevant files are:
   - eulerflow.pdf (clearer presentation of the original version, but without the sensitivity calculation)
   - wlsqm_gen.pdf (theory diff on how to make a version that handles also missing function values; also why WLSQM works and some analysis of its accuracy)
 
-The documentation is slightly out of date; see TODO.md for details on what needs updating and how.
+The documentation is slightly out of date; see [TODO](TODO.md) for details on what needs updating and how.
 
 
 ## Experiencing crashes?
