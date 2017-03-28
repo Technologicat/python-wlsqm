@@ -102,7 +102,7 @@ WLSQM itself does not link against LAPACK or BLAS; it utilizes the `cython_lapac
 
 ## License
 
-BSD (see LICENSE.md). Copyright 2016-2017 Juha Jeronen and University of Jyväskylä.
+[BSD](LICENSE.md). Copyright 2016-2017 Juha Jeronen and University of Jyväskylä.
 
 
 #### Acknowledgement
