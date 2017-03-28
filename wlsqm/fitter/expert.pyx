@@ -128,6 +128,19 @@ host             : in, ExpertSolver instance to use as host for guest mode. (Def
         if dimension not in [1,2,3]:
             raise ValueError("Dimension must be 1, 2 or 3, got %d" % dimension)
 
+        # int parameters will be assigned to C variables
+        #
+        if algorithm is None:
+            raise ValueError("algorithm cannot be None")
+        if do_sens is None:
+            raise ValueError("do_sens cannot be None")
+        if max_iter is None:
+            raise ValueError("max_iter cannot be None")
+        if ntasks is None:
+            raise ValueError("ntasks cannot be None")
+        if debug is None:
+            raise ValueError("debug cannot be None")
+
         cdef int iterative
         if algorithm == defs.ALGO_BASIC_c:
             iterative = 0
@@ -713,6 +726,8 @@ Return value: tuple (out, I_out) where
             raise ValueError("mode must be one of 'nearest', 'continuous'; got '%d'" % mode)
         if mode == 'continuous'  and  r is None:
             raise ValueError("r must be specified in mode='continuous'")
+        if diff is None:
+            raise ValueError("diff cannot be None")
 
         # TODO/FIXME: catch the case where the model has been prepared, but not solved (since this uses the internal xi arrays of the Case instances)
         if self.tree is None:
