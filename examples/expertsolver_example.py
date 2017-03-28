@@ -8,8 +8,6 @@ from __future__ import division
 
 import numpy as np
 
-import scipy.io
-import scipy.interpolate
 import scipy.spatial.ckdtree
 
 import matplotlib.pyplot as plt
