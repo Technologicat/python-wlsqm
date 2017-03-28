@@ -6,7 +6,7 @@ Use cases include response surface modeling, and computing space derivatives of 
 
 This is an independent implementation of the weighted least squares meshless algorithm described (in the 2nd order 2D case) in section 2.2.1 of Hong Wang (2012), Evolutionary Design Optimization with Nash Games and Hybridized Mesh/Meshless Methods in Computational Fluid Dynamics, Jyväskylä Studies in Computing 162, University of Jyväskylä. [ISBN 978-951-39-5007-1 (PDF)](http://urn.fi/URN:ISBN:978-951-39-5007-1)
 
-This implementation is targeted for high performance in a single-node environment, such as a laptop. Cython is used to accelerate the low-level routines. The main target is the `x86_64` architecture, but any 64-bit architecture should be fine with the appropriate compiler option changes to `setup.py`.
+This implementation is targeted for high performance in a single-node environment, such as a laptop. Cython is used to accelerate the low-level routines. The main target is the `x86_64` architecture, but any 64-bit architecture should be fine with the appropriate compiler option changes to [setup.py](setup.py).
 
 Currently only Python 2.7 is supported, but this may change in the future. Automated unit tests are missing; this is another area that is likely to be improved. Otherwise the code is already rather stable; any major new features are unlikely to be added, and the API is considered stable.
 
@@ -39,17 +39,17 @@ Currently only Python 2.7 is supported, but this may change in the future. Autom
   - OpenMP is used for parallelization over the independent local problems (also in the linear solver step).
   - The polynomial evaluation code has been manually optimized to reduce the number of FLOPS required.
 
-    In 1D, the Horner form is used. The 2D and 3D cases use a symmetric form that extends the 1D Horner form into multiple dimensions (see `wlsqm/fitter/polyeval.pyx` for details). The native FMA (fused multiply-add) instruction of the CPU is used in the evaluation to further reduce FLOPS required, and to improve accuracy (utilizing the fact it rounds only once).
+    In 1D, the Horner form is used. The 2D and 3D cases use a symmetric form that extends the 1D Horner form into multiple dimensions (see [wlsqm/fitter/polyeval.pyx](wlsqm/fitter/polyeval.pyx) for details). The native FMA (fused multiply-add) instruction of the CPU is used in the evaluation to further reduce FLOPS required, and to improve accuracy (utilizing the fact it rounds only once).
 
 - Accuracy:
-  - Problem matrices are preconditioned by a symmetry-preserving scaling algorithm (D. Ruiz 2001; exact reference given in `wlsqm/utils/lapackdrivers.pyx`) to obtain best possible accuracy from the direct linear solver. This is critical especially for high-order fits.
+  - Problem matrices are preconditioned by a symmetry-preserving scaling algorithm (D. Ruiz 2001; exact reference given in [wlsqm/utils/lapackdrivers.pyx](wlsqm/utils/lapackdrivers.pyx)) to obtain best possible accuracy from the direct linear solver. This is critical especially for high-order fits.
   - The fitting procedure optionally accomodates an internal iterative refinement loop to mitigate the effect of roundoff.
   - FMA, as mentioned above.
 
 
 ## Documentation
 
-For usage examples, see `examples/wlsqm_example.py`.
+For usage examples, see [examples/wlsqm_example.py](examples/wlsqm_example.py).
 
 For the technical details, see the docstrings and comments in the code itself.
 
@@ -90,6 +90,14 @@ ldd $(dirname $(python -c "import numpy; print(numpy.__file__)"))/core/multiarra
 ```
 
 WLSQM itself does not link against LAPACK or BLAS; it utilizes the `cython_lapack` module of SciPy.
+
+
+## Dependencies
+
+- [NumPy](http://www.numpy.org)
+- [SciPy](http://www.scipy.org)
+- [Cython](http://www.cython.org)
+- [Matplotlib](http://matplotlib.org/) (for usage examples)
 
 
 ## License
