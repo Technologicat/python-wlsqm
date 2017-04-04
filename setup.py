@@ -71,25 +71,15 @@ DESC="""WLSQM (Weighted Least SQuares Meshless) is a fast and accurate meshless 
 
 Given scalar data values on a set of points in 1D, 2D or 3D, WLSQM constructs a piecewise polynomial global surrogate model (a.k.a. response surface), using up to 4th order polynomials.
 
-This is an independent implementation of the weighted least squares meshless algorithm described (in the 2nd order 2D case) in section 2.2.1 of Hong Wang (2012), Evolutionary Design Optimization with Nash Games and Hybridized Mesh/Meshless Methods in Computational Fluid Dynamics, Jyväskylä Studies in Computing 162, University of Jyväskylä. ISBN 978-951-39-5007-1 (PDF). http://urn.fi/URN:ISBN:978-951-39-5007-1
+Use cases include response surface modeling, and computing space derivatives of data known only as values at discrete points in space. No grid or mesh is needed.
 
-Use cases include response surface modeling, and computing space derivatives of data known only as values at discrete points in space (this has applications in explicit algorithms for solving initial boundary value problems (IBVPs)). No grid or mesh is needed. No restriction is imposed on geometry other than "not degenerate", e.g. points in 2D should not all fall onto the same 1D line.
-
-Any derivative of the model function (e.g. d2f/dxdy) can be easily evaluated, up to the order of the polynomial. Derivatives at each "local model reference point" xi are directly available as DOFs of the solution. Derivatives at any other point can be automatically interpolated from the model.
-
-Each local model has a reference point, on which the local polynomial will be centered. At the reference point, the function value and/or any of the derivatives can be specified as knowns, in which case they will be automatically eliminated from the equation system. The function value itself may also be unknown (at the reference point only), which is useful for implementing Neumann BCs in a PDE (IBVP) solving context.
+Any derivative of the model function (e.g. d2f/dxdy) can be easily evaluated, up to the order of the polynomial.
 
 Sensitivity data of solution DOFs (on the data values at points other than the reference in the local neighborhood) can be optionally computed.
 
-Sliced arrays are supported for input, both for the geometry (points) and data (function values). Performance-critical parts are implemented in Cython, and the GIL is released during computation. LAPACK is used directly via SciPy's Cython-level bindings. OpenMP is used for parallelization over the independent local problems (also in the linear solver step).
+Performance-critical parts are implemented in Cython. LAPACK is used via SciPy's Cython-level bindings. OpenMP is used for parallelization over the independent local problems (also in the linear solver step).
 
-To improve accuracy, problem matrices are preconditioned by a symmetry-preserving scaling algorithm. Fused multiply-add (FMA) is used in polynomial evaluation.
-
-This implementation is targeted for high performance in a single-node environment, such as a laptop. The main target is the x86_64 architecture, but any 64-bit architecture should be fine with the appropriate compiler option changes to setup.py.
-
-Likely future improvements include Python 3 support (currently only Python 2.7 is supported), and automated unit tests. Otherwise the code is already rather stable; any major new features are unlikely to be added, and the public API is considered stable.
-
-Usage examples are provided in the download.
+This implementation is targeted for high performance in a single-node environment, such as a laptop. The main target is x86_64.
 """
 
 #########################################################
