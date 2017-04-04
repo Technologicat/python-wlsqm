@@ -1,4 +1,4 @@
-# python-wlsqm
+# wlsqm
 
 WLSQM (Weighted Least SQuares Meshless) is a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.
 
