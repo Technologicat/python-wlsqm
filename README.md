@@ -47,6 +47,43 @@ Currently only Python 2.7 is supported, but this may change in the future. Autom
   - FMA, as mentioned above.
 
 
+## Installation
+
+### From PyPI (wlsqm v0.1.1+)
+
+Install as user:
+
+```bash
+pip install wlsqm --user
+```
+
+Install as admin:
+
+```bash
+sudo pip install wlsqm
+```
+
+Note that this package is currently compatible with Python 2.7 only, so you may need to use `pip2` instead of `pip` (which may default to Python 3).
+
+### From GitHub
+
+As user:
+
+```bash
+git clone https://github.com/Technologicat/python-wlsqm.git
+cd python-wlsqm
+python setup.py install --user
+```
+
+As admin, change the last command to
+
+```bash
+sudo python setup.py install
+```
+
+Here, too, may need to use `python2` instead of `python`.
+
+
 ## Documentation
 
 For usage examples, see [examples/wlsqm_example.py](examples/wlsqm_example.py) for a tour, and [examples/expertsolver_example.py](examples/expertsolver_example.py) for a minimal example concentrating specifically on `ExpertSolver`.
