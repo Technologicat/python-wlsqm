@@ -105,7 +105,12 @@ WLSQM itself does not link against LAPACK or BLAS; it utilizes the `cython_lapac
 [BSD](LICENSE.md). Copyright 2016-2017 Juha Jeronen and University of Jyväskylä.
 
 
+## History
+
+  - 0.1.1: change distribution system from distutils to setuptools
+  - 0.1.0: initial version
+
+
 #### Acknowledgement
 
 This work was financially supported by the Jenny and Antti Wihuri Foundation.
-

@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 #
-"""Distutils-based setup script for WLSQM.
-
-Requires Cython.
-
-JJ 2017-02-24
-"""
+"""Setuptools-based setup script for WLSQM."""
 
 from __future__ import absolute_import
+
+#########################################################
+# Config
+#########################################################
+
+# choose build type here
+#
+build_type="optimized"
+#build_type="debug"
+
+
+#########################################################
+# Init
+#########################################################
 
 # check for Python 2.7 or later
 # http://stackoverflow.com/questions/19534896/enforcing-python-version-in-setup-py
@@ -17,20 +26,18 @@ if sys.version_info < (2,7):
 
 import os
 
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup
+from setuptools.extension import Extension
 
 try:
-    from Cython.Distutils import build_ext
     from Cython.Build import cythonize
 except ImportError:
-    print "Cython not found. Cython is needed to build the extension modules for WLSQM."
-    sys.exit(1)
+    sys.exit("Cython not found. Cython is needed to build the extension modules for WLSQM.")
 
 
-build_type="optimized"
-#build_type="debug"
-
+#########################################################
+# Definitions
+#########################################################
 
 extra_compile_args_math_optimized    = ['-fopenmp', '-march=native', '-O2', '-msse', '-msse2', '-mfma', '-mfpmath=sse']
 extra_compile_args_math_debug        = ['-fopenmp', '-march=native', '-O0', '-g']
@@ -106,6 +113,13 @@ def ext_math(extName):
                       libraries=["m"]  # "m" links libm, the math library on unix-likes; see http://docs.cython.org/src/tutorial/external.html
                     )
 
+# http://stackoverflow.com/questions/13628979/setuptools-how-to-make-package-contain-extra-data-folder-and-all-folders-inside
+datadir = "examples"
+datafiles = [(root, [os.path.join(root, f) for f in files if f.endswith(".py")])
+    for root, dirs, files in os.walk(datadir)]
+
+datafiles.append( ('.', ["README.md", "LICENSE.md", "TODO.md"]) )
+
 #########################################################
 # Utility modules
 #########################################################
@@ -127,7 +141,8 @@ ext_module_expert   = ext_math("wlsqm.fitter.expert")    # advanced API
 
 #########################################################
 
-# Extract __version__ from the package __init__.py (it's not a good idea to actually run it during the build process).
+# Extract __version__ from the package __init__.py
+# (since it's not a good idea to actually run __init__.py during the build process).
 #
 # http://stackoverflow.com/questions/2058802/how-can-i-get-the-version-defined-in-setup-py-setuptools-in-my-package
 #
@@ -142,7 +157,6 @@ with file('wlsqm/__init__.py') as f:
         print "WARNING: Version information not found, using placeholder '%s'" % (version)
 
 
-# TODO: add download_url
 setup(
     name = "wlsqm",
     version = version,
@@ -150,7 +164,7 @@ setup(
     author_email = "juha.jeronen@jyu.fi",
     url = "https://github.com/Technologicat/python-wlsqm",
 
-    description = "WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.",
+    description = "WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar data on 1D, 2D and 3D point clouds.",
     long_description = DESC,
 
     license = "BSD",
@@ -174,10 +188,12 @@ setup(
                   ],
 
     # 0.16 seems to be the first SciPy version that has cython_lapack.pxd. ( https://github.com/scipy/scipy/commit/ba438eab99ce8f55220a6ff652500f07dd6a547a )
-    requires = ["cython", "numpy", "scipy (>=0.16)"],
+    setup_requires = ["cython", "scipy (>=0.16)"],
+    install_requires = ["numpy", "scipy (>=0.16)"],
     provides = ["wlsqm"],
 
-    cmdclass = {'build_ext': build_ext},
+    # same keywords as used as topics on GitHub
+    keywords = ["numerical interpolation differentiation curve-fitting least-squares meshless"],
 
     ext_modules = cythonize( [ ext_module_lapackdrivers,
                                ext_module_ptrwrap,
@@ -197,7 +213,10 @@ setup(
     packages = ["wlsqm", "wlsqm.utils", "wlsqm.fitter"],
 
     # Install also Cython headers so that other Cython modules can cimport ours
-    package_data={'wlsqm.utils': ['*.pxd'],  # note: paths relative to each package
-                  'wlsqm.fitter': ['*.pxd']},
-)
+    # FIXME: force sdist, but sdist only, to keep the .pyx files (this puts them also in the bdist)
+    package_data={'wlsqm.utils': ['*.pxd', '*.pyx'],  # note: paths relative to each package
+                  'wlsqm.fitter': ['*.pxd', '*.pyx']},
 
+    # Usage examples; not in a package
+    data_files = datafiles
+)
