@@ -159,7 +159,7 @@ setup(
     author_email = "juha.jeronen@jyu.fi",
     url = "https://github.com/Technologicat/python-wlsqm",
 
-    description = "WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar data on 1D, 2D and 3D point clouds.",
+    description = "Weighted least squares meshless interpolator",
     long_description = DESC,
 
     license = "BSD",

@@ -1,5 +1,8 @@
 ## Changelog
 
+### [v0.1.4]
+ - actually use the shorter short description (oops)
+
 ### [v0.1.3]
  - setup.py is now Python 3 compatible (but wlsqm itself is not yet!)
  - fixed sdist: package also CHANGELOG.md

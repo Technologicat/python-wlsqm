@@ -20,7 +20,7 @@ JJ 2017-02-22
 
 from __future__ import absolute_import  # https://www.python.org/dev/peps/pep-0328/
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 from .fitter.defs   import *  # definitions (constants) (common)
 from .fitter.simple import *  # simple API
