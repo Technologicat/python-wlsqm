@@ -104,11 +104,16 @@ def ext_math(extName):
                     )
 
 # http://stackoverflow.com/questions/13628979/setuptools-how-to-make-package-contain-extra-data-folder-and-all-folders-inside
-datadir = "examples"
-datafiles = [(root, [os.path.join(root, f) for f in files if f.endswith(".py")])
-    for root, dirs, files in os.walk(datadir)]
+datadirs  = ("examples",)
+dataexts  = (".py", ".pyx", ".pxd", ".c", ".sh", ".lyx", ".pdf")
+datafiles = []
+getext = lambda filename: os.path.splitext(filename)[1]
+for datadir in datadirs:
+    datafiles.extend( [(root, [os.path.join(root, f) for f in files if getext(f) in dataexts])
+                       for root, dirs, files in os.walk(datadir)] )
 
-datafiles.append( ('.', ["README.md", "LICENSE.md", "TODO.md"]) )
+datafiles.append( ('.', ["README.md", "LICENSE.md", "TODO.md", "CHANGELOG.md"]) )
+
 
 #########################################################
 # Utility modules
