@@ -183,7 +183,7 @@ setup(
     provides = ["wlsqm"],
 
     # same keywords as used as topics on GitHub
-    keywords = ["numerical interpolation differentiation curve-fitting least-squares meshless"],
+    keywords = ["numerical interpolation differentiation curve-fitting least-squares meshless numpy cython"],
 
     ext_modules = cythonize( [ ext_module_lapackdrivers,
                                ext_module_ptrwrap,
