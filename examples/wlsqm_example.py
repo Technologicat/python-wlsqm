@@ -125,7 +125,7 @@ def testmany2d():
         nk    = np.empty( (npoints,), dtype=np.int32 )        # number of neighbors, i.e. nk[i] is the number of actually used columns in hoods[i,:]
         for i in range(npoints):
             I = tree.query_ball_point( S[i], r )  # indices of neighbors of S[i] at distance <= r  (but also including S[i] itself!)
-            I = filter( lambda idx: idx != i, I )  # exclude S[i] itself
+            I = [ idx for idx in I if idx != i ]  # exclude S[i] itself
             if len(I) > max_nk:
                 I = I[:max_nk]
             I = np.array( I, dtype=np.int32 )
@@ -463,7 +463,7 @@ def test3d():
         if points_per_axis % 2 == 1:
             point_list = S.tolist()
             oldlen = len(point_list)
-            point_list = filter( lambda item: not (abs(item[0]) < 1e-8 and abs(item[1]) < 1e-8 and abs(item[2]) < 1e-8), point_list )
+            point_list = [item for item in point_list if not (abs(item[0]) < 1e-8 and abs(item[1]) < 1e-8 and abs(item[2]) < 1e-8)]
             S = np.array(point_list)
             if len(point_list) < oldlen:
                 print( "Sudoku LHS sampled the point at the origin; discarding it from the sample" )
@@ -530,7 +530,7 @@ def test3d():
 
     # check exact solution and relative error
     #
-    exact = np.array( map( lambda func : func( xi[0], xi[1], xi[2] ), funcs ) )
+    exact = np.array( [func( xi[0], xi[1], xi[2] ) for func in funcs] )
     err   = (fi - exact)
 
     print()
@@ -743,7 +743,7 @@ def test2d():
         if points_per_axis % 2 == 1:
             point_list = S.tolist()
             oldlen = len(point_list)
-            point_list = filter( lambda item: not (abs(item[0]) < 1e-8 and abs(item[1]) < 1e-8), point_list )
+            point_list = [ item for item in point_list if not (abs(item[0]) < 1e-8 and abs(item[1]) < 1e-8) ]
             S = np.array(point_list)
             if len(point_list) < oldlen:
                 print( "Sudoku LHS sampled the point at the origin; discarding it from the sample" )
@@ -807,7 +807,7 @@ def test2d():
 
     # check exact solution and relative error
     #
-    exact = np.array( map( lambda func : func( xi[0], xi[1] ), funcs ) )
+    exact = np.array( [func( xi[0], xi[1] ) for func in funcs] )
     err   = (fi - exact)
 
     print()
@@ -1153,7 +1153,7 @@ def test1d():
 
     # check exact solution and relative error
     #
-    exact = np.array( map( lambda func : func( xi ), funcs ) )
+    exact = np.array( [func( xi ) for func in funcs] )
     err   = (fi - exact)
 
     print()
