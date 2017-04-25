@@ -8,7 +8,7 @@ This is an independent implementation of the weighted least squares meshless alg
 
 This implementation is targeted for high performance in a single-node environment, such as a laptop. Cython is used to accelerate the low-level routines. The main target is the `x86_64` architecture, but any 64-bit architecture should be fine with the appropriate compiler option changes to [setup.py](setup.py).
 
-Currently only Python 2.7 is supported, but this may change in the future. Automated unit tests are missing; this is another area that is likely to be improved. Otherwise the code is already rather stable; any major new features are unlikely to be added, and the API is considered stable.
+Currently automated unit tests are missing; this is an area that is likely to be improved. Otherwise the code is already rather stable; any major new features are unlikely to be added, and the API is considered stable.
 
 
 ## Features
@@ -63,8 +63,6 @@ Install as admin:
 sudo pip install wlsqm
 ```
 
-Note that this package is currently compatible with Python 2.7 only, so you may need to use `pip2` instead of `pip` (which may default to Python 3).
-
 ### From GitHub
 
 As user:
@@ -80,8 +78,6 @@ As admin, change the last command to
 ```bash
 sudo python setup.py install
 ```
-
-Here, too, may need to use `python2` instead of `python`.
 
 
 ## Documentation
