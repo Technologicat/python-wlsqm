@@ -1,5 +1,8 @@
 ## Changelog
 
+### [v0.1.5]
+ - support both Python 3.4 and 2.7
+
 ### [v0.1.4]
  - actually use the shorter short description (oops)
 
