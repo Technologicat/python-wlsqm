@@ -21,7 +21,7 @@ JJ 2017-02-22
 # absolute_import: https://www.python.org/dev/peps/pep-0328/
 from __future__ import division, print_function, absolute_import
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 from .fitter.defs   import *  # definitions (constants) (common)
 from .fitter.simple import *  # simple API
