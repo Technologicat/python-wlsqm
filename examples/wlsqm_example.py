@@ -5,8 +5,7 @@
 -JJ 2016-11-10
 """
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 import time
 
@@ -15,15 +14,14 @@ import sympy as sy
 
 import scipy.spatial  # cKDTree
 
-import pylab as pl
+import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 
 try:
     import wlsqm
 except ImportError:
-    print "WLSQM not found; is it installed?"
-    from sys import exit
-    exit(1)
+    import sys
+    sys.exit("WLSQM not found; is it installed?")
 
 import sudoku_lhs
 
@@ -50,7 +48,7 @@ class SimpleTimer:
         dt         = time.time() - self.t0
         identifier = ("%s" % self.label) if len(self.label) else "time taken: "
         avg        = (", avg. %gs per run" % (dt/self.n)) if self.n is not None else ""
-        print "%s%gs%s" % (identifier, dt, avg)
+        print( "%s%gs%s" % (identifier, dt, avg) )
 
 
 # many simultaneous local models, 2D
@@ -85,23 +83,23 @@ def testmany2d():
     # the test itself
     #########################
 
-    print
-    print "=" * 79
-    print "many neighborhoods, 2D case"
-    print "=" * 79
-    print
+    print()
+    print( "=" * 79 )
+    print( "many neighborhoods, 2D case" )
+    print( "=" * 79 )
+    print()
 
     # create a stratified point cloud
-    print "generating sudoku sample"
+    print( "generating sudoku sample" )
     with SimpleTimer(label=("    done in ")) as s:
         S,m = sudoku_lhs.sample(2, points_per_axis, 1)
         bins_per_axis = m*points_per_axis
         S = S / float(bins_per_axis - 1)  # scale the sample from [0, bins_per_axis-1]**2 to [0, 1]**2
         npoints = len(S)
-        print "    %d points" % (npoints)
+        print( "    %d points" % (npoints) )
 
     # index the point cloud for fast neighbor searching
-    print "indexing sample"
+    print( "indexing sample" )
     with SimpleTimer(label=("    done in ")) as s:
         tree = scipy.spatial.cKDTree( data=S )
 
@@ -114,18 +112,18 @@ def testmany2d():
     dfdx              = lambdify_numpy_2d(sy.diff(expr, "x"))
     dfdy              = lambdify_numpy_2d(sy.diff(expr, "y"))
 
-    print "evaluating example function"
+    print( "evaluating example function" )
     with SimpleTimer(label=("    done in ")) as s:
         no = wlsqm.number_of_dofs( dimension=2, order=fit_order )
         fi = np.empty( (npoints,no), dtype=np.float64 )
         fi[:,0] = f( S[:,0], S[:,1] )  # fi[i,0] contains the function value at point S[i,:]
 
     # find the neighborhoods
-    print "generating neighborhoods for each point"
+    print( "generating neighborhoods for each point" )
     with SimpleTimer(label=("    done in ")) as s:
         hoods = np.zeros( (npoints,max_nk), dtype=np.int32 )  # neighbor point indices (pointing to rows in S[])
         nk    = np.empty( (npoints,), dtype=np.int32 )        # number of neighbors, i.e. nk[i] is the number of actually used columns in hoods[i,:]
-        for i in xrange(npoints):
+        for i in range(npoints):
             I = tree.query_ball_point( S[i], r )  # indices of neighbors of S[i] at distance <= r  (but also including S[i] itself!)
             I = filter( lambda idx: idx != i, I )  # exclude S[i] itself
             if len(I) > max_nk:
@@ -135,14 +133,14 @@ def testmany2d():
             hoods[i,:nk[i]] = I
 
     # DEBUG
-    print "number of neighbors min = %g, avg = %g, max = %g" % ( np.min(nk), np.mean(nk), np.max(nk) )
-    print "neighbor lists for each problem instance:"
-    print hoods
-    print "number of neighbors for each problem instance:"
-    print nk
+    print( "number of neighbors min = %g, avg = %g, max = %g" % ( np.min(nk), np.mean(nk), np.max(nk) ) )
+    print( "neighbor lists for each problem instance:" )
+    print( hoods )
+    print( "number of neighbors for each problem instance:" )
+    print( nk )
 
     # perform the fitting
-    print "fitting %d local surrogate models of order %d, driver mode (fit each model once)" % (npoints, fit_order)
+    print( "fitting %d local surrogate models of order %d, driver mode (fit each model once)" % (npoints, fit_order) )
     fit_order_array = fit_order        * np.ones( (npoints,), dtype=np.int32 )
     knowns_array    = knowns           * np.ones( (npoints,), dtype=np.int64 )
     wm_array        = weighting_method * np.ones( (npoints,), dtype=np.int32 )
@@ -175,24 +173,24 @@ def testmany2d():
     # The total advantage is slightly smaller for a small number of repetitions with ALGO_ITERATIVE,
     # since the iterative mode already uses this strategy internally (also when invoked in driver mode).
     #
-    print "fitting %d local surrogate models of order %d, expert mode" % (npoints, fit_order)
-    print "    init"
+    print( "fitting %d local surrogate models of order %d, expert mode" % (npoints, fit_order) )
+    print( "    init" )
     with SimpleTimer(label=("        done in ")) as s:
         solver = wlsqm.ExpertSolver( dimension=2, nk=nk, order=fit_order_array, knowns=knowns_array, weighting_method=wm_array, algorithm=wlsqm.ALGO_BASIC, do_sens=False, max_iter=max_iter, ntasks=ntasks, debug=False )
-    print "    prepare"
+    print( "    prepare" )
     with SimpleTimer(label=("        done in ")) as s:
         solver.prepare( xi=S, xk=S[hoods] )
-    print "    fit (each model %d times)" % (reps)
+    print( "    fit (each model %d times)" % (reps) )
     with SimpleTimer(label=("        %d reps done in " % reps), n=reps) as s:
-        for k in xrange(reps):
+        for k in range(reps):
             solver.solve( fk=fi[hoods,0], fi=fi, sens=None )
 
     # DEBUG
-    print "max corrective iterations taken: %d" % (max_iterations_taken)
+    print( "max corrective iterations taken: %d" % (max_iterations_taken) )
     # see that we got the derivatives at each point
     if fit_order > 0:  # no derivatives if piecewise constant fit
-        print dfdx( S[:,0], S[:,1] ) - fi[:,1]
-        print dfdy( S[:,0], S[:,1] ) - fi[:,2]
+        print( dfdx( S[:,0], S[:,1] ) - fi[:,1] )
+        print( dfdy( S[:,0], S[:,1] ) - fi[:,2] )
 
     #########################
     # plotting
@@ -209,10 +207,10 @@ def testmany2d():
     x = np.empty( (len(Xlin), 2), dtype=np.float64 )
     x[:,0] = Xlin
     x[:,1] = Ylin
-    print "preparing to interpolate global model"
+    print( "preparing to interpolate global model" )
     with SimpleTimer(label=("    done in ")) as s:
         solver.prep_interpolate()
-    print "interpolating global model to %d points" % (len(Xlin))
+    print( "interpolating global model to %d points" % (len(Xlin)) )
     with SimpleTimer(label=("    done in ")) as s:
         W2,dummy = solver.interpolate( x, mode='continuous', r=r )  # slow, continuous
 #        W2,dummy = solver.interpolate( x, mode='nearest' )  # fast, surprisingly accurate if a reasonable number of points (and continuous-looking although technically has jumps over Voronoi cell boundaries)
@@ -222,8 +220,8 @@ def testmany2d():
     #
     # see http://matplotlib.sourceforge.net/examples/mplot3d/lines3d_demo.html
 
-    fig = pl.figure(3, figsize=(12,12))
-    pl.clf()
+    fig = plt.figure(3, figsize=(12,12))
+    plt.clf()
 
     # Axes3D has a tendency to underestimate how much space it needs; it draws its labels
     # outside the window area in certain orientations.
@@ -249,8 +247,8 @@ def testmany2d():
     # use linewidth=0 to remove the wireframe if desired.
 #    surf = ax.plot_surface(X,Y,W, rstride=stride, cstride=stride, cmap=matplotlib.cm.Blues_r, clim=[fmin,fmax], linewidth=0.25, alpha=0.5)
     ax.plot_wireframe(X,Y,W, rstride=stride, cstride=stride, color='k', linewidth=0.5, linestyle='solid')
-#        pl.colorbar(surf, shrink=0.5, aspect=5)
-#        pl.colorbar(surf, shrink=0.96)
+#        plt.colorbar(surf, shrink=0.5, aspect=5)
+#        plt.colorbar(surf, shrink=0.96)
 
     # sampled points
     if points_per_axis < 50:
@@ -266,12 +264,12 @@ def testmany2d():
 
     ax.axis('tight')
     ax.set_zlim(-1.01, 1.01)
-    pl.xlabel('$x$')
-    pl.ylabel('$y$')
+    plt.xlabel('$x$')
+    plt.ylabel('$y$')
     ax.set_title('f(x,y)')
 
 
-    print "    uninit"
+    print( "    uninit" )
     with SimpleTimer(label=("        done in ")) as s:
         del solver
 
@@ -346,34 +344,34 @@ def test3d():
     # the test itself
     #########################
 
-    print
-    print "=" * 79
-    print "3D case"
-    print "=" * 79
-    print
+    print()
+    print( "=" * 79 )
+    print( "3D case" )
+    print( "=" * 79 )
+    print()
 
-    print "expr: %s, xi = %s" % (expr, xi)
+    print( "expr: %s, xi = %s" % (expr, xi) )
 
     labels = ["F",
               "DX", "DY", "DZ",
               "DX2", "DXDY", "DY2", "DYDZ", "DZ2", "DXDZ",
               "DX3", "DX2DY", "DXDY2", "DY3", "DY2DZ", "DYDZ2", "DZ3", "DXDZ2", "DX2DZ", "DXDYDZ",
               "DX4", "DX3DY", "DX2DY2", "DXDY3", "DY4", "DY3DZ", "DY2DZ2", "DYDZ3", "DZ4", "DXDZ3", "DX2DZ2", "DX3DZ", "DX2DYDZ", "DXDY2DZ", "DXDYDZ2" ]
-    print "legend: %s" % ("\t".join(labels))
+    print( "legend: %s" % ("\t".join(labels)) )
     knowns_str = ""
     for j in range(wlsqm.SIZE3):  # SIZE3 = maximum size of c matrix for 3D case
         if j > 0:
             knowns_str += '\t'
         if knowns & (1 << j):
             knowns_str += labels[j]
-    print "knowns: %s" % knowns_str
+    print( "knowns: %s" % knowns_str )
 #    # http://stackoverflow.com/questions/699866/python-int-to-binary
 #    print "knowns (mask): %s" % format(knowns, '010b')[::-1]
 
-    print "surrogate order: %d" % fit_order
+    print( "surrogate order: %d" % fit_order )
 
     if noise_eps > 0.:
-        print "simulating noisy input with eps = %g" % noise_eps
+        print( "simulating noisy input with eps = %g" % noise_eps )
 
     # SymPy expr --> lambda(x,y)
     lambdify_numpy_3d = lambda expr: sy.lambdify(("x","y","z"), expr, modules="numpy")
@@ -468,7 +466,7 @@ def test3d():
             point_list = filter( lambda item: not (abs(item[0]) < 1e-8 and abs(item[1]) < 1e-8 and abs(item[2]) < 1e-8), point_list )
             S = np.array(point_list)
             if len(point_list) < oldlen:
-                print "Sudoku LHS sampled the point at the origin; discarding it from the sample"
+                print( "Sudoku LHS sampled the point at the origin; discarding it from the sample" )
 
         nk = len(S)
         xk = np.tile(xi, (nk,1)) + r*S
@@ -479,9 +477,9 @@ def test3d():
     # sample the function values at the neighbor points xk (these are used to fit the surrogate model)
     #
     sample_also_xi_str = " (and xi itself)" if knowns & 1 else ""
-    print "sampling %d points%s" % (nk, sample_also_xi_str)
+    print( "sampling %d points%s" % (nk, sample_also_xi_str) )
     fk = np.empty( (nk,), dtype=np.float64 )
-    for k in xrange(nk):
+    for k in range(nk):
         fk[k] = f( xk[k,0], xk[k,1], xk[k,2] )
 
     # simulate numerical errors by adding noise to the neighbor point function value samples
@@ -523,31 +521,31 @@ def test3d():
     # fit the surrogate model (see wlsqm.fitter.simple for detailed documentation)
     #
     if debug:
-        print  # blank line before debug info
+        print()  # blank line before debug info
 
     iterations_taken = wlsqm.fit_3D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
 #    iterations_taken = wlsqm.fit_3D( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method )
 
-    print "refinement iterations taken: %d" % iterations_taken
+    print( "refinement iterations taken: %d" % iterations_taken )
 
     # check exact solution and relative error
     #
     exact = np.array( map( lambda func : func( xi[0], xi[1], xi[2] ), funcs ) )
     err   = (fi - exact)
 
-    print
-    print "derivatives at xi:"
-    print "exact:"
-    print exact
-    print "wlsqm solution:"
-    print fi
+    print()
+    print( "derivatives at xi:" )
+    print( "exact:" )
+    print( exact )
+    print( "wlsqm solution:" )
+    print( fi )
     if do_sens:
-        print "sensitivity:"
-        print sens
-    print "abs error:"
-    print err
-    print "rel error:"
-    print (err / exact)
+        print( "sensitivity:" )
+        print( sens )
+    print( "abs error:" )
+    print( err )
+    print( "rel error:" )
+    print( (err / exact) )
 
     #########################
     # plotting
@@ -556,19 +554,19 @@ def test3d():
     # surrogate model - the returned fi[] are actually the coefficients of a polynomial
     model    = wlsqm.lambdify_fit( xi, fi, dimension=3, order=fit_order )  # lambda x,y : ...
 
-    print
-    print "function values at neighbor points:"
+    print()
+    print( "function values at neighbor points:" )
     fxk =     f( xk[:,0], xk[:,1], xk[:,2] )
     mxk = model( xk[:,0], xk[:,1], xk[:,2] )
-    print "exact:"
-    print fxk
-    print "wlsqm solution:"
-    print mxk
-    print "abs error:"
+    print( "exact:" )
+    print( fxk )
+    print( "wlsqm solution:" )
+    print( mxk )
+    print( "abs error:" )
     errf = mxk - fxk
-    print errf
-    print "rel error:"
-    print (errf / fxk)
+    print( errf )
+    print( "rel error:" )
+    print( (errf / fxk) )
 
     # comparison
     xx2        = np.linspace(xi[0] - r, xi[0] + r, nvis)
@@ -583,9 +581,9 @@ def test3d():
     W3_lin     = np.reshape(W3, -1)
     maxerr_abs = diff_lin[idx]
     maxerr_rel = diff_lin[idx] / W3_lin[idx]
-    print "largest absolute total fit error (over the domain of the fit, not just the neighbor points):"
-    print "absolute: %g" % (maxerr_abs)
-    print "relative: %g" % (maxerr_rel)
+    print( "largest absolute total fit error (over the domain of the fit, not just the neighbor points):" )
+    print( "absolute: %g" % (maxerr_abs) )
+    print( "relative: %g" % (maxerr_rel) )
 
 
 # one local model, 2D
@@ -662,30 +660,30 @@ def test2d():
     # the test itself
     #########################
 
-    print
-    print "=" * 79
-    print "2D case"
-    print "=" * 79
-    print
+    print()
+    print( "=" * 79 )
+    print( "2D case" )
+    print( "=" * 79 )
+    print()
 
-    print "expr: %s, xi = %s" % (expr, xi)
+    print( "expr: %s, xi = %s" % (expr, xi) )
 
     labels = ["F", "DX", "DY", "DX2", "DXDY", "DY2", "DX3", "DX2DY", "DXDY2", "DY3", "DX4", "DX3DY", "DX2DY2", "DXDY3", "DY4"]
-    print "legend: %s" % ("\t".join(labels))
+    print( "legend: %s" % ("\t".join(labels)) )
     knowns_str = ""
     for j in range(wlsqm.SIZE2):  # SIZE2 = maximum size of c matrix for 2D case
         if j > 0:
             knowns_str += '\t'
         if knowns & (1 << j):
             knowns_str += labels[j]
-    print "knowns: %s" % knowns_str
+    print( "knowns: %s" % knowns_str )
 #    # http://stackoverflow.com/questions/699866/python-int-to-binary
-#    print "knowns (mask): %s" % format(knowns, '010b')[::-1]
+#    print ("knowns (mask): %s" % format(knowns, '010b')[::-1] )
 
-    print "surrogate order: %d" % fit_order
+    print( "surrogate order: %d" % fit_order )
 
     if noise_eps > 0.:
-        print "simulating noisy input with eps = %g" % noise_eps
+        print( "simulating noisy input with eps = %g" % noise_eps )
 
     # SymPy expr --> lambda(x,y)
     lambdify_numpy_2d = lambda expr: sy.lambdify(("x","y"), expr, modules="numpy")
@@ -748,7 +746,7 @@ def test2d():
             point_list = filter( lambda item: not (abs(item[0]) < 1e-8 and abs(item[1]) < 1e-8), point_list )
             S = np.array(point_list)
             if len(point_list) < oldlen:
-                print "Sudoku LHS sampled the point at the origin; discarding it from the sample"
+                print( "Sudoku LHS sampled the point at the origin; discarding it from the sample" )
 
         nk = len(S)
         xk = np.tile(xi, (nk,1)) + r*S
@@ -759,9 +757,9 @@ def test2d():
     # sample the function values at the neighbor points xk (these are used to fit the surrogate model)
     #
     sample_also_xi_str = " (and xi itself)" if knowns & 1 else ""
-    print "sampling %d points%s" % (nk, sample_also_xi_str)
+    print( "sampling %d points%s" % (nk, sample_also_xi_str) )
     fk = np.empty( (nk,), dtype=np.float64 )
-    for k in xrange(nk):
+    for k in range(nk):
         fk[k] = f( xk[k,0], xk[k,1] )
 
     # simulate numerical errors by adding noise to the neighbor point function value samples
@@ -803,28 +801,28 @@ def test2d():
     # fit the surrogate model (see wlsqm.fitter.simple for detailed documentation)
     #
     if debug:
-        print  # blank line before debug info
+        print()  # blank line before debug info
     iterations_taken = wlsqm.fit_2D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
-    print "refinement iterations taken: %d" % iterations_taken
+    print( "refinement iterations taken: %d" % iterations_taken )
 
     # check exact solution and relative error
     #
     exact = np.array( map( lambda func : func( xi[0], xi[1] ), funcs ) )
     err   = (fi - exact)
 
-    print
-    print "derivatives at xi:"
-    print "exact:"
-    print exact
-    print "wlsqm solution:"
-    print fi
+    print()
+    print( "derivatives at xi:" )
+    print( "exact:" )
+    print( exact )
+    print( "wlsqm solution:" )
+    print( fi )
     if do_sens:
-        print "sensitivity:"
-        print sens
-    print "abs error:"
-    print err
-    print "rel error:"
-    print (err / exact)
+        print( "sensitivity:" )
+        print( sens )
+    print( "abs error:" )
+    print( err )
+    print( "rel error:" )
+    print( (err / exact) )
 
     #########################
     # plotting
@@ -857,19 +855,19 @@ def test2d():
 #    print "difference between Python and C API model interpolation:"
 #    print out - W2  # should be close to zero
 
-    print
-    print "function values at neighbor points:"
+    print()
+    print( "function values at neighbor points:" )
     fxk = f( xk[:,0], xk[:,1] )
     mxk = model( xk[:,0], xk[:,1] )
-    print "exact:"
-    print fxk
-    print "wlsqm solution:"
-    print mxk
-    print "abs error:"
+    print( "exact:" )
+    print( fxk )
+    print( "wlsqm solution:" )
+    print( mxk )
+    print( "abs error:" )
     errf = mxk - fxk
-    print errf
-    print "rel error:"
-    print (errf / fxk)
+    print( errf )
+    print( "rel error:" )
+    print( (errf / fxk) )
 
     # comparison
     W3   = f(X2,Y2)
@@ -879,15 +877,15 @@ def test2d():
     W3_lin   = np.reshape(W3, -1)
     maxerr_abs = diff_lin[idx]
     maxerr_rel = diff_lin[idx] / W3_lin[idx]
-    print "largest absolute total fit error (over the domain of the fit, not just the neighbor points):"
-    print "absolute: %g" % (maxerr_abs)
-    print "relative: %g" % (maxerr_rel)
+    print( "largest absolute total fit error (over the domain of the fit, not just the neighbor points):" )
+    print( "absolute: %g" % (maxerr_abs) )
+    print( "relative: %g" % (maxerr_rel) )
 
-    fig = pl.figure(2, figsize=(12,6))  # for 2x1 subplots
-#    fig = pl.figure(2, figsize=(12,12))
+    fig = plt.figure(2, figsize=(12,6))  # for 2x1 subplots
+#    fig = plt.figure(2, figsize=(12,12))
     fig.clf()
 
-    ax = pl.subplot(1,2, 1)
+    ax = plt.subplot(1,2, 1)
 
     ax.plot( (xx[0],  xx[-1]), (yy[0],  yy[0]),  'k-' )
     ax.plot( (xx[-1], xx[-1]), (yy[0],  yy[-1]), 'k-' )
@@ -900,12 +898,12 @@ def test2d():
     ax.plot( (xi[0] - r, xi[0] + r), (xi[1] + r, xi[1] + r), 'r-' )
     ax.plot( (xi[0] - r, xi[0] - r), (xi[1] - r, xi[1] + r), 'r-' )
     ax.plot( (xi[0],), (xi[1],), linestyle='none', marker='x', markeredgecolor='k', markerfacecolor='none' )
-    pl.axis('tight')
+    plt.axis('tight')
     axis_marginize(ax, 0.02, 0.02)
-    pl.grid(b=True, which='both')
-    pl.xlabel('x')
-    pl.ylabel('y')
-    pl.subplot(1,2, 2)
+    plt.grid(b=True, which='both')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.subplot(1,2, 2)
 
     # make 3d plot of the function
     #
@@ -935,8 +933,8 @@ def test2d():
     # use linewidth=0 to remove the wireframe if desired.
 #    surf = ax.plot_surface(X,Y,W, rstride=stride, cstride=stride, cmap=matplotlib.cm.Blues_r, clim=[fmin,fmax], linewidth=0.25, alpha=0.5)
     ax.plot_wireframe(X,Y,W, rstride=stride, cstride=stride, color='k', linewidth=0.5, linestyle='solid')
-#        pl.colorbar(surf, shrink=0.5, aspect=5)
-#        pl.colorbar(surf, shrink=0.96)
+#        plt.colorbar(surf, shrink=0.5, aspect=5)
+#        plt.colorbar(surf, shrink=0.96)
 
     # sampled points
     if noise_eps > 0.:
@@ -958,8 +956,8 @@ def test2d():
 
     ax.axis('tight')
     ax.set_zlim(-1.01, 1.01)
-    pl.xlabel('$x$')
-    pl.ylabel('$y$')
+    plt.xlabel('$x$')
+    plt.ylabel('$y$')
     ax.set_title('f(x,y)')
 
 
@@ -1034,27 +1032,27 @@ def test1d():
     # the test itself
     #########################
 
-    print
-    print "=" * 79
-    print "1D case"
-    print "=" * 79
-    print
+    print()
+    print( "=" * 79 )
+    print( "1D case" )
+    print( "=" * 79 )
+    print()
 
-    print "expr: %s, xi = %s" % (expr, xi)
+    print( "expr: %s, xi = %s" % (expr, xi) )
     labels = ["F", "DX", "DX2", "DX3", "DX4"]
-    print "legend: %s" % ("\t".join(labels))
+    print( "legend: %s" % ("\t".join(labels)) )
     knowns_str = ""
     for j in range(wlsqm.SIZE1):  # SIZE1 = maximum size of c matrix for 1D case
         if j > 0:
             knowns_str += '\t'
         if knowns & (1 << j):
             knowns_str += labels[j]
-    print "knowns: %s" % knowns_str
+    print( "knowns: %s" % knowns_str )
 
-    print "surrogate order: %d" % fit_order
+    print( "surrogate order: %d" % fit_order )
 
     if noise_eps > 0.:
-        print "simulating noisy input with eps = %g" % noise_eps
+        print( "simulating noisy input with eps = %g" % noise_eps )
 
     # SymPy expr --> lambda(x)
     lambdify_numpy_1d = lambda expr: sy.lambdify(("x"), expr, modules="numpy")
@@ -1088,9 +1086,9 @@ def test1d():
     # sample the function values at the neighbor points xk (these are used to fit the surrogate model)
     #
     sample_also_xi_str = " (and xi itself)" if knowns & 1 else ""
-    print "sampling %d points%s" % (nk, sample_also_xi_str)
+    print( "sampling %d points%s" % (nk, sample_also_xi_str) )
     fk = np.empty( (nk,), dtype=np.float64 )
-    for k in xrange(nk):
+    for k in range(nk):
         fk[k] = f( xk[k] )
 
     # simulate numerical errors by adding noise to the neighbor point function value samples
@@ -1149,28 +1147,28 @@ def test1d():
     #          See the b1_* (bitmask, 1D case) constants.
     #
     if debug:
-        print  # blank line before debug info
+        print()  # blank line before debug info
     iterations_taken = wlsqm.fit_1D_iterative( xk, fk, xi, fi, sens, do_sens=do_sens, order=fit_order, knowns=knowns, debug=debug, weighting_method=weighting_method, max_iter=max_iter )
-    print "refinement iterations taken: %d" % iterations_taken
+    print( "refinement iterations taken: %d" % iterations_taken )
 
     # check exact solution and relative error
     #
     exact = np.array( map( lambda func : func( xi ), funcs ) )
     err   = (fi - exact)
 
-    print
-    print "derivatives at xi:"
-    print "exact:"
-    print exact
-    print "wlsqm solution:"
-    print fi
+    print()
+    print( "derivatives at xi:" )
+    print( "exact:" )
+    print( exact )
+    print( "wlsqm solution:" )
+    print( fi )
     if do_sens:
-        print "sensitivity:"
-        print sens
-    print "abs error:"
-    print err
-    print "rel error:"
-    print (err / exact)
+        print( "sensitivity:" )
+        print( sens )
+    print( "abs error:" )
+    print( err )
+    print( "rel error:" )
+    print( (err / exact) )
 
     #########################
     # plotting
@@ -1195,23 +1193,23 @@ def test1d():
 #    print "difference between Python and C API model interpolation:"
 #    print out - ww2  # should be close to zero
 
-    print
-    print "function values (and derivatives) at neighbor points:"
+    print()
+    print( "function values (and derivatives) at neighbor points:" )
     flags = [ wlsqm.i1_F, wlsqm.i1_X, wlsqm.i1_X2, wlsqm.i1_X3, wlsqm.i1_X4 ]
     for label,func,flag in zip(labels,funcs,flags):
         m   = wlsqm.lambdify_fit( xi, fi, dimension=1, order=fit_order, diff=flag )  # using diff=..., derivatives of the model can be lambdified, too
         fxk = func( xk )
         mxk = m( xk )
-        print label
-        print "exact:"
-        print fxk
-        print "wlsqm solution:"
-        print mxk
-        print "abs error:"
+        print( label )
+        print( "exact:" )
+        print( fxk )
+        print( "wlsqm solution:" )
+        print( mxk )
+        print( "abs error:" )
         errf = mxk - fxk
-        print errf
-        print "rel error:"
-        print (errf / fxk)
+        print( errf )
+        print( "rel error:" )
+        print( (errf / fxk) )
 
     # comparison
     ww3  = f(xx2)
@@ -1219,14 +1217,14 @@ def test1d():
     idx  = np.argmax(np.abs( diff ))
     maxerr_abs = diff[idx]
     maxerr_rel = diff[idx] / ww3[idx]
-    print "largest absolute total fit error (over the domain of the fit, not just the neighbor points):"
-    print "absolute: %g" % (maxerr_abs)
-    print "relative: %g" % (maxerr_rel)
+    print( "largest absolute total fit error (over the domain of the fit, not just the neighbor points):" )
+    print( "absolute: %g" % (maxerr_abs) )
+    print( "relative: %g" % (maxerr_rel) )
 
-    fig = pl.figure(1, figsize=(6,6))
+    fig = plt.figure(1, figsize=(6,6))
     fig.clf()
 
-    ax = pl.subplot(1,1, 1)
+    ax = plt.subplot(1,1, 1)
 
     # the function
     ax.plot( xx, ww, color='k', linewidth=0.5, linestyle='solid' )
@@ -1257,11 +1255,11 @@ def test1d():
     # point xi
     ax.plot( xi, f(xi), linestyle='none', marker='x', markeredgecolor='k', markerfacecolor='none' )
 
-    pl.axis('tight')
+    plt.axis('tight')
     axis_marginize(ax, 0.02, 0.02)
-    pl.grid(b=True, which='both')
-    pl.xlabel('x')
-    pl.ylabel('y')
+    plt.grid(b=True, which='both')
+    plt.xlabel('x')
+    plt.ylabel('y')
 
 
 def main():
@@ -1270,9 +1268,8 @@ def main():
     test1d()
     testmany2d()
 #    wlsqm.test_pointer_wrappers()
-    print
-    pl.show()
+    print()
+    plt.show()
 
 if __name__ == '__main__':
     main()
-
