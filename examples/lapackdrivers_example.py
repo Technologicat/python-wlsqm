@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
 #
-"""Performance benchmarking and usage examples for the wlsqm.lapackdrivers module.
+"""Performance benchmarking and usage examples for the wlsqm.utils.lapackdrivers module.
 
 JJ 2016-11-02
 """
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 import time
-import math
 
 import numpy as np
 from numpy.linalg import solve as numpy_solve  # for comparison purposes
 
-import pylab as pl
+import matplotlib.pyplot as plt
 
 try:
     import wlsqm.utils.lapackdrivers as drivers
 except ImportError:
-    print "WLSQM not found; is it installed?"
-    from sys import exit
-    exit(1)
+    import sys
+    sys.exit( "WLSQM not found; is it installed?" )
 
 # from find_neighbors2.py
 class SimpleTimer:
@@ -37,7 +34,7 @@ class SimpleTimer:
         dt         = time.time() - self.t0
         identifier = ("%s" % self.label) if len(self.label) else "time taken: "
         avg        = (", avg. %gs per run" % (dt/self.n)) if self.n is not None else ""
-        print "%s%gs%s" % (identifier, dt, avg)
+        print( "%s%gs%s" % (identifier, dt, avg) )
 
 # from util.py
 def f5(seq, idfun=None):
@@ -91,17 +88,17 @@ def main():
     # test that it works
 
     x = numpy_solve(A, b)
-    print "NumPy:", x
+    print( "NumPy:", x )
 
     A2 = A.copy(order='F')
     x2 = b.copy()
     drivers.symmetric(A2, x2)
-    print "dsysv:", x2
+    print( "dsysv:", x2 )
 
     A3 = A.copy(order='F')
     x3 = b.copy()
     drivers.general(A3, x3)
-    print "dgesv:", x3
+    print( "dgesv:", x3 )
 
     assert (np.abs(x - x3) < 1e-10).all(), "Something went wrong, solutions do not match"  # check general solver first
     assert (np.abs(x - x2) < 1e-10).all(), "Something went wrong, solutions do not match"  # then check symmetric solver
@@ -127,7 +124,7 @@ def main():
     sizes = f5( map( lambda x: int(x), np.ceil(3*np.logspace(0, 2, 21, dtype=int)) ) )
     reps = map( lambda x: int(x), 10.**(6 - np.log10(sizes)) )
 
-    print "performance test: %d tasks, sizes %s" % (ntasks, sizes)
+    print( "performance test: %d tasks, sizes %s" % (ntasks, sizes) )
 
     results1 = np.empty( (len(sizes),), dtype=np.float64 )
     results2 = np.empty( (len(sizes),), dtype=np.float64 )
@@ -153,11 +150,11 @@ def main():
 
     for j,item in enumerate(zip(sizes,reps)):
         n,r = item
-        print "testing size %d, reps = %d" % (n, r)
+        print( "testing size %d, reps = %d" % (n, r) )
 
         # same LHS, many different RHS
 
-        print "    prep same LHS, many RHS..."
+        print( "    prep same LHS, many RHS..." )
 
         A = np.random.sample( (n,n) )
         # symmetrize
@@ -169,24 +166,24 @@ def main():
         b = np.random.sample( (n,r) )
         b = np.array( b, dtype=np.float64, order='F' )
 
-        print "    solve:"
+        print( "    solve:" )
 
 #        # for verification only - very slow (Python loop, serial!)
 #        if use_numpy:
 #            t0 = time.time()
 #            x = np.empty( (n,r), dtype=np.float64 )
-#            for k in xrange(r):
+#            for k in range(r):
 #                x[:,k] = numpy_solve(A, b[:,k])
 #            results1[j] = (time.time() - t0) / r
 
-        print "        symmetricsp"
+        print( "        symmetricsp" )
         t0 = time.time()
         A2 = A.copy(order='F')
         x2 = b.copy(order='F')
         drivers.symmetricsp(A2, x2, ntasks)
         results2[j] = (time.time() - t0) / r
 
-        print "        generalsp"
+        print( "        generalsp" )
         t0 = time.time()
         A3 = A.copy(order='F')
         x3 = b.copy(order='F')
@@ -195,7 +192,7 @@ def main():
 
         # different LHS for each problem
 
-        print "    prep independent problems..."
+        print( "    prep independent problems..." )
 
         A = np.random.sample( (n,n,r) )
         # symmetrize
@@ -207,43 +204,43 @@ def main():
         b = np.random.sample( (n,r) )
         b = np.array( b, dtype=np.float64, order='F' )
 
-        print "    solve:"
+        print( "    solve:" )
 
         # for verification only - very slow (Python loop, serial!)
         if use_numpy:
-            print "        NumPy"
+            print( "        NumPy" )
             t0 = time.time()
             x = np.empty( (n,r), dtype=np.float64, order='F' )
-            for k in xrange(r):
+            for k in range(r):
                 x[:,k] = numpy_solve(A[:,:,k], b[:,k])
             results1[j] = (time.time() - t0) / r
 
-        print "        msymmetricp"
+        print( "        msymmetricp" )
         t0 = time.time()
         A2 = A.copy(order='F')
         x2 = b.copy(order='F')
         drivers.msymmetricp(A2, x2, ntasks)
         results4[j] = (time.time() - t0) / r
 
-        print "        mgeneralp"
+        print( "        mgeneralp" )
         t0 = time.time()
         A3 = A.copy(order='F')
         x3 = b.copy(order='F')
         drivers.mgeneralp(A3, x3, ntasks)
         results5[j] = (time.time() - t0) / r
 
-        print "        msymmetricfactorp & msymmetricfactoredp"  # factor once, then it is possible to solve multiple times (although we now test only once)
+        print( "        msymmetricfactorp & msymmetricfactoredp" )  # factor once, then it is possible to solve multiple times (although we now test only once)
         t0 = time.time()
-        ipiv = np.empty( (n,r), dtype=np.int32, order='F' )
+        ipiv = np.empty( (n,r), dtype=np.intc, order='F' )
         fact = A.copy(order='F')
         x4   = b.copy(order='F')
         drivers.msymmetricfactorp( fact, ipiv, ntasks )
         drivers.msymmetricfactoredp( fact, ipiv, x4, ntasks )
         results6[j] = (time.time() - t0) / r
 
-        print "        mgeneralfactorp & mgeneralfactoredp"  # factor once, then it is possible to solve multiple times (although we now test only once)
+        print( "        mgeneralfactorp & mgeneralfactoredp" )  # factor once, then it is possible to solve multiple times (although we now test only once)
         t0 = time.time()
-        ipiv = np.empty( (n,r), dtype=np.int32, order='F' )
+        ipiv = np.empty( (n,r), dtype=np.intc, order='F' )
         fact = A.copy(order='F')
         x5   = b.copy(order='F')
         drivers.mgeneralfactorp( fact, ipiv, ntasks )
@@ -251,9 +248,9 @@ def main():
         results7[j] = (time.time() - t0) / r
 
         if use_numpy:
-#            print np.max(np.abs(x - x3))  # DEBUG
-#            print np.max(np.abs(x - x5))  # DEBUG
-            print np.max(np.abs(x2 - x4))  # DEBUG
+#            print( np.max(np.abs(x - x3)) )  # DEBUG
+#            print( np.max(np.abs(x - x5)) )  # DEBUG
+            print( np.max(np.abs(x2 - x4)) )  # DEBUG
             assert (np.abs(x - x5) < 1e-10).all(), "Something went wrong, solutions do not match"  # check general solver first
             assert (np.abs(x - x3) < 1e-10).all(), "Something went wrong, solutions do not match"  # check general solver
 #            assert (np.abs(x - x2) < 1e-5).all(), "Something went wrong, solutions do not match"  # doesn't make sense to compare, DSYSV is more accurate for badly conditioned symmetric matrices
@@ -265,7 +262,7 @@ def main():
 #
 #    for j,item in enumerate(zip(sizes,reps)):
 #        n,r = item
-#        print "testing size %d, reps = %d" % (n, r)
+#        print( "testing size %d, reps = %d" % (n, r) )
 #
 #        A = np.random.sample( (n,n) )
 #        A = 0.5 * (A + A.T)  # symmetrize
@@ -273,19 +270,19 @@ def main():
 #        b = np.random.sample( (n,) )
 #
 #        t0 = time.time()
-#        for k in xrange(r):
+#        for k in range(r):
 #            x = numpy_solve(A, b)
 #        results1[j] = (time.time() - t0) / r
 #
 #        t0 = time.time()
-#        for k in xrange(r):
+#        for k in range(r):
 #            A2 = A.copy(order='F')
 #            x2 = b.copy()
 #            drivers.symmetric(A2, x2)
 #        results2[j] = (time.time() - t0) / r
 #
 #        t0 = time.time()
-#        for k in xrange(r):
+#        for k in range(r):
 #            A3 = A.copy(order='F')
 #            x3 = b.copy()
 #            drivers.general(A3, x3)
@@ -294,27 +291,26 @@ def main():
 
     # visualize
 
-    pl.figure(1)
-    pl.clf()
+    plt.figure(1)
+    plt.clf()
     if use_numpy:
-        pl.loglog(sizes, results1, 'k-', label='NumPy')
-    pl.loglog(sizes, results2, 'b--', label='dsysv, same LHS, many RHS')
-    pl.loglog(sizes, results3, 'b-',  label='dgesv, same LHS, many RHS')
-    pl.loglog(sizes, results4, 'r--', label='dsysv, independent problems')
-    pl.loglog(sizes, results5, 'r-',  label='dgesv, independent problems')
-    pl.loglog(sizes, results6, 'g--', label='dsytrf+dsytrs, independent problems')
-    pl.loglog(sizes, results7, 'g-',  label='dgetrf+dgetrs, independent problems')
-    pl.xlabel('n')
-    pl.ylabel('t')
-    pl.title('Average time per problem instance, %d parallel tasks' % (ntasks))
-    pl.axis('tight')
-    pl.grid(b=True, which='both')
-    pl.legend(loc='best')
+        plt.loglog(sizes, results1, 'k-', label='NumPy')
+    plt.loglog(sizes, results2, 'b--', label='dsysv, same LHS, many RHS')
+    plt.loglog(sizes, results3, 'b-',  label='dgesv, same LHS, many RHS')
+    plt.loglog(sizes, results4, 'r--', label='dsysv, independent problems')
+    plt.loglog(sizes, results5, 'r-',  label='dgesv, independent problems')
+    plt.loglog(sizes, results6, 'g--', label='dsytrf+dsytrs, independent problems')
+    plt.loglog(sizes, results7, 'g-',  label='dgetrf+dgetrs, independent problems')
+    plt.xlabel('n')
+    plt.ylabel('t')
+    plt.title('Average time per problem instance, %d parallel tasks' % (ntasks))
+    plt.axis('tight')
+    plt.grid(b=True, which='both')
+    plt.legend(loc='best')
 
-    pl.savefig('figure1_latest.pdf')
+    plt.savefig('figure1_latest.pdf')
 
 
 if __name__ == '__main__':
     main()
-    pl.show()
-
+    plt.show()
