@@ -16,8 +16,7 @@
 # cython: boundscheck = False
 # cython: cdivision   = True
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 # BUG in Cython 0.20.1post0: /usr/lib/python2.7/dist-packages/Cython/Includes/libc/math.pxd
 # defines fma(double x, double y), but it should be fma(double x, double y, double z)

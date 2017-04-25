@@ -18,7 +18,8 @@ This makes the names available as wlsqm.fit_2D(), wlsqm.ExpertSolver, etc.
 JJ 2017-02-22
 """
 
-from __future__ import absolute_import  # https://www.python.org/dev/peps/pep-0328/
+# absolute_import: https://www.python.org/dev/peps/pep-0328/
+from __future__ import division, print_function, absolute_import
 
 __version__ = '0.1.4'
 

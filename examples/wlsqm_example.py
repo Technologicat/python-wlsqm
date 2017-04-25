@@ -851,9 +851,9 @@ def test2d():
 #    temp_x = np.array( [ (x,y) for x,y in zip(X2lin,Y2lin) ] )
 #    out = wlsqm.interpolate_fit( xi, fi, dimension=2, order=fit_order, x=temp_x )
 #    out = np.reshape( out, shp )
-#    print
-#    print "difference between Python and C API model interpolation:"
-#    print out - W2  # should be close to zero
+#    print()
+#    print( "difference between Python and C API model interpolation:" )
+#    print( out - W2 )  # should be close to zero
 
     print()
     print( "function values at neighbor points:" )

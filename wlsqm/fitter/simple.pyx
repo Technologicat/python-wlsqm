@@ -26,8 +26,7 @@ JJ 2016-11-07
 # - no contiguous buffer in the prep stage to allow generating the input by slicing an array (very useful); but the generated matrices will be contiguous!
 #   --> need to read only the function value data (fk[]) non-contiguously in the solve stage
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 
@@ -86,7 +85,7 @@ order  : in, order of the surrogate polynomial. Can be 0, 1, 2, 3 or 4.
 knowns : in, bitmask describing what is known about the function at the point xi.
          See the b3_* (bitmask, 3D case) constants in wlsqm.fitter.defs.
 
-debug  : in, boolean. If debug is True, print row scale and condition number information to stdout.
+debug  : in, boolean. If debug is True, compute 2-norm condition number.
 
 weighting_method : in, one of the constants WEIGHT_*. Specifies the type of weighting to use;
                    different weightings are good for different use cases of WLSQM.
@@ -267,7 +266,7 @@ order  : in, order of the surrogate polynomial. Can be 0, 1, 2, 3 or 4.
 knowns : in, bitmask describing what is known about the function at the point xi.
          See the b2_* (bitmask, 2D case) constants.
 
-debug  : in, boolean. If debug is True, print row scale and condition number information to stdout.
+debug  : in, boolean. If debug is True, compute 2-norm condition number.
 
 weighting_method : in, one of the constants WEIGHT_*. Specifies the type of weighting to use;
                    different weightings are good for different use cases of WLSQM.
@@ -455,7 +454,7 @@ order  : in, order of the surrogate polynomial. Can be 0, 1, 2, 3 or 4.
 knowns : in, bitmask describing what is known about the function at the point xi.
          See the b1_* (bitmask, 1D case) constants.
 
-debug  : in, boolean. If debug is True, print row scale and condition number information to stdout.
+debug  : in, boolean. If debug is True, compute 2-norm condition number.
 
 weighting_method : in, one of the constants WEIGHT_*. Specifies the type of weighting to use;
                    different weightings are good for different use cases of WLSQM.

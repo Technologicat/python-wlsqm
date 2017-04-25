@@ -55,8 +55,7 @@ See the function docstrings for details.
 JJ 2016-10-07
 """
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 cimport cython
 cimport cython.parallel
@@ -69,7 +68,14 @@ from libc.stdlib cimport malloc, free
 
 import numpy as np
 
-from scipy.linalg.cython_lapack cimport dgtsv,    dsysv, dsytrf, dsytrs,    dgesv, dgetrf, dgetrs
+# triangular solver
+from scipy.linalg.cython_lapack cimport dgtsv
+# symmetric solver
+from scipy.linalg.cython_lapack cimport dsysv, dsytrf, dsytrs
+# general solver
+from scipy.linalg.cython_lapack cimport dgesv, dgetrf, dgetrs
+
+# other routines
 from scipy.linalg.cython_lapack cimport dgeequ, dgesvd
 
 # fast inline min/max for C code

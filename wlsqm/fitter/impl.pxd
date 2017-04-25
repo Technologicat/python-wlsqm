@@ -16,6 +16,8 @@
 # cython: boundscheck = False
 # cython: cdivision   = True
 
+from __future__ import absolute_import
+
 from cython cimport view
 
 # See the infrasructure module for the definition of Case.

@@ -8,6 +8,8 @@
 #
 # JJ 2016-11-30
 
+from __future__ import absolute_import
+
 from cython cimport view
 
 cimport wlsqm.fitter.infra as infra

@@ -11,6 +11,8 @@
 #
 # JJ 2016-11-30
 
+from __future__ import absolute_import
+
 # Algorithms for the solve step (expert mode).
 #
 cdef int ALGO_BASIC_c      # fit just once

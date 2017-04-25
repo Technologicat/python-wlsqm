@@ -17,8 +17,7 @@ Interpolation of fitted surrogate model.
 JJ 2016-11-30
 """
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 import numpy as np  # needed by interpolate_fit() in Python API
 
@@ -140,7 +139,7 @@ Return value : rank-1 array, function value at each x.
         case.fi2       = &fi2[0]  # if interpolating a derivative, this work space is needed (if we had a Case object, the work space would have been created by Case_allocate())
         interpolate_nD( &case, xManyD, x1D, &out[0], diff )
 
-    return out
+    return np.asanyarray(out)  # memoryviewslice --> np.array
 
 
 def lambdify_fit( xi, fi, dimension, order, diff=0 ):  # Python only

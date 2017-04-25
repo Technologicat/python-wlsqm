@@ -6,6 +6,8 @@
 #
 # JJ 2016-02-29
 
+from __future__ import absolute_import
+
 cdef class PointerWrapper:
     cdef void* ptr
     cdef set_ptr(self, void * input)

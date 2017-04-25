@@ -59,6 +59,8 @@ Examples:
 JJ 2016-11-30
 """
 
+from __future__ import division, print_function, absolute_import
+
 #################################################
 # C definitions (Cython level)
 #################################################

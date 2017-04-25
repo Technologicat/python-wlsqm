@@ -33,8 +33,7 @@
 #           - max(nk_j) here too, same reason
 #      - ntasks*no*sizeof(double) bytes for fi_tmp
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
@@ -249,7 +248,7 @@ cdef Allocator* Allocator_new( int mode, int total_size_bytes ) nogil except <Al
 cdef void* Allocator_malloc( Allocator* self, int size_bytes ) nogil:
     if self.mode == ALLOC_MODE_PASSTHROUGH:
 #        with gil:
-#            print "directly allocating %d bytes" % (size_bytes)
+#            print( "directly allocating %d bytes" % (size_bytes) )  # DEBUG
         return malloc( size_bytes )
 
     # else...
@@ -262,12 +261,12 @@ cdef void* Allocator_malloc( Allocator* self, int size_bytes ) nogil:
     cdef int size_remaining = self.size_total - self.size_used
     if size_bytes > size_remaining:
 #        with gil:
-#            print "buffer full, cannot allocate %d bytes" % (size_bytes)  # DEBUG
+#            print( "buffer full, cannot allocate %d bytes" % (size_bytes) )  # DEBUG
         return <void*>0
 
     cdef void* p
     with gil:  # since we are called from Python threads only, we can use the GIL to make the operation thread-safe. (TODO/FIXME: well, not exactly, see e.g. http://www.slideshare.net/dabeaz/an-introduction-to-python-concurrency )
-#        print "reserving %d bytes from buffer of size %d; after alloc, %d bytes remaining" % (size_bytes, self.size_total, size_remaining - size_bytes)  # DEBUG
+#        print( "reserving %d bytes from buffer of size %d; after alloc, %d bytes remaining" % (size_bytes, self.size_total, size_remaining - size_bytes) )  # DEBUG
         p = self.p
         self.p = <void*>( (<char*>p) + size_bytes )
         self.size_used += size_bytes

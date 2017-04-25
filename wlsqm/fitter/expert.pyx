@@ -17,8 +17,7 @@ This module contains the Python API for an "expert mode" in the LAPACK sense, wi
 JJ 2016-12-07
 """
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 from libc.math   cimport sqrt

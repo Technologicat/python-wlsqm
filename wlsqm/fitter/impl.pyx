@@ -16,15 +16,13 @@
 # cython: boundscheck = False
 # cython: cdivision   = True
 
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, log10
 from libc.math cimport fabs as c_abs
 
 from numpy import asanyarray
-from numpy.linalg import cond  # only needed for debug mode
 
 cimport wlsqm.utils.lapackdrivers as drivers
 

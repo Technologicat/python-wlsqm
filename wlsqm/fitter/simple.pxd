@@ -19,6 +19,8 @@
 # This module contains "driver" routines in the LAPACK sense.
 # The low-level C routines are contained in wlsqm.fitter.impl.
 
+from __future__ import absolute_import
+
 from cython cimport view  # for usage, see http://cython.readthedocs.io/en/latest/src/userguide/memoryviews.html#specifying-more-general-memory-layouts
 
 ####################################################
