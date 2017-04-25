@@ -175,7 +175,6 @@ setup(
                     "Programming Language :: Python",
                     "Programming Language :: Python :: 2",
                     "Programming Language :: Python :: 2.7",
-                    "Programming Language :: Python :: 2 :: Only",
                     "Topic :: Scientific/Engineering",
                     "Topic :: Scientific/Engineering :: Mathematics",
                     "Topic :: Software Development :: Libraries",
