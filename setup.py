@@ -113,6 +113,7 @@ for datadir in datadirs:
                        for root, dirs, files in os.walk(datadir)] )
 
 datafiles.append( ('.', ["README.md", "LICENSE.md", "TODO.md", "CHANGELOG.md"]) )
+datafiles.append( ('.', ["example.png"]) )
 
 
 #########################################################
