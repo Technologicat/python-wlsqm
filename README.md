@@ -1,5 +1,12 @@
 # wlsqm
 
+Weighted least squares meshless interpolator
+
+![2D example](example.png)
+
+
+## Introduction
+
 WLSQM (Weighted Least SQuares Meshless) is a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.
 
 Use cases include response surface modeling, and computing space derivatives of data known only as values at discrete points in space (this has applications in explicit algorithms for solving IBVPs). No grid or mesh is needed. No restriction is imposed on geometry other than "not degenerate", e.g. points in 2D should not all fall onto the same 1D line.
