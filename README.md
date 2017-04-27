@@ -95,13 +95,13 @@ For the technical details, see the docstrings and comments in the code itself.
 
 Mathematics documented at:
 
-  [https://yousource.it.jyu.fi/jjrandom2/freya/trees/master/docs](https://yousource.it.jyu.fi/jjrandom2/freya/trees/master/docs)
+  - [https://yousource.it.jyu.fi/jjrandom2/freya/trees/master/docs](https://yousource.it.jyu.fi/jjrandom2/freya/trees/master/docs)
 
 where the relevant files are:
 
-  - wlsqm.pdf (old documentation for the old pure-Python version of WLSQM included in FREYA, plus the sensitivity calculation)
-  - eulerflow.pdf (clearer presentation of the original version, but without the sensitivity calculation)
-  - wlsqm_gen.pdf (theory diff on how to make a version that handles also missing function values; also why WLSQM works and some analysis of its accuracy)
+  - [wlsqm.pdf](https://yousource.it.jyu.fi/jjrandom2/freya/blobs/raw/master/docs/wlsqm.pdf) (old documentation for the old pure-Python version of WLSQM included in FREYA, plus the sensitivity calculation)
+  - [eulerflow.pdf](https://yousource.it.jyu.fi/jjrandom2/freya/blobs/raw/master/docs/eulerflow.pdf) (clearer presentation of the original version, but without the sensitivity calculation)
+  - [wlsqm_gen.pdf](https://yousource.it.jyu.fi/jjrandom2/freya/blobs/raw/master/docs/wlsqm_gen.pdf) (theory diff on how to make a version that handles also missing function values; also why WLSQM works and some analysis of its accuracy)
 
 The documentation is slightly out of date; see [TODO](TODO.md) for details on what needs updating and how.
 
