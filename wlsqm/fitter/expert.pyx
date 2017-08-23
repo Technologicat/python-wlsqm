@@ -668,7 +668,9 @@ after calling solve().
         if self.host is not None:  # in guest mode, use the host's tree for searching
             self.tree = self.host.tree
         else:
-            self.tree = scipy.spatial.cKDTree( data=self.xi )
+            # KDTree input format: rank-2 array of (N,K), where N = number of points, K = number of dimensions
+            xi_rank2 = self.xi if self.dimension >= 2 else np.atleast_2d(self.xi).T
+            self.tree = scipy.spatial.cKDTree( data=xi_rank2 )
 
 
     # TODO: continuous mode: add options for falloff, weighting function shape
@@ -882,7 +884,8 @@ cdef void expert_interpolate_nearest( int dimension, xi_tree, infra.CaseManager*
 cdef void expert_interpolate_continuous( int dimension, xi, xi_tree, infra.CaseManager* manager, x, double[::1] out, int diff, r ):  # TODO/FIXME: always single-threaded for now
     # Index the points where the global model is to be interpolated (for faster searching of pairs).
     # TODO: add caching to ExpertSolver if this is the same as the last used x ("if x is x_cached"?)  OTOH, this would keep alive a reference to a caller-given array (that is probably intended as a temporary)...
-    input_tree = scipy.spatial.cKDTree( data=x )
+    x_rank2 = x if dimension >= 2 else np.atleast_2d(x).T
+    input_tree = scipy.spatial.cKDTree( data=x_rank2 )
 
     # For each point in x, find all local models whose origin is within radius r.
     #
