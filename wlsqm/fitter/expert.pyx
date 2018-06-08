@@ -223,7 +223,8 @@ host             : in, ExpertSolver instance to use as host for guest mode. (Def
 
         # Create the Cases, adding them to the manager.
         #
-        cdef double nan = 0./0.  # FIXME: IEEE-754 abuse
+        cdef double zero = 0
+        cdef double nan = zero/zero  # FIXME: IEEE-754 abuse
         cdef double xi=nan, yi=nan, zi=nan  # pass invalid coordinates for now, we'll fill them in later
 
         if host is None:  # usual mode of operation (create geometry data locally)
@@ -849,7 +850,9 @@ cdef void expert_interpolate_nearest( int dimension, xi_tree, infra.CaseManager*
     #
     # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.cKDTree.query.html#scipy.spatial.cKDTree.query
     # "Missing neighbors are indicated with self.n."
-    cdef double nan = 0./0. # FIXME: IEEE-754 abuse
+
+    cdef double zero = 0
+    cdef double nan = zero/zero  # FIXME: IEEE-754 abuse
     if (np.asanyarray(I) == manager.ncases).any():
         for j in range(nx):
             out[j] = nan

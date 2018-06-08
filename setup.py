@@ -25,6 +25,7 @@ if sys.version_info < (2,7):
     sys.exit('Sorry, Python < 2.7 is not supported')
 
 import os
+import platform
 
 from setuptools import setup
 from setuptools.extension import Extension
@@ -39,28 +40,36 @@ except ImportError:
 # Definitions
 #########################################################
 
-extra_compile_args_math_optimized    = ['-fopenmp', '-march=native', '-O2', '-msse', '-msse2', '-mfma', '-mfpmath=sse']
-extra_compile_args_math_debug        = ['-fopenmp', '-march=native', '-O0', '-g']
+system = platform.system()
 
-extra_compile_args_nonmath_optimized = ['-O2']
-extra_compile_args_nonmath_debug     = ['-O0', '-g']
-
-extra_link_args_optimized    = ['-fopenmp']
-extra_link_args_debug        = ['-fopenmp']
-
-
-if build_type == 'optimized':
-    my_extra_compile_args_math    = extra_compile_args_math_optimized
-    my_extra_compile_args_nonmath = extra_compile_args_nonmath_optimized
-    my_extra_link_args            = extra_link_args_optimized
+if system == "Windows":
+    my_extra_compile_args_math = ["/openmp"]
+    my_extra_compile_args_nonmath = []
+    my_extra_link_args = []
     debug = False
-    print( "build configuration selected: optimized" )
-else: # build_type == 'debug':
-    my_extra_compile_args_math    = extra_compile_args_math_debug
-    my_extra_compile_args_nonmath = extra_compile_args_nonmath_debug
-    my_extra_link_args            = extra_link_args_debug
-    debug = True
-    print( "build configuration selected: debug" )
+else:
+    extra_compile_args_math_optimized    = ['-fopenmp', '-march=native', '-O2', '-msse', '-msse2', '-mfma', '-mfpmath=sse']
+    extra_compile_args_math_debug        = ['-fopenmp', '-march=native', '-O0', '-g']
+
+    extra_compile_args_nonmath_optimized = ['-O2']
+    extra_compile_args_nonmath_debug     = ['-O0', '-g']
+
+    extra_link_args_optimized    = ['-fopenmp']
+    extra_link_args_debug        = ['-fopenmp']
+
+
+    if build_type == 'optimized':
+        my_extra_compile_args_math    = extra_compile_args_math_optimized
+        my_extra_compile_args_nonmath = extra_compile_args_nonmath_optimized
+        my_extra_link_args            = extra_link_args_optimized
+        debug = False
+        print( "build configuration selected: optimized" )
+    else: # build_type == 'debug':
+        my_extra_compile_args_math    = extra_compile_args_math_debug
+        my_extra_compile_args_nonmath = extra_compile_args_nonmath_debug
+        my_extra_link_args            = extra_link_args_debug
+        debug = True
+        print( "build configuration selected: debug" )
 
 
 #########################################################
@@ -95,12 +104,16 @@ def ext(extName):
                       extra_compile_args=my_extra_compile_args_nonmath
                     )
 def ext_math(extName):
+    if system == "Windows":
+        libraries = []
+    else:
+        libraries = ["m"]  # "m" links libm, the math library on unix-likes; see http://docs.cython.org/src/tutorial/external.html
     extPath = extName.replace(".", os.path.sep)+".pyx"
     return Extension( extName,
                       [extPath],
                       extra_compile_args=my_extra_compile_args_math,
                       extra_link_args=my_extra_link_args,
-                      libraries=["m"]  # "m" links libm, the math library on unix-likes; see http://docs.cython.org/src/tutorial/external.html
+                      libraries=libraries
                     )
 
 # http://stackoverflow.com/questions/13628979/setuptools-how-to-make-package-contain-extra-data-folder-and-all-folders-inside
