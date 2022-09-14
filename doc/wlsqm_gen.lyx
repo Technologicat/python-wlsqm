@@ -1,0 +1,1304 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "palatino" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2cm
+\topmargin 2cm
+\rightmargin 2cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Extended WLSQM: dealing with missing function values
+\end_layout
+
+\begin_layout Standard
+Can we extend WLSQM to the case where the function value 
+\begin_inset Formula $\widehat{f}_{i}(x_{i})$
+\end_inset
+
+ is unknown, provided that 
+\begin_inset Formula $\widehat{f}_{i}(x_{k})$
+\end_inset
+
+ is known for all neighbor points 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+?
+\end_layout
+
+\begin_layout Itemize
+The primary use case is handling boundary conditions, which may prescribe
+ a derivative, leaving the function value free.
+ In these cases, we eliminate the appropriate 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, either by algebraic elimination of the corresponding row and column; or
+ by replacing its row in the equation system with 
+\begin_inset Formula $1\cdot a_{j}=C$
+\end_inset
+
+ (maybe appropriately scaled), where 
+\begin_inset Formula $C$
+\end_inset
+
+ is its known value.
+\end_layout
+
+\begin_layout Itemize
+This can also be used for interpolation, to obtain an approximation to the
+ function value and its derivatives at an arbitrary point 
+\begin_inset Formula $x$
+\end_inset
+
+ that does not belong to the point cloud.
+ (But here a cheaper alternative is to compute the approximation from the
+ obtained quadratic fit.
+ This also gives the derivatives, since the analytical expression of the
+ fit is known.)
+\end_layout
+
+\begin_layout Itemize
+Another use case may be as an error indicator (compare the interpolated
+ 
+\begin_inset Formula $\widehat{f}_{i}(x_{i})$
+\end_inset
+
+, computed by omitting 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+, and the actual data 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Itemize
+Also as a smoother? Replace each 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ by its interpolant, then iterate until convergence.
+\end_layout
+
+\begin_layout Standard
+The answer turns out to be yes.
+ Let us denote the local representation of our scalar field 
+\begin_inset Formula $f(x)$
+\end_inset
+
+, in a neighborhood of the point 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, by 
+\begin_inset Formula $\widehat{f}_{i}(x)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Let us Taylor expand 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+ around the point 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, and evaluate the Taylor series at a neighbor point 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ (a point distinct from 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, also belonging to the point cloud): 
+\begin_inset Formula 
+\begin{equation}
+\widehat{f}_{i}(x_{k})=\widehat{f}_{i}(x_{i})+h_{k}a_{1}+\ell_{k}a_{2}+\frac{h_{k}^{2}}{2}a_{3}+h_{k}\ell_{k}a_{4}+\frac{\ell_{k}^{2}}{2}a_{5}+O(h_{k}^{3}\,,\ell_{k}^{3})\;,\label{eq:Tay}
+\end{equation}
+
+\end_inset
+
+where
+\begin_inset Formula 
+\begin{align}
+h_{k} & :=(x_{k})_{1}-(x_{i})_{1}\;,\label{eq:hk}\\
+\ell_{k} & :=(x_{k})_{2}-(x_{i})_{2}\;,\label{eq:ellk}
+\end{align}
+
+\end_inset
+
+and the function value and the derivatives are denoted by (note the numbering)
+\begin_inset Formula 
+\begin{align}
+a_{1} & =\frac{\partial\widehat{f}_{i}}{\partial x}\vert_{x=x_{i}}\;, & a_{2} & =\frac{\partial\widehat{f}_{i}}{\partial y}\vert_{x=x_{i}}\;,\nonumber \\
+a_{3} & =\frac{\partial^{2}\widehat{f}_{i}}{\partial x^{2}}\vert_{x=x_{i}}\;, & a_{5} & =\frac{\partial^{2}\widehat{f}_{i}}{\partial y^{2}}\vert_{x=x_{i}}\;,\nonumber \\
+a_{4} & =\frac{\partial^{2}\widehat{f}_{i}}{\partial x\partial y}\vert_{x=x_{i}}\;, & a_{0} & =\widehat{f}_{i}\vert_{x=x_{i}}\;.\label{eq:aj}
+\end{align}
+
+\end_inset
+
+Truncating the error term, we have the Taylor approximation:
+\begin_inset Formula 
+\begin{equation}
+\widehat{f}_{i}(x_{k})\approx a_{0}+h_{k}a_{1}+\ell_{k}a_{2}+\frac{h_{k}^{2}}{2}a_{3}+h_{k}\ell_{k}a_{4}+\frac{\ell_{k}^{2}}{2}a_{5}=:\overline{f}_{k}\;,\label{eq:approx}
+\end{equation}
+
+\end_inset
+
+Now, let us define the coefficients
+\begin_inset Formula 
+\begin{align}
+c_{k}^{(1)} & :=h_{k}\;, & c_{k}^{(2)} & :=\ell_{k}\;,\nonumber \\
+c_{k}^{(3)} & :=\frac{h_{k}^{2}}{2}\;, & c_{k}^{(5)} & :=\frac{\ell_{k}^{2}}{2}\;,\nonumber \\
+c_{k}^{(4)} & :=h_{k}\ell_{k}\;, & c_{k}^{(0)} & :=1\;.\label{eq:ck}
+\end{align}
+
+\end_inset
+
+Observe that
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\overline{f}_{k}}{\partial a_{j}}=c_{k}^{(j)}\;,\label{eq:dfkdaj}
+\end{equation}
+
+\end_inset
+
+At the neighbor points 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ (belonging to the point cloud), by assumption we have the function values
+ available as data.
+ The error made at any such point 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+, when we replace 
+\begin_inset Formula $\widehat{f}_{i}(x_{k})$
+\end_inset
+
+ with its Taylor approximation, is
+\begin_inset Formula 
+\begin{equation}
+e_{k}:=f_{k}-\overline{f}_{k}\;,\label{eq:ek}
+\end{equation}
+
+\end_inset
+
+One-half of the total squared error across all the neighbor points 
+\begin_inset Formula $k$
+\end_inset
+
+ is simply
+\begin_inset Formula 
+\begin{equation}
+G(a_{0},\dots,a_{5}):=\frac{1}{2}\;\underset{k\in I_{i}}{\sum}\,e_{k}^{2}\;,\label{eq:G}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $I_{i}$
+\end_inset
+
+ is the index set of the point 
+\begin_inset Formula $i$
+\end_inset
+
+'s neighbors.
+\end_layout
+
+\begin_layout Standard
+Minimizing the error leads, in the least-squares sense, to the best possible
+ values for the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\{a_{0},\dots,a_{5}\}_{\mathrm{optimal}}=\underset{a_{0},\dots,a_{5}}{\arg\min}\,G(a_{0},\dots,a_{5})\;.
+\]
+
+\end_inset
+
+Because 
+\begin_inset Formula $G\ge0$
+\end_inset
+
+ for any values of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, and 
+\begin_inset Formula $G$
+\end_inset
+
+ is a quadratic function of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, it has a unique extremal point, which is a minimum.
+ The least-squares fit is given by this unique minimum of 
+\begin_inset Formula $G$
+\end_inset
+
+:
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+The error 
+\begin_inset Formula $G$
+\end_inset
+
+ obviously has no finite maximum in terms of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+; hence its only critical point must be a minimum.
+ Thus the problem becomes to find values for 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ such that
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial G}{\partial a_{j}}=0\;,\quad j=0,\dots,5\;.\label{eq:minG}
+\end{equation}
+
+\end_inset
+
+Using first 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:G"
+
+\end_inset
+
+, and then on the second line 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ek"
+
+\end_inset
+
+, we can write
+\begin_inset Formula 
+\begin{align}
+\frac{\partial G}{\partial a_{j}} & =\underset{k\in I_{i}}{\sum}e_{k}\frac{\partial e_{k}}{\partial a_{j}}\nonumber \\
+ & =\underset{k\in I_{i}}{\sum}[f_{k}-\overline{f}_{k}(a_{0},\dots,a_{5})]\left[-\frac{\partial\overline{f}_{k}}{\partial a_{j}}\right]=0\;,\quad j=0,\dots5\;,\label{eq:minG2}
+\end{align}
+
+\end_inset
+
+which, using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+–
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ck"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:dfkdaj"
+
+\end_inset
+
+, leads to
+\begin_inset Formula 
+\[
+\underset{k\in I_{i}}{\sum}\left(\left[-f_{k}+c_{k}^{(0)}a_{0}+c_{k}^{(1)}a_{1}+c_{k}^{(2)}a_{2}+c_{k}^{(3)}a_{3}+c_{k}^{(4)}a_{4}+c_{k}^{(5)}a_{5}\right]c_{k}^{(j)}\right)=0\;,\quad j=0,\dots,5\;.
+\]
+
+\end_inset
+
+This can be written as a standard linear equation system
+\begin_inset Formula 
+\begin{equation}
+\underset{n=0}{\overset{5}{\sum}}A_{jn}a_{n}=b_{j}\;,\quad j=0,\dots,5\;,\label{eq:lineq}
+\end{equation}
+
+\end_inset
+
+where
+\begin_inset Formula 
+\begin{equation}
+A_{jn}=\underset{k\in I_{i}}{\sum}\;\,c_{k}^{(n)}c_{k}^{(j)}\;,\label{eq:Ajn}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+b_{j}=\underset{k\in I_{i}}{\sum}\,f_{k}\,c_{k}^{(j)}\;.\label{eq:bj}
+\end{equation}
+
+\end_inset
+
+Considering the magnitudes of the expressions 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ck"
+
+\end_inset
+
+, which contribute quadratically to 
+\begin_inset Formula $A_{jn}$
+\end_inset
+
+, we see that the condition number of 
+\begin_inset Formula $A$
+\end_inset
+
+ will likely deteriorate, when compared to the previous case where 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ is known.
+ This is as expected; we are now dealing with not only the first and second
+ derivatives, but also with the function value.
+ Preconditioning (even by row normalization, although this destroys the
+ symmetry) may help with floating-point roundoff issues.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Accuracy?
+\end_layout
+
+\begin_layout Standard
+At first glance, WLSQM is not even consistent, if we treat 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ as an 
+\begin_inset Formula $O(h_{k}^{3}\,,\ell_{k}^{3})$
+\end_inset
+
+ approximation of 
+\begin_inset Formula $\widehat{f}_{i}(x_{k})$
+\end_inset
+
+, and track the error term through the calculation (details left as an exercise).
+\end_layout
+
+\begin_layout Standard
+Obviously, consistent expansion of the matrix 
+\begin_inset Formula $A$
+\end_inset
+
+ to the order 
+\begin_inset Formula $O(h_{k}^{3}\,,\ell_{k}^{3})$
+\end_inset
+
+ gives 
+\begin_inset Formula 
+\[
+A=\underset{k\in I_{i}}{\sum}\left[\begin{array}{cccccc}
+1 & h_{k} & \ell_{k} & \frac{h_{k}^{2}}{2} & h_{k}\ell_{k} & \frac{\ell_{k}^{2}}{2}\\
+h_{k} & h_{k}^{2} & h_{k}\ell_{k} & \sim0 & \sim0 & \sim0\\
+\ell_{k} & h_{k}\ell_{k} & \ell_{k}^{2} & \sim0 & \sim0 & \sim0\\
+\frac{h_{k}^{2}}{2} & \sim0 & \sim0 & \sim0 & \sim0 & \sim0\\
+h_{k}\ell_{k} & \sim0 & \sim0 & \sim0 & \sim0 & \sim0\\
+\frac{\ell_{k}^{2}}{2} & \sim0 & \sim0 & \sim0 & \sim0 & \sim0
+\end{array}\right]=\underset{k\in I_{i}}{\sum}\left[\begin{array}{cccccc}
+1 & h_{k} & \ell_{k} & \frac{h_{k}^{2}}{2} & h_{k}\ell_{k} & \frac{\ell_{k}^{2}}{2}\\
+ & h_{k}^{2} & h_{k}\ell_{k} & \sim0 & \sim0 & \sim0\\
+ &  & \ell_{k}^{2} & \sim0 & \sim0 & \sim0\\
+ &  &  & \sim0 & \sim0 & \sim0\\
+ & \mathrm{symm.} &  &  & \sim0 & \sim0\\
+ &  &  &  &  & \sim0
+\end{array}\right]
+\]
+
+\end_inset
+
+which has at most rank 3 (rank 2 in the classical case, where the first
+ row and column, corresponding to unknown 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+, are removed).
+ Of course it can be of full rank if the almost zeros are retained, but
+ the truncation error (of the Taylor approximation) dominates those, so
+ consistency requires that they be dropped.
+\end_layout
+
+\begin_layout Standard
+(As an aside, we note that if there is only one neighbor point, the equations
+ corresponding to the UL 3x3 block become scalar multiples of each other
+ due to 
+\begin_inset Formula $b$
+\end_inset
+
+ also having a factor of 
+\begin_inset Formula $c_{k}^{(j)}$
+\end_inset
+
+.
+ This is of course as expected; one can hardly expect to obtain two independent
+ derivatives from just one neighbor.
+ The same occurs if the neighbors are collinear (as is obvious geometrically,
+ and quite simple to see algebraically, writing e.g.
+ for two points 
+\begin_inset Formula $h_{2}=Ch_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $\ell_{2}=C\ell_{1}$
+\end_inset
+
+...).)
+\end_layout
+
+\begin_layout Standard
+However, WLSQM (at least the classical version with 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ known) has been observed to actually work, with some reasonable amount
+ of numerical error, so this analysis must be wrong.
+ What is going on?
+\end_layout
+
+\begin_layout Subsection
+Accuracy, correctly
+\end_layout
+
+\begin_layout Standard
+Let us take a page from finite element methods, where the weak form is —
+ after the fact — taken as the new 
+\emph on
+definition
+\emph default
+ of the problem (which just so happens to lead to the classical strong form
+ in cases where both can be written).
+\end_layout
+
+\begin_layout Standard
+To apply this philosophy here: after we define 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+, we can 
+\begin_inset Quotes eld
+\end_inset
+
+forget
+\begin_inset Quotes erd
+\end_inset
+
+ that it comes from a truncated Taylor series, and 
+\emph on
+take the definition as a new starting point
+\emph default
+: in principle, 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ is just a function of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, to be least-squares fitted to known data points 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ (and optionally known 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+, as per classical WLSQM).
+\end_layout
+
+\begin_layout Standard
+Then we just perform standard least-squares fitting.
+ The math is exact (given unrealistic, exact arithmetic — this is a separate
+ issue); no truncation error term appears.
+ The full matrix should be retained:
+\begin_inset Formula 
+\[
+A=\underset{k\in I_{i}}{\sum}\left[\begin{array}{cccccc}
+1 & h_{k} & \ell_{k} & \frac{h_{k}^{2}}{2} & h_{k}\ell_{k} & \frac{\ell_{k}^{2}}{2}\\
+h_{k} & h_{k}^{2} & h_{k}\ell_{k} & \frac{h_{k}^{3}}{2} & h_{k}^{2}\ell_{k} & h_{k}\frac{\ell_{k}^{2}}{2}\\
+\ell_{k} & h_{k}\ell_{k} & \ell_{k}^{2} & \ell_{k}\frac{h_{k}^{2}}{2} & h_{k}\ell_{k}^{2} & \frac{\ell_{k}^{3}}{2}\\
+\frac{h_{k}^{2}}{2} & \frac{h_{k}^{3}}{2} & \ell_{k}\frac{h_{k}^{2}}{2} & \frac{h_{k}^{4}}{4} & \frac{h_{k}^{3}}{2}\ell_{k} & \frac{h_{k}^{2}\ell_{k}^{2}}{4}\\
+h_{k}\ell_{k} & h_{k}^{2}\ell_{k} & h_{k}\ell_{k}^{2} & \frac{h_{k}^{3}}{2}\ell_{k} & h_{k}^{2}\ell_{k}^{2} & h_{k}\frac{\ell_{k}^{3}}{2}\\
+\frac{\ell_{k}^{2}}{2} & h_{k}\frac{\ell_{k}^{2}}{2} & \frac{\ell_{k}^{3}}{2} & \frac{h_{k}^{2}\ell_{k}^{2}}{4} & h_{k}\frac{\ell_{k}^{3}}{2} & \frac{\ell_{k}^{4}}{4}
+\end{array}\right]=\underset{k\in I_{i}}{\sum}\left[\begin{array}{cccccc}
+1 & h_{k} & \ell_{k} & \frac{h_{k}^{2}}{2} & h_{k}\ell_{k} & \frac{\ell_{k}^{2}}{2}\\
+ & h_{k}^{2} & h_{k}\ell_{k} & \frac{h_{k}^{3}}{2} & h_{k}^{2}\ell_{k} & h_{k}\frac{\ell_{k}^{2}}{2}\\
+ &  & \ell_{k}^{2} & \ell_{k}\frac{h_{k}^{2}}{2} & h_{k}\ell_{k}^{2} & \frac{\ell_{k}^{3}}{2}\\
+ &  &  & \frac{h_{k}^{4}}{4} & \frac{h_{k}^{3}}{2}\ell_{k} & \frac{h_{k}^{2}\ell_{k}^{2}}{4}\\
+ & \mathrm{symm.} &  &  & h_{k}^{2}\ell_{k}^{2} & h_{k}\frac{\ell_{k}^{3}}{2}\\
+ &  &  &  &  & \frac{\ell_{k}^{4}}{4}
+\end{array}\right]
+\]
+
+\end_inset
+
+This is now of full rank, provided that enough neighbor points 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ are used in the calculation (considering that we are least-squares fitting
+ a general quadratic polynomial in the plane; see below).
+\end_layout
+
+\begin_layout Standard
+At this point the only error — considering only 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ and the data 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ — is the 
+\emph on
+RMS (root mean square) error
+\emph default
+ of the least-squares fit, 
+\begin_inset Formula $\min\sqrt{2G}$
+\end_inset
+
+ (where the minimum occurs at the solution point).
+ The RMS error measures how well the model adheres to each data point, on
+ average.
+ The obtained coefficients are optimal: out of all functions of the form
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+ with 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ as parameters, the solution of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:lineq"
+
+\end_inset
+
+–
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:bj"
+
+\end_inset
+
+ gives the smallest possible RMS error for the fit.
+\end_layout
+
+\begin_layout Standard
+Then — again after the fact — we observe that these optimal 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ are pretty good also for use in a Taylor approximation
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+, precisely because they minimize the RMS error of the fit
+\end_layout
+
+\end_inset
+
+.
+ The solution is, in the least-squares sense, the best quadratic polynomial
+ of 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ for locally approximating 
+\begin_inset Formula $f(x)$
+\end_inset
+
+ around 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+.
+ (The fit 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+ is linear in 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, but quadratic in 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+.) Also the Taylor approximation, truncated after the second-order terms,
+ is a quadratic polynomial approximating 
+\begin_inset Formula $f(x)$
+\end_inset
+
+ around 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+.
+ Thus 
+\emph on
+we
+\emph default
+ 
+\emph on
+interpret the quadratic fit as a (response surface) model
+\emph default
+ for 
+\begin_inset Formula $f(x)$
+\end_inset
+
+ near 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, and thus the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ as approximations to the Taylor coefficients of 
+\begin_inset Formula $f$
+\end_inset
+
+ (whence also as the numerical approximations to the derivatives).
+\end_layout
+
+\begin_layout Standard
+However, it must be emphasized that this gives rise to 
+\emph on
+modeling error
+\emph default
+, because the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ are 
+\emph on
+not
+\emph default
+ the exact coefficients of the true Taylor expansion of 
+\begin_inset Formula $f(x)$
+\end_inset
+
+ around 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+.
+ Indeed, strictly speaking, the data may not even describe a function admitting
+ such an expansion! Even if the data admits an underlying function, and
+ it happens to be in
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $C^{2}$
+\end_inset
+
+, there may be numerical and/or experimental noise in the data points, depending
+ on the data source.
+ (This 
+\emph on
+inexact data
+\emph default
+ is another separate error source.) Also, in the general case the fit will
+ not be exact, i.e.
+ the RMS error will be nonzero.
+\end_layout
+
+\begin_layout Standard
+From this viewpoint, WLSQM would be more accurately advertised as a method
+ for response surface modeling (RSM), for computing a local quadratic response
+ surface in arbitrary geometries, instead of as a method for numerical different
+iation.
+\end_layout
+
+\begin_layout Standard
+Regarding numerical differentiation, the natural follow-up question is,
+ what is the the total error arising from approximating the function 
+\begin_inset Formula $f(x)$
+\end_inset
+
+ locally as the quadratic polynomial fit? The (original, not truncated)
+ Taylor series, at a general point 
+\begin_inset Formula $x$
+\end_inset
+
+ in the neighborhood of 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, is 
+\begin_inset Formula 
+\begin{equation}
+\widehat{f}_{i}(x)=\widehat{f}_{i}+h\frac{\partial\widehat{f}_{i}}{\partial x}+\ell\frac{\partial\widehat{f}_{i}}{\partial y}+\frac{h^{2}}{2}\frac{\partial^{2}\widehat{f}_{i}}{\partial x^{2}}+h\ell\frac{\partial^{2}\widehat{f}_{i}}{\partial x\partial y}+\frac{\ell^{2}}{2}\frac{\partial^{2}\widehat{f}_{i}}{\partial y^{2}}+O(h^{3}\,,\ell^{3})\;,\label{eq:Taygeneral}
+\end{equation}
+
+\end_inset
+
+where on the right-hand side, the function and the derivatives are evaluated
+ at 
+\begin_inset Formula $x=x_{i}$
+\end_inset
+
+, and 
+\begin_inset Formula $x-x_{i}=(h,\ell)$
+\end_inset
+
+.
+ The quadratic polynomial fit is
+\begin_inset Formula 
+\begin{equation}
+Q(x):=a_{0}+ha_{1}+\ell a_{2}+\frac{h^{2}}{2}a_{3}+h\ell a_{4}+\frac{\ell^{2}}{2}a_{5}\;,\label{eq:Qx}
+\end{equation}
+
+\end_inset
+
+where the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ are obtained from the least-squares optimization.
+ The total error in the function value, at a point 
+\begin_inset Formula $x$
+\end_inset
+
+, is their difference
+\begin_inset Formula 
+\begin{align}
+\mathrm{err}(x) & :=f(x)-Q(x)\overset{\text{near }x_{i}}{=}\widehat{f}_{i}(x)-Q(x)\nonumber \\
+ & =(\widehat{f}_{i}-a_{0})+h(\frac{\partial\widehat{f}_{i}}{\partial x}-a_{1})+\ell(\frac{\partial\widehat{f}_{i}}{\partial y}-a_{2})+\frac{h^{2}}{2}(\frac{\partial^{2}\widehat{f}_{i}}{\partial x^{2}}-a_{3})+h\ell(\frac{\partial^{2}\widehat{f}_{i}}{\partial x\partial y}-a_{4})+\frac{\ell^{2}}{2}(\frac{\partial^{2}\widehat{f}_{i}}{\partial y^{2}}-a_{5})+O(h^{3}\,,\ell^{3})\;.\label{eq:errx}
+\end{align}
+
+\end_inset
+
+When the Taylor series is truncated after the quadratic terms, the asymptotic
+ term gives the 
+\emph on
+truncation error
+\emph default
+.
+ The rest of the error is due to 
+\emph on
+modeling error
+\emph default
+ in the coefficients 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, i.e.
+ the parenthetical expressions in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:errx"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It is obvious that in the general case, the modeling error will be nonzero
+ (even if we assume the data to be exact): the function 
+\begin_inset Formula $f$
+\end_inset
+
+ is generally not a quadratic polynomial, and hence no quadratic polynomial
+ can represent it exactly.
+ To reiterate: the coefficients 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ are the coefficients of the quadratic fit 
+\begin_inset Formula $Q(x)$
+\end_inset
+
+ — they are 
+\emph on
+not
+\emph default
+ the Taylor coefficients of 
+\begin_inset Formula $f$
+\end_inset
+
+!
+\end_layout
+
+\begin_layout Standard
+However, they are a computable, close relative of the Taylor coefficients
+ of the unknown function 
+\begin_inset Formula $f$
+\end_inset
+
+, since the Taylor series of 
+\begin_inset Formula $Q(x)$
+\end_inset
+
+ expanded at 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ is, quite simply, 
+\begin_inset Formula $Q(x)$
+\end_inset
+
+ itself.
+ (Because 
+\begin_inset Formula $Q(x)$
+\end_inset
+
+ is a polynomial, no asymptotic error term appears.)
+\end_layout
+
+\begin_layout Standard
+Thus the magnitude of the total error depends on how well the coefficients
+ 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ approximate the Taylor coefficients of 
+\begin_inset Formula $f$
+\end_inset
+
+; or in other words, how close 
+\begin_inset Formula $f$
+\end_inset
+
+ is (locally) to a quadratic polynomial (which — given exact data and exact
+ arithmetic — can be fitted exactly; note that both assumptions are required,
+ as inexact data will give rise to nonzero RMS error in the fit, i.e.
+ then the fit will not be exact).
+\end_layout
+
+\begin_layout Standard
+This obviously depends on the neighborhood size, due to the asymptotic term
+ describing the truncation error in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Taygeneral"
+
+\end_inset
+
+.
+ The asymptotic term of the Taylor series says that if the neighborhood
+ is small enough, any 
+\begin_inset Formula $f\in C^{2}$
+\end_inset
+
+ is locally close to a quadratic polynomial.
+ This — for sufficiently small neighborhoods — should make the modeling
+ error (and thus the error in the numerical derivatives) comparable to 
+\begin_inset Formula $O(h^{3}\,,\ell^{3})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This suggests that 
+\begin_inset Formula $\mathrm{err}(x)$
+\end_inset
+
+ — with exact data and exact arithmetic — should also be comparable to 
+\begin_inset Formula $O(h^{3}\,,\ell^{3})$
+\end_inset
+
+.
+ (With inexact data, one needs to take into account that 
+\begin_inset Formula $f_{k}=f(x_{k})+\delta_{k}$
+\end_inset
+
+ and work from that.)
+\end_layout
+
+\begin_layout Standard
+Observe also that there are six 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ (
+\begin_inset Formula $j=0,\dots,5$
+\end_inset
+
+) in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Qx"
+
+\end_inset
+
+.
+ Hence, with exact arithmetic, six data values for 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+, i.e.
+ six neighbors 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ (five if 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ is known, eliminating 
+\begin_inset Formula $a_{0}$
+\end_inset
+
+), uniquely determine the quadratic function 
+\begin_inset Formula $Q(x)$
+\end_inset
+
+.
+ (Fewer data values lead to an underdetermined system, which has an infinite
+ family of solutions.) More data values lead to an overdetermined system,
+ which is then taken care of by least-squares fitting: picking the quadratic
+ polynomial that best approximates the data (which generally did not come
+ from a quadratic polynomial).
+\end_layout
+
+\begin_layout Standard
+This explains why the classical WLSQM takes 
+\begin_inset Formula $6$
+\end_inset
+
+ neighbors (here 
+\begin_inset Formula $7$
+\end_inset
+
+ if 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ is not known) to perform the fitting; it is the smallest number of (nondegenera
+te!) neighbors 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ that makes the quadratic fitting problem overdetermined (hence actually
+ needing the least-squares procedure).
+ (The overdeterminedness also slightly protects against inexact data, so
+ that one data point that is slightly off will not completely change the
+ fit.)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+But why is the result not exact, i.e.
+ why is there modeling error in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:errx"
+
+\end_inset
+
+? After all, the truncated Taylor expansion 
+\emph on
+is
+\emph default
+ the best local polynomial representation of 
+\begin_inset Formula $f$
+\end_inset
+
+, up to the given degree.
+ With exact data and arithmetic, how can the least-squares fit be anything
+ but the truncated Taylor expansion?
+\end_layout
+
+\begin_layout Standard
+The key is in the definition of 
+\begin_inset Quotes eld
+\end_inset
+
+best
+\begin_inset Quotes erd
+\end_inset
+
+.
+ In a Taylor series, as the truncation order is increased, with each added
+ term (given sufficient continuity of 
+\begin_inset Formula $f$
+\end_inset
+
+) the asymptotic accuracy increases, without requiring changes to the already
+ computed coefficients.
+ The Taylor series, being the polynomial series expansion of 
+\begin_inset Formula $f$
+\end_inset
+
+, is optimal in the class of polynomial representations where the coefficients
+ are 
+\begin_inset Quotes eld
+\end_inset
+
+final
+\begin_inset Quotes erd
+\end_inset
+
+ in this sense.
+ This is indeed what leads to the common-sense notion of the Taylor series
+ being 
+\begin_inset Quotes eld
+\end_inset
+
+the best polynomial representation
+\begin_inset Quotes erd
+\end_inset
+
+ of
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $f$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+However, nothing requires the truncated Taylor series to satisfy the least-squar
+es property.
+ In the least-squares sense, 
+\emph on
+there may exist better polynomials of the same degree
+\emph default
+ to locally approximate 
+\begin_inset Formula $f$
+\end_inset
+
+.
+ For a trivial 1D example: to represent 
+\begin_inset Formula $f(x)=x^{2}$
+\end_inset
+
+ in an interval 
+\begin_inset Formula $x\in[-a,a]$
+\end_inset
+
+ around the origin using a constant approximation, the Taylor series produces
+ 
+\begin_inset Formula $f\approx0$
+\end_inset
+
+.
+ However, the mean value across the interval is a 
+\begin_inset Quotes eld
+\end_inset
+
+better
+\begin_inset Quotes erd
+\end_inset
+
+ constant approximation in an integral least-squares sense.
+\end_layout
+
+\begin_layout Standard
+Indeed, a least-squares fit, as its order is increased, will change 
+\emph on
+all
+\emph default
+ of its coefficients; and it will do this to minimize the RMS error of the
+ fit.
+ (Be very careful: this is different from the modeling error in equation
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:errx"
+
+\end_inset
+
+.
+ The RMS error only measures how well the model adheres to each data point,
+ on average; it does not see what the model is used for.) In the least-squares
+ fit, there is no asymptotic error term — the data points
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $f_{k}$
+\end_inset
+
+, used in the fitting, implicitly contain the information also from all
+ the higher-order terms in the polynomial series expansion of
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $f$
+\end_inset
+
+.
+ The fit then eliminates as much of the difference between the chosen model
+ and the data as is possible.
+\end_layout
+
+\begin_layout Standard
+It is not surprising that the price that must be paid for this increase
+ of accuracy in interpolation is the 
+\begin_inset Quotes eld
+\end_inset
+
+finality
+\begin_inset Quotes erd
+\end_inset
+
+ of the coefficients in the above sense, the Taylor series already being
+ optimal in its class.
+\end_layout
+
+\begin_layout Standard
+We conclude that in the general case the result cannot be exact, because
+ we are dealing with two very different entities, which coincide only under
+ very restrictive assumptions.
+\end_layout
+
+\begin_layout Standard
+Note also that 
+\begin_inset Quotes eld
+\end_inset
+
+best
+\begin_inset Quotes erd
+\end_inset
+
+ obviously depends on context.
+ For response surface modeling, the WLSQM quadratic polynomial fit is optimal.
+ However, for numerical differentiation, the fact that the obtained coefficients
+ do not exactly coincide with the Taylor series coefficients of 
+\begin_inset Formula $f$
+\end_inset
+
+ produces an undesirable source of numerical error (modeling error).
+\end_layout
+
+\end_body
+\end_document

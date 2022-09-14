@@ -1,0 +1,4499 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman palatino
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2cm
+\topmargin 2cm
+\rightmargin 2cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Flow simulation for fluid--structure interaction in the vibration problem
+ of a travelling panel
+\end_layout
+
+\begin_layout Author
+Juha Jeronen
+\end_layout
+
+\begin_layout Standard
+\align center
+TECHNICAL NOTE
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Itemize
+This research is related to paper making, specifically, open draws in paper
+ machines.
+ Important fundamental physics for moving materials: questions of stability.
+\end_layout
+
+\begin_layout Itemize
+Previously investigated: small transverse vibrations of a travelling panel
+ subjected to an axial potential flow, in 2D [refs here]
+\end_layout
+
+\begin_layout Itemize
+Current aim: small transverse vibrations of a travelling panel subjected
+ to an axial Euler flow, in 2D
+\end_layout
+
+\begin_layout Itemize
+Why Euler? Air has small viscosity, may be able to ignore it.
+ Also, Euler flow is the next logical step in systematic model building
+ for this system.
+ Comparison with earlier (potential flow) results will isolate the effect
+ that the advective nonlinearity of the fluid component has on the vibration
+ characteristics of the structure component.
+\end_layout
+
+\begin_layout Itemize
+Euler flow = inviscid, but (in the general case) not irrotational; may be
+ compressible or incompressible.
+ Compare potential flow = inviscid, irrotational, incompressible.
+\end_layout
+
+\begin_layout Itemize
+Advection-dominated problem, nonlinear first-order PDEs.
+\end_layout
+
+\begin_layout Itemize
+Generally speaking, meshless methods are promising for fluid--structure
+ interaction (FSI) problems due to being free from restrictions on mesh
+ topology.
+ The points may easily move in an arbitrary manner without the need for
+ remeshing.
+\end_layout
+
+\begin_layout Itemize
+A Lagrangean (material) formulation is very tempting, because it gets rid
+ of one of the principal difficulties in fluid flow equations: the advection
+ term.
+ However, even with meshless methods, Lagrangean approaches need periodic
+ resetting due to issues in point cloud density.
+ As is known from MAC (marker-and-cell) methods in computer graphics (used
+ e.g.
+ in realtime treatment of free-surface flows), the point cloud tends to
+ form clusters and voids as the points move along the flow.
+\end_layout
+
+\begin_layout Itemize
+Thus, to keep things simple, an Eulerian formulation will be considered,
+ using a stationary set of points (which may be arbitrarily distributed).
+ This is sufficient for small vibrations of structures, where the geometry
+ can be approximated as flat.
+ This approach is especially applicable to stability analysis, where the
+ local amplification characteristics of small disturbances are the main
+ object of interest.
+\end_layout
+
+\begin_layout Itemize
+In this approach, the vibration of the structure is seen by the flow only
+ via a velocity boundary condition (the no-penetration condition) along
+ the geometrically flat boundary.
+ The non-flatness of the actual surface is accounted for when determining
+ the local orientation of the surface for the boundary condition.
+ The same approach was used in our earlier studies; thus the results will
+ be directly comparable.
+\end_layout
+
+\begin_layout Itemize
+Because Euler flow is inviscid (just like potential flow), it cannot push
+ things (that would be a viscous phenomenon)! It may only cause structures
+ to be displaced by differences in dynamic pressure (e.g.
+ as in the classical explanation of how wings work).
+ The flow is seen by the structure only as a local difference in pressure
+ across the upper/lower surfaces.
+\end_layout
+
+\begin_layout Itemize
+Numerical method: for simplicity, we choose the classical moving least squares
+ meshless method (MLS).
+\end_layout
+
+\begin_layout Itemize
+MLS is a local Taylor series optimization scheme to explicitly compute spatial
+ derivatives (usually, up to 2nd order) of fields defined by their values
+ on a set of points.
+ Scalar, vector and tensor fields of any rank can be treated by MLS.
+\end_layout
+
+\begin_layout Itemize
+MLS belongs to the family of collocation methods (sometimes called finite
+ point methods).
+ MLS is similar in spirit to finite differences, but generalized to arbitrary
+ geometries.
+ MLS is just one approach to perform this generalization, two others being
+ interpolation functions on a background mesh (so that classical difference
+ stencils can be used as-is), and developing new difference formulas to
+ account for non-equal distances in the stencil.
+\end_layout
+
+\begin_layout Itemize
+MLS has the advantage that it guarantees the least-squares optimal (i.e.
+ in a sense the best possible) local Taylor series representation of the
+ unknown function.
+ In the category of optimization-based methods, MLS is also reasonably efficient
+; taking advantage of the quadratic form of the optimization problem, it
+ is reduced to solving a linear equation system.
+ For different points in the point cloud, these systems are local and independen
+t, enabling parallelization.
+\end_layout
+
+\begin_layout Itemize
+If MLS is used, an explicit approach is preferable for time integration,
+ because MLS does not easily lead itself to implicit equations, or to steady-sta
+te problems such as elliptic equations.
+\end_layout
+
+\begin_layout Itemize
+In incompressible flow, the pressure term acts as an instantaneous correction
+ to keep the velocity field divergence-free [refs here].
+ The often used predictor-corrector approach requires solving a Poisson
+ equation for the pressure.
+ This equation appears via the Helmholtz projection trick, where (formally)
+ the pressure field is chosen at each timestep such that the pressure gradient
+ eliminates the divergence of the predicted velocity field.
+ (This projects the predicted velocity field into divergence-free space.)
+\end_layout
+
+\begin_layout Itemize
+Hence, for MLS, compressible flow is preferable, because fully explicit
+ formulations are possible.
+\end_layout
+
+\begin_layout Itemize
+Our problem has only Dirichlet boundary conditions.
+ The velocity has a given inflow, and at the surfaces of obstacles, its
+ normal component is zero.
+ All the unknowns are transported by the velocity field, and there is no
+ diffusion in any of the equations.
+ Hence, considering information flow, if the velocity field does not penetrate
+ obstacles, these other fields will not either.
+ The scalar quantities, density and internal energy, have only given values
+ at inflow.
+\end_layout
+
+\begin_layout Itemize
+Of course, when computing derivatives, the point clouds (used in the Taylor
+ series optimization) must be chosen such that the surface is treated as
+ an obstacle, so that the discontinuities are preserved correctly.
+ For example, points in the flow simulation near the upper surface of the
+ panel must use only points from the upper side; the points below the lower
+ surface of the panel are not visible to them.
+\end_layout
+
+\begin_layout Itemize
+To treat the obstance boundary conditions, we write the equations in the
+ local (tangent, normal) coordinates, solve the tangential component, set
+ the normal component to zero, and then transform the result to global (x,
+ y) coordinates by rotating the coordinate system.
+ This requires only minor modifications to the solution procedure.
+ This is more robust and arguably simpler than solving for the x (or y)
+ component as a function of the other component.
+\end_layout
+
+\begin_layout Itemize
+To specify the link between pressure and density, closing the equation system,
+ we treat the air as an ideal gas.
+\end_layout
+
+\begin_layout Section
+Governing equations
+\end_layout
+
+\begin_layout Standard
+For obtaining local balance laws as partial differential equations in continuum
+ form, it is convenient to start from elementary physical considerations
+ in integral form over a control volume, apply the Reynolds transport theorem,
+ and finally extract the pointwise behavior by noting the arbitrariness
+ of the control volume.
+ For such a general treatment of conservation laws, see e.g.
+ [ref AllenHerreraPinder, CSCVirtauslaskenta].
+ The final results, which provide our starting point, are as follows; we
+ will give them with some comments relevant to our present study.
+\end_layout
+
+\begin_layout Standard
+In the Eulerian (laboratory) frame, local dynamic mass balance is given
+ by 
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\rho}{\partial t}+\nabla\cdot(\rho\mathbf{u})=0\;.\label{eq:mass-balance}
+\end{equation}
+
+\end_inset
+
+Here 
+\begin_inset Formula $\rho$
+\end_inset
+
+ (SI unit: 
+\begin_inset Formula $\mathrm{kg/m^{3}}$
+\end_inset
+
+) is the density of the fluid and 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{m}/\mathrm{s}$
+\end_inset
+
+) is the velocity field.
+ The divergence in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+ can be expanded, yielding
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\rho}{\partial t}+\mathbf{u}\cdot\nabla\rho+\rho\nabla\cdot\mathbf{u}=0\;.\label{eq:mass-balance-expanded}
+\end{equation}
+
+\end_inset
+
+Moving one of the terms yields a form that lends itself to an intuitive
+ physical interpretation of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\frac{\partial\rho}{\partial t}+\mathbf{u}\cdot\nabla\rho=-\rho\nabla\cdot\mathbf{u}\;.
+\]
+
+\end_inset
+
+This is a scalar first-order transport equation with a source term.
+ The density field 
+\begin_inset Formula $\rho$
+\end_inset
+
+ undergoes advection by the velocity field 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+, and in addition experiences a source of strength 
+\begin_inset Formula $-\rho\nabla\cdot\mathbf{u}$
+\end_inset
+
+ (i.e.
+ a sink of strength 
+\begin_inset Formula $\rho\nabla\cdot\mathbf{u}$
+\end_inset
+
+).
+ That is, at points where 
+\begin_inset Formula $\nabla\cdot\mathbf{u}>0$
+\end_inset
+
+, i.e.
+ where fluid flows outward from the point, the density decreases proportional
+ to the existing density (and similarly, increases in the case of inflow
+ toward the point).
+\end_layout
+
+\begin_layout Standard
+The equation commonly known as 
+\emph on
+Euler's equation for fluid flow
+\emph default
+ describes the dynamic balance of linear momentum in an Euler (i.e.
+ general inviscid) flow, written in an Eulerian (laboratory) frame:
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}+\frac{\nabla p}{\rho}=\mathbf{g}\;.\label{eq:linear-momentum-balance}
+\end{equation}
+
+\end_inset
+
+We have written 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ in terms of accelerations (
+\begin_inset Formula $\mathrm{m}/\mathrm{s}^{2}$
+\end_inset
+
+) in the standard manner.
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+For an alternative viewpoint emphasizing the momentum density 
+\begin_inset Formula $\rho\mathbf{u}$
+\end_inset
+
+, see
+\begin_inset Newline newline
+\end_inset
+
+
+\family sans
+
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.av8n.com/physics/euler-flow.pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ The new quantities that have appeared in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ are the pressure 
+\begin_inset Formula $p$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{Pa}$
+\end_inset
+
+) and the acceleration of body forces 
+\begin_inset Formula $\mathbf{g}$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{m}/\mathrm{s}^{2}$
+\end_inset
+
+).
+ The latter can be used to represent e.g.
+ gravity.
+\end_layout
+
+\begin_layout Standard
+For the gradient, in this document we use the 
+\begin_inset Quotes eld
+\end_inset
+
+transpose Jacobian
+\begin_inset Quotes erd
+\end_inset
+
+ convention
+\begin_inset Formula 
+\begin{equation}
+(\nabla\mathbf{a})_{ij}:=\partial_{i}a_{j}\;,\label{eq:transpose-jacobian}
+\end{equation}
+
+\end_inset
+
+which is based on the natural reading order of the index notation.
+ As the name suggests, this is the transpose of the standard Jacobian
+\begin_inset Formula 
+\begin{equation}
+\left(J(\mathbf{a})\right)_{ij}:=\frac{\partial a_{i}}{\partial x_{j}}\equiv\partial_{j}a_{i}\;,\label{eq:standard-jacobian}
+\end{equation}
+
+\end_inset
+
+where the ordering is based on the natural reading order of the classical
+ partial derivative notation.
+\end_layout
+
+\begin_layout Standard
+We have chosen to use the transpose Jacobian convention 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:transpose-jacobian"
+
+\end_inset
+
+ for convenience, as it makes some things simpler.
+ In a Cartesian (i.e.
+ orthonormal) tensor setting, it allows manipulating the symbol 
+\begin_inset Formula $\nabla$
+\end_inset
+
+ using the exact same rules as vectors, simplifying manipulation of equations
+ and thus reducing the chance of mistakes.
+ The directional derivative operator is written as 
+\begin_inset Formula $\mathbf{a}\cdot\nabla$
+\end_inset
+
+, as usual, but now the notation can be interpreted literally, 
+\begin_inset Formula $\mathbf{a}\cdot\nabla=a_{i}\partial_{i}$
+\end_inset
+
+.
+ For directional derivatives of vector fields, we just translate the symbols
+ literally from left to right, 
+\begin_inset Formula $(\mathbf{a}\cdot\nabla\mathbf{b})_{j}=a_{i}\partial_{i}b_{j}$
+\end_inset
+
+.
+ The direction vector naturally belongs to the left, avoiding any special-case
+ rules for nabla.
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Even when using the 
+\begin_inset Quotes eld
+\end_inset
+
+standard Jacobian
+\begin_inset Quotes erd
+\end_inset
+
+ convention, many authors write the directional derivative of a vector field
+ as 
+\begin_inset Formula $\mathbf{a}\cdot\nabla\mathbf{b}$
+\end_inset
+
+, but one must then keep in mind to interpret it as special notation for
+ 
+\begin_inset Formula $(\nabla\mathbf{b})\cdot\mathbf{a}=(\partial_{j}b_{i})a_{i}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ follows from the general dynamic balance equation of linear momentum, which
+ is a fundamental law valid for both fluids and solids:
+\begin_inset Formula 
+\begin{equation}
+\rho\left(\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}\right)-\nabla\cdot\boldsymbol{\sigma}^{\mathrm{T}}=\mathbf{f}\;,\label{eq:general-linear-momentum-balance}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\boldsymbol{\sigma}$
+\end_inset
+
+ is the stress tensor and 
+\begin_inset Formula $(\cdot)^{\mathrm{T}}$
+\end_inset
+
+ denotes the rank-2 transpose, 
+\begin_inset Formula $(A^{\mathrm{T}})_{ij}=A_{ji}$
+\end_inset
+
+.
+ We define 
+\begin_inset Formula $\mathbf{g}=\mathbf{f}/\rho$
+\end_inset
+
+, and choose 
+\begin_inset Formula $\boldsymbol{\sigma}$
+\end_inset
+
+ as the stress tensor of an inviscid fluid,
+\begin_inset Formula 
+\begin{equation}
+\sigma_{ij}=-\delta_{ij}p\;,\label{eq:stress}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\delta_{ij}$
+\end_inset
+
+ is the Kronecker delta.
+ An inviscid fluid only resists compression isotropically; there is no shear
+ resistance.
+ Note that choosing 
+\begin_inset Quotes eld
+\end_inset
+
+inviscid fluid
+\begin_inset Quotes erd
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:general-linear-momentum-balance"
+
+\end_inset
+
+ is a constitutive modeling assumption, partially specifying the constitutive
+ model for the continuum being modelled.
+ Then
+\begin_inset Formula 
+\begin{equation}
+(\nabla\cdot\boldsymbol{\sigma}^{\mathrm{T}})_{j}=\partial_{i}\sigma_{ji}=-\partial_{i}(\delta_{ji}p)=-\partial_{j}p=-(\nabla p)_{j}\;,\label{eq:divsigmaT}
+\end{equation}
+
+\end_inset
+
+yielding 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Dynamic balance of specific internal energy 
+\begin_inset Formula $e$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{J}/\mathrm{kg}$
+\end_inset
+
+) requires
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial e}{\partial t}+\mathbf{u}\cdot\nabla e+\frac{p}{\rho}\nabla\cdot\mathbf{u}=0\;.\label{eq:specific-internal-energy-balance}
+\end{equation}
+
+\end_inset
+
+This is also a scalar transport equation with a source (sink) term.
+\end_layout
+
+\begin_layout Standard
+The balance of the fourth and final conserved quantity in mechanics, angular
+ momentum, requires only that the stress tensor is symmetric.
+ 
+\end_layout
+
+\begin_layout Standard
+At this point there are three equations and four unknowns: 
+\begin_inset Formula $\rho$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+, 
+\begin_inset Formula $p$
+\end_inset
+
+ and 
+\begin_inset Formula $e$
+\end_inset
+
+.
+ In order to close the system of equations, the constitutive model must
+ be completed.
+ In the following subsections, we will consider alternative constitutive
+ modeling assumptions that can be used for this.
+\end_layout
+
+\begin_layout Subsection
+Incompressible flow
+\end_layout
+
+\begin_layout Standard
+One of the simplest ways
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+See 
+\family sans
+
+\begin_inset CommandInset href
+LatexCommand href
+target "https://astro.uni-bonn.de/~jonathan/misc/hydro_notes.pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ to complete the constitutive model is to take a barotropic equation of
+ state: 
+\begin_inset Formula $\rho=\rho(p)$
+\end_inset
+
+.
+ A special case of this is 
+\begin_inset Formula $\rho=\mathrm{const.}$
+\end_inset
+
+, reducing 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+ to 
+\begin_inset Formula $\nabla\cdot\mathbf{u}=0$
+\end_inset
+
+, which states that the flow is incompressible.
+ A typical case is any liquid.
+\end_layout
+
+\begin_layout Standard
+If we instead begin by requiring incompressibility, 
+\begin_inset Formula $\nabla\cdot\mathbf{u}=0$
+\end_inset
+
+, equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+ transform into
+\begin_inset Formula 
+\begin{equation}
+\frac{\mathrm{d}\rho}{\mathrm{d}t}=\frac{\partial\rho}{\partial t}+\mathbf{u}\cdot\nabla\rho=0\;,\label{eq:drho-dt-is-0}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+\frac{\mathrm{d}e}{\mathrm{d}t}=\frac{\partial e}{\partial t}+\mathbf{u}\cdot\nabla e=0\;,\label{eq:dedt-is-0}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathrm{d}/\mathrm{d}t$
+\end_inset
+
+ is the material derivative.
+ That is, in any incompressible flow, the density of each fluid parcel remains
+ constant in time, as does its internal energy.
+ The initial distributions of 
+\begin_inset Formula $\rho$
+\end_inset
+
+ and 
+\begin_inset Formula $e$
+\end_inset
+
+ are simply transported by the flow.
+ Physically, of course, in a single-phase flow of a liquid of a single type,
+ it is reasonable to then take 
+\begin_inset Formula $\rho=\mathrm{const.}$
+\end_inset
+
+, although this is not mathematically required by just the property of incompres
+sibility.
+\end_layout
+
+\begin_layout Standard
+In a constant-density flow, only equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+, with the constraint 
+\begin_inset Formula $\nabla\cdot\mathbf{u}=0$
+\end_inset
+
+, is needed for the flow simulation.
+\end_layout
+
+\begin_layout Standard
+For an incompressible flow, no additional constitutive equation is needed
+ to connect 
+\begin_inset Formula $p$
+\end_inset
+
+ and 
+\begin_inset Formula $\rho$
+\end_inset
+
+.
+ This is because in the incompressible flow model, the pressure term acts
+ as a Lagrange multiplier for the incompressibility constraint.
+ The pressure field instantaneously adjusts itself such that the velocity
+ field remains divergence-free at all times.
+ Note that because this happens instantaneously across the whole domain,
+ the speed of sound in an incompressible fluid is infinite.
+\end_layout
+
+\begin_layout Standard
+Remaining is the question of obtaining the pressure field in practice.
+ Some approaches will be summarized below.
+\end_layout
+
+\begin_layout Subsubsection
+Explicit equation for pressure
+\end_layout
+
+\begin_layout Standard
+An explicit equation for the pressure can be obtained by taking the divergence
+ of the linear momentum balance 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+, and then simplifying the result using the incompressibility constraint
+ 
+\begin_inset Formula $\nabla\cdot\mathbf{u}=0$
+\end_inset
+
+.
+ We have
+\begin_inset Formula 
+\[
+\nabla\cdot\left(\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}+\frac{\nabla p}{\rho}\right)=\nabla\cdot\mathbf{g}\;.
+\]
+
+\end_inset
+
+This is easiest to work with by using Cartesian tensors in index notation.
+ Starting from
+\begin_inset Formula 
+\[
+\partial_{i}\left(\partial_{t}u_{i}+u_{j}\partial_{j}u_{i}+\frac{1}{\rho}\partial_{i}p\right)=\partial_{i}g_{i}\;,
+\]
+
+\end_inset
+
+we first obtain
+\begin_inset Formula 
+\[
+\partial_{i}(\partial_{t}u_{i})+\partial_{i}(u_{j}\partial_{j}u_{i})+\partial_{i}(\frac{1}{\rho}\partial_{i}p)=\partial_{i}g_{i}\;.
+\]
+
+\end_inset
+
+Expanding the second term, we have
+\begin_inset Formula 
+\[
+\partial_{i}(\partial_{t}u_{i})+(\partial_{i}u_{j})(\partial_{j}u_{i})+u_{j}(\partial_{i}\partial_{j}u_{i})+\partial_{i}(\frac{1}{\rho}\partial_{i}p)=\partial_{i}g_{i}\;.
+\]
+
+\end_inset
+
+Assuming sufficient continuity so that we can reorder derivatives, we can
+ rewrite this as
+\begin_inset Formula 
+\[
+\partial_{t}(\partial_{i}u_{i})+(\partial_{i}u_{j})(\partial_{j}u_{i})+u_{j}\partial_{j}(\partial_{i}u_{i})+\partial_{i}(\frac{1}{\rho}\partial_{i}p)=\partial_{i}g_{i}\;.
+\]
+
+\end_inset
+
+Now using 
+\begin_inset Formula $\partial_{i}u_{i}=0$
+\end_inset
+
+ (incompressibility) and 
+\begin_inset Formula $\rho=\mathrm{const.}$
+\end_inset
+
+ yields
+\begin_inset Formula 
+\[
+(\partial_{i}u_{j})(\partial_{j}u_{i})+\frac{1}{\rho}\partial_{i}\partial_{i}p=\partial_{i}g_{i}\;.
+\]
+
+\end_inset
+
+Converting back to nabla notation, the equation for pressure in a constant-densi
+ty incompressible flow is 
+\begin_inset Formula 
+\begin{equation}
+\nabla\mathbf{u}:\nabla\mathbf{u}+\frac{1}{\rho}\triangle p=\nabla\cdot\mathbf{g}\;,\label{eq:p}
+\end{equation}
+
+\end_inset
+
+where the double-dot product is 
+\begin_inset Formula $\mathbf{A}:\mathbf{B}=A_{ij}B_{ji}$
+\end_inset
+
+ (note the ordering of the indices).
+\end_layout
+
+\begin_layout Standard
+Some authors write the first term, equivalently, as
+\begin_inset Formula 
+\begin{equation}
+(\partial_{i}u_{j})(\partial_{j}u_{i})=\mathrm{tr}\left((\nabla\mathbf{u})^{2}\right)\;,\label{eq:tr}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathrm{tr}\;(\mathbf{A})=A_{ii}$
+\end_inset
+
+ is the trace and 
+\begin_inset Formula $\mathbf{A}^{2}=\mathbf{A}\cdot\mathbf{A}$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $(\mathbf{A}^{2})_{ij}=A_{ik}A_{kj}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Note that if 
+\begin_inset Formula $\mathbf{g}$
+\end_inset
+
+ is, for example, a uniform gravitational field, the right-hand side of
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p"
+
+\end_inset
+
+ vanishes.
+\end_layout
+
+\begin_layout Standard
+Solving the Poisson equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p"
+
+\end_inset
+
+ at each timestep, the pressure field is obtained.
+ As boundary conditions, known pressure (Dirichlet, essential) or the normal
+ derivative of pressure (Neumann, natural) can be used.
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Let us rewrite 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p"
+
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{equation}
+\triangle p=-\rho\nabla\mathbf{u}:\nabla\mathbf{u}+\rho\nabla\cdot\mathbf{g}\;.\label{eq:p-2}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+The appearance of 
+\begin_inset Formula $\nabla p$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ suggests that the natural formulation for the pressure Poisson equation
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p"
+
+\end_inset
+
+ is the mixed form, based on applying 
+\begin_inset Formula $\triangle(\dots)=\nabla\cdot\nabla(\dots)$
+\end_inset
+
+ to 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-2"
+
+\end_inset
+
+ and defining an auxiliary unknown vector field 
+\begin_inset Formula $\mathbf{q}$
+\end_inset
+
+: 
+\begin_inset Formula 
+\begin{align}
+\nabla\cdot\mathbf{q} & =-\rho\nabla\mathbf{u}:\nabla\mathbf{u}+\rho\nabla\cdot\mathbf{g}\;,\label{eq:p-mixed1}\\
+\mathbf{q} & =\nabla p\;.\label{eq:p-mixed2}
+\end{align}
+
+\end_inset
+
+This way, when discretizing, there is no need to differentiate 
+\begin_inset Formula $p$
+\end_inset
+
+ to obtain 
+\begin_inset Formula $\nabla p$
+\end_inset
+
+, because it is available directly as 
+\begin_inset Formula $\mathbf{q}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Predictor-corrector methods
+\end_layout
+
+\begin_layout Standard
+A classical way to treat incompressible flow numerically is to use predictor-cor
+rector methods, which first evolve 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ to the end of the timestep, ignoring the pressure term.
+ Then, as the corrector step, the Helmholtz decomposition (or in general,
+ Hodge decomposition) is utilized to project the predicted velocity field
+ onto its divergence-free part
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This procedure is also called Leray projection, see e.g.
+ the course notes at
+\begin_inset Newline newline
+\end_inset
+
+
+\family sans
+
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.math.ucdavis.edu/~hunter/notes/euler.pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+.
+ This approach also leads to a Poisson equation for 
+\begin_inset Formula $p$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The technique is based on the fundamental theorem of vector calculus, which
+ states that any smooth vector field 
+\begin_inset Formula $\mathbf{v}$
+\end_inset
+
+ in three dimensions can be decomposed into the sum of divergence-free and
+ curl-free parts:
+\begin_inset Formula 
+\begin{equation}
+\mathbf{v}=\mathbf{w}+\nabla\varphi\;,\label{eq:decomp}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\nabla\cdot\mathbf{w}=0$
+\end_inset
+
+ and 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ is the scalar potential of the curl-free part (note 
+\begin_inset Formula $\nabla\times\nabla(\cdot)\equiv0$
+\end_inset
+
+).
+ Rearranging, we immediately obtain the divergence-free projection of 
+\begin_inset Formula $\mathbf{v}$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{equation}
+\mathbf{w}=\mathbf{v}-\nabla\varphi\;,\label{eq:w}
+\end{equation}
+
+\end_inset
+
+and the only remaining question is how to compute the scalar potential 
+\begin_inset Formula $\varphi$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\widetilde{\mathbf{u}}$
+\end_inset
+
+ be the predicted velocity field, which may have nonzero divergence.
+ Taking its divergence, using the decomposition 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:decomp"
+
+\end_inset
+
+ and denoting the scalar potential by 
+\begin_inset Formula $p$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{equation}
+\nabla\cdot\widetilde{\mathbf{u}}\;=\;\nabla\cdot(\mathbf{w}+\nabla p)\;=\;\nabla\cdot\mathbf{w}+\nabla\cdot\nabla p\;=\;\nabla\cdot\nabla p\;\equiv\;\triangle p\;.\label{eq:correction}
+\end{equation}
+
+\end_inset
+
+Given 
+\begin_inset Formula $\widetilde{\mathbf{u}}$
+\end_inset
+
+, this is a Poisson equation for 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ As the boundary conditions, one may specify either known pressure, or the
+ normal derivative of pressure.
+ The divergence-free velocity field is then obtained by 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:w"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In two dimensions, one may use the Hodge decomposition.
+ Alternatively, for a simple approach, motivated by the above, we begin
+ by attempting to set
+\begin_inset Formula 
+\begin{equation}
+\triangle p=\nabla\cdot\widetilde{\mathbf{u}}\label{eq:attempt}
+\end{equation}
+
+\end_inset
+
+for some unknown scalar field 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ Now, because the laplacian 
+\begin_inset Formula $\triangle(\cdot)\equiv\nabla\cdot\nabla(\cdot)$
+\end_inset
+
+,
+\begin_inset Formula 
+\[
+\nabla\cdot\nabla p=\nabla\cdot\widetilde{\mathbf{u}}\;.
+\]
+
+\end_inset
+
+Rearranging gives
+\begin_inset Formula 
+\[
+\nabla\cdot(\widetilde{\mathbf{u}}-\nabla p)=0\;,
+\]
+
+\end_inset
+
+i.e.
+ the expression inside the parentheses is divergence-free.
+ Choosing 
+\begin_inset Formula $\mathbf{u}:=\widetilde{\mathbf{u}}-\nabla p$
+\end_inset
+
+, we have obtained a divergence-free velocity field (in any number of space
+ dimensions).
+ Just like above, given that 
+\begin_inset Formula $\widetilde{\mathbf{u}}$
+\end_inset
+
+ is known, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:attempt"
+
+\end_inset
+
+ is a Poisson equation for 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ The same note about boundary conditions applies.
+\end_layout
+
+\begin_layout Subsubsection
+Divergence-free function spaces
+\end_layout
+
+\begin_layout Standard
+A modern, mathematically especially elegant, way to treat incompressible
+ flow is to use a finite element discretization where the basis is able
+ to directly represent divergence-free spaces.
+ This allows looking for the solution in the correct space in the first
+ place, avoiding the need for a separate correction step.
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+For this approach, see e.g.
+\family sans
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.math.udel.edu/~szhang/research/p/uj.pdf"
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.math.udel.edu/~szhang/research/p/review.pdf"
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.dam.brown.edu/people/jguzman/documents/Stokes2D_000.pdf"
+
+\end_inset
+
+
+\family default
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Compressible flow of an ideal gas
+\end_layout
+
+\begin_layout Standard
+As was noted in the introduction, the incompressible model is difficult
+ to handle with MLS.
+ To keep the numerical implementation as simple as possible, we will instead
+ opt for compressible flow.
+ This will be the topic of this subsection.
+\end_layout
+
+\begin_layout Standard
+In a compressible flow, one simple constitutive model is to treat the flowing
+ substance as an ideal gas.
+ Since we are dealing with a gas (air) as opposed to a liquid, this is a
+ reasonable approximation (although in the range of mach numbers below 
+\begin_inset Formula $0.1$
+\end_inset
+
+, the incompressible model is often used also for air).
+\end_layout
+
+\begin_layout Standard
+For an ideal gas, we have the well-known equation of state,
+\begin_inset Formula 
+\begin{equation}
+pV=nRT\;,\label{eq:ideal-gas}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $p$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{Pa}$
+\end_inset
+
+) is the pressure, 
+\begin_inset Formula $V$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{m}^{3}$
+\end_inset
+
+) is the volume being considered, 
+\begin_inset Formula $n$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{mol}$
+\end_inset
+
+) is the amount of ideal gas in the volume 
+\begin_inset Formula $V$
+\end_inset
+
+, the quantity 
+\begin_inset Formula $R=8.3144598\,\mathrm{J}/\mathrm{mol}\,\mathrm{K}$
+\end_inset
+
+ is the universal gas constant, and 
+\begin_inset Formula $T$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{K}$
+\end_inset
+
+) is the temperature.
+ To bring 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas"
+
+\end_inset
+
+ into a usable form, we may use the relation
+\begin_inset Formula 
+\begin{equation}
+n=\frac{m}{\mu}\;,\label{eq:n}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $m$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{kg}$
+\end_inset
+
+) is the total mass of ideal gas in the volume 
+\begin_inset Formula $V$
+\end_inset
+
+, and 
+\begin_inset Formula $\mu$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{kg}/\mathrm{mol}$
+\end_inset
+
+) is the mean molecular weight.
+ For air
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+See 
+\family sans
+
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.engineeringtoolbox.com/molecular-mass-air-d_679.html"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+, 
+\begin_inset Formula $\mu=28.97\,\mathrm{kg}/\mathrm{kmol}=2.897\cdot10^{-2}\,\mathrm{kg}/\mathrm{mol}$
+\end_inset
+
+.
+ This is accounting for a composition of approximately 
+\begin_inset Formula $78\%$
+\end_inset
+
+ 
+\begin_inset Formula $\mathrm{N}_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $21\%$
+\end_inset
+
+ 
+\begin_inset Formula $\mathrm{O}_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $1\%$
+\end_inset
+
+ 
+\begin_inset Formula $\mathrm{Ar}$
+\end_inset
+
+ (with negligible amounts of other constituents).
+\end_layout
+
+\begin_layout Standard
+Inserting 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:n"
+
+\end_inset
+
+ into 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas"
+
+\end_inset
+
+ and dividing both sides by 
+\begin_inset Formula $V\ne0$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{equation}
+p=\frac{m}{V}\frac{1}{\mu}RT\;.\label{eq:ideal-gas2}
+\end{equation}
+
+\end_inset
+
+Recognizing that equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas2"
+
+\end_inset
+
+ models the same substance as our balance equations, and taking the limit
+ as the control volume 
+\begin_inset Formula $V\rightarrow0^{+}$
+\end_inset
+
+, we have 
+\begin_inset Formula $m/V\rightarrow\rho$
+\end_inset
+
+ and thus for the continuum, we obtain the pointwise relation
+\begin_inset Formula 
+\begin{equation}
+p=\rho\frac{1}{\mu}RT\;.\label{eq:ideal-gas3}
+\end{equation}
+
+\end_inset
+
+We may stop at this point, and approximate the temperature as constant,
+ e.g.
+ 
+\begin_inset Formula $T=293.15\,\mathrm{K}$
+\end_inset
+
+.
+ The constant-temperature assumption makes 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+ a barotropic relation, 
+\begin_inset Formula $p=p(\rho)$
+\end_inset
+
+.
+ Moreover, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+ is linear in 
+\begin_inset Formula $\rho$
+\end_inset
+
+, the constant of proportionality being
+\begin_inset Formula 
+\begin{equation}
+\frac{RT}{\mu}=\frac{8.3144598\,\mathrm{J}/\mathrm{mol}\,\mathrm{K}\;\cdot\;293.15\,\mathrm{K}}{2.897\cdot10^{-2}\mathrm{kg}/\mathrm{mol}}\approx8.413\cdot10^{4}\frac{\mathrm{J}}{\mathrm{kg}}\;.\label{eq:const-of-prop}
+\end{equation}
+
+\end_inset
+
+In physical terms, the constant-temperature assumption should be valid if
+ any compression and expansion that occurs in the gas can be considered
+ small enough to cause no significant temperature changes.
+ Then, because now 
+\begin_inset Formula $e$
+\end_inset
+
+ does not appear in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ or 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+, if we are not interested in the internal energy, we may simply drop 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+ and consider only 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+.
+ Thus we obtain a closed system of two equations in the two unknowns 
+\begin_inset Formula $\rho$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+.
+ The pressure 
+\begin_inset Formula $p$
+\end_inset
+
+ is given by 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+ with 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+ providing 
+\begin_inset Formula $p$
+\end_inset
+
+ allow the use of an explicit integration method, each equation for the
+ unknown that appears in the 
+\begin_inset Formula $\partial/\partial t$
+\end_inset
+
+ term.
+ When the fields 
+\begin_inset Formula $\rho$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ (and optionally 
+\begin_inset Formula $e$
+\end_inset
+
+) are known at time 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+, an explicit timestep can be taken (using e.g.
+ RK4) to obtain their new values at 
+\begin_inset Formula $t=t_{0}+\Delta t$
+\end_inset
+
+.
+ (Of course, boundary conditions must also be enforced.)
+\end_layout
+
+\begin_layout Standard
+For initializing the simulation, we can consider e.g.
+ the ambient (far-field, free-stream) pressure 
+\begin_inset Formula $p_{\infty}$
+\end_inset
+
+ and temperature 
+\begin_inset Formula $T_{\infty}$
+\end_inset
+
+ given, and determine the corresponding ambient density 
+\begin_inset Formula $\rho_{\infty}$
+\end_inset
+
+ from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Compressible flow of an ideal gas with temperature variations
+\end_layout
+
+\begin_layout Standard
+A slightly more sophisticated variant of the model can be used to account
+ for temperature changes due to compression or expansion of the ideal gas.
+ The total internal energy of an ideal gas (note that 
+\begin_inset Quotes eld
+\end_inset
+
+ideal gas
+\begin_inset Quotes erd
+\end_inset
+
+ implies no phase changes occur) is given by
+\begin_inset Formula 
+\begin{equation}
+U=c_{V}nT\;,\label{eq:internal-energy}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $U$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{J}$
+\end_inset
+
+) is the total internal energy for mass 
+\begin_inset Formula $m$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $U/m=e$
+\end_inset
+
+, and 
+\begin_inset Formula $c_{V}$
+\end_inset
+
+ (
+\begin_inset Formula $\mathrm{J}/\mbox{\mathrm{kg}}\,\mathrm{K}$
+\end_inset
+
+) is the specific heat capacity (of the ideal gas) at constant volume.
+ Dividing both sides of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:internal-energy"
+
+\end_inset
+
+ by 
+\begin_inset Formula $m$
+\end_inset
+
+ and using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:n"
+
+\end_inset
+
+, we obtain the relation between the internal energy and the temperature,
+\begin_inset Formula 
+\begin{equation}
+e=\frac{c_{V}}{\mu}T\;.\label{eq:e-as-a-function-of-T}
+\end{equation}
+
+\end_inset
+
+For air, the specific heat capacity itself depends on temperature; in the
+ range 
+\begin_inset Formula $250\dots300\;\mathrm{K}$
+\end_inset
+
+, we can use the value
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+See 
+\family sans
+
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.ohio.edu/mechanical/thermo/property_tables/air/air_Cp_Cv.html"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset Formula $c_{V}\approx0.717\,\mathrm{kJ}/\mathrm{kg}\,\mathrm{K}=7.17\cdot10^{2}\,\mathrm{J}/\mathrm{kg}\,\mathrm{K}$
+\end_inset
+
+.
+ Solving equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:e-as-a-function-of-T"
+
+\end_inset
+
+ for 
+\begin_inset Formula $T$
+\end_inset
+
+ and inserting the result into 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+ obtains
+\begin_inset Formula 
+\begin{equation}
+p=\rho\frac{1}{\mu}R\left[\frac{e\mu}{c_{V}}\right]=\rho\frac{R}{c_{V}}e\;,\label{eq:p-alt}
+\end{equation}
+
+\end_inset
+
+which explicitly gives 
+\begin_inset Formula $p$
+\end_inset
+
+ in terms of the other unknowns 
+\begin_inset Formula $\rho$
+\end_inset
+
+ and 
+\begin_inset Formula $e$
+\end_inset
+
+.
+ Also from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{equation}
+\rho=\frac{\mu}{RT}p=\frac{c_{V}}{R}\frac{p}{e}\;.\label{eq:rho-alt}
+\end{equation}
+
+\end_inset
+
+Equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:e-as-a-function-of-T"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rho-alt"
+
+\end_inset
+
+ are useful for initializing the simulation.
+ It is sufficient to give the ambient pressure 
+\begin_inset Formula $p_{\infty}$
+\end_inset
+
+ and temperature 
+\begin_inset Formula $T_{\infty}$
+\end_inset
+
+; the corresponding specific internal energy 
+\begin_inset Formula $e_{\infty}$
+\end_inset
+
+ and density 
+\begin_inset Formula $\rho_{\infty}$
+\end_inset
+
+ can then be determined automatically.
+\end_layout
+
+\begin_layout Standard
+Equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-alt"
+
+\end_inset
+
+ form a closed system of four equations in the four unknowns 
+\begin_inset Formula $\rho$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+, 
+\begin_inset Formula $e$
+\end_inset
+
+ and 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ If we wish, we may eliminate 
+\begin_inset Formula $p$
+\end_inset
+
+ by inserting 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-alt"
+
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+, obtaining
+\begin_inset Formula 
+\begin{align}
+\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}+\frac{R}{c_{V}}\frac{\nabla(\rho e)}{\rho} & =\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}+\frac{R}{c_{V}}\frac{e\nabla\rho+\rho\nabla e}{\rho}\nonumber \\
+ & =\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}+\frac{R}{c_{V}}\left[e\frac{\nabla\rho}{\rho}+\nabla e\right]=\mathbf{g}\;.\label{eq:linear-momentum-2}
+\end{align}
+
+\end_inset
+
+and
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial e}{\partial t}+\mathbf{u}\cdot\nabla e+\frac{R}{c_{V}}\frac{\rho e}{\rho}\nabla\cdot\mathbf{u}=\frac{\partial e}{\partial t}+\mathbf{u}\cdot\nabla e+\frac{R}{c_{V}}e\nabla\cdot\mathbf{u}=0\;.\label{eq:internal-energy-2}
+\end{equation}
+
+\end_inset
+
+Equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-2"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:internal-energy-2"
+
+\end_inset
+
+ form a closed system of three equations in the three unknowns 
+\begin_inset Formula $\rho$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ and 
+\begin_inset Formula $e$
+\end_inset
+
+.
+ If desired, the pressure 
+\begin_inset Formula $p$
+\end_inset
+
+ can be then computed from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-alt"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Either way, equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+ with 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-alt"
+
+\end_inset
+
+ allow the use of an explicit integration method.
+ Note that it is not a priori known whether it is numerically better to
+ eliminate 
+\begin_inset Formula $p$
+\end_inset
+
+ analytically by inserting 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-alt"
+
+\end_inset
+
+, as was done in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-2"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:internal-energy-2"
+
+\end_inset
+
+, or just keep 
+\begin_inset Formula $p$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:specific-internal-energy-balance"
+
+\end_inset
+
+, and evaluate 
+\begin_inset Formula $p=p(\rho,e)$
+\end_inset
+
+ from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:p-alt"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Implementation strategies
+\end_layout
+
+\begin_layout Standard
+In this section, we will discuss different strategies that can be used to
+ discretize the model for a practical software implementation.
+\end_layout
+
+\begin_layout Standard
+For simplicity, we choose the model variant with compressible flow at a
+ constant temperature, and ignore the internal energy of the air.
+ The equations for the three unknowns 
+\begin_inset Formula $\rho$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ and 
+\begin_inset Formula $p$
+\end_inset
+
+ are, respectively, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+.
+ Expanding the parentheses in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+, we have 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance-expanded"
+
+\end_inset
+
+.
+ In summary:
+\begin_inset Formula 
+\[
+\frac{\partial\rho}{\partial t}+\mathbf{u}\cdot\nabla\rho+\rho\nabla\cdot\mathbf{u}=0\;,
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\partial\mathbf{u}}{\partial t}+\mathbf{u}\cdot\nabla\mathbf{u}+\frac{\nabla p}{\rho}=\mathbf{g}\;,
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p=\alpha\rho\;,
+\]
+
+\end_inset
+
+where we have defined
+\begin_inset Formula 
+\begin{equation}
+\alpha:=\frac{RT}{\mu}\;.\label{eq:alpha}
+\end{equation}
+
+\end_inset
+
+The value of the constant 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is given by 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:const-of-prop"
+
+\end_inset
+
+.
+ Note that 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is fairly large (on the order of 
+\begin_inset Formula $10^{5}$
+\end_inset
+
+), which may make the equation system numerically stiff.
+ Physically, this is because the pressure response is very fast compared
+ to the advection, and thus the physical behavior of the flow has separate
+ fast and slow timescales.
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This is easily seen by applying operator splitting (see subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Operator-splitting"
+
+\end_inset
+
+ for the idea) to the linear momentum balance equation, treating the advection
+ and pressure response as separate subproblems.
+ If 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ and 
+\begin_inset Formula $\rho$
+\end_inset
+
+ are 
+\begin_inset Formula $O(1)$
+\end_inset
+
+, the time derivative in the advection subproblem is 
+\begin_inset Formula $O(1)$
+\end_inset
+
+, but in the pressure response subproblem it is 
+\begin_inset Formula $O(\alpha)\approx O(10^{5})$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This is also the mathematical reason why slow airflows can be considered
+ incompressible, but fast ones (typically Mach
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $>0.1$
+\end_inset
+
+, see e.g.
+ [refs Anderson Lighthill]) cannot.
+ For slow flows, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ is 
+\begin_inset Formula $O(1)$
+\end_inset
+
+, and the extremely fast pressure response is then modeled as instantaneous.
+ For fast flows, 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+ is larger, and thus the disparity in the timescales (in the operator splitting
+ consideration) becomes smaller.
+ Hence, for fast flows, the advection and pressure response cannot be separated;
+ in this region, the incompressible model, which assumes this timescale
+ separation, becomes invalid.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that this numerical stiffness cannot be worked around by including
+ temperature variations in the model.
+ The magnitude of the internal energy variable 
+\begin_inset Formula $e$
+\end_inset
+
+ is large with respect to the other variables.
+ As can be observed from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:e-as-a-function-of-T"
+
+\end_inset
+
+, e.g.
+ at an initial temperature of 
+\begin_inset Formula $T=293.15\,\mathrm{K}$
+\end_inset
+
+, the ratio 
+\begin_inset Formula $c_{V}T/\mu$
+\end_inset
+
+ is in the order of 
+\begin_inset Formula $10^{6}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In index notation, using Cartesian tensors (valid in any orthonormal coordinate
+ system), equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:mass-balance"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:linear-momentum-balance"
+
+\end_inset
+
+ become
+\begin_inset Formula 
+\begin{align*}
+\partial_{t}\rho+\partial_{i}(\rho u_{i}) & =0\;,\\
+\partial_{t}u_{i}+u_{j}\partial_{j}u_{i}+\frac{1}{\rho}\partial_{i}p & =g_{i}\;.
+\end{align*}
+
+\end_inset
+
+Expanding the parentheses in the first equation and inserting 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ideal-gas3"
+
+\end_inset
+
+ into the second, the final equations for this model are
+\begin_inset Formula 
+\begin{align}
+\partial_{t}\rho+(\partial_{i}\rho)u_{i}+\rho(\partial_{i}u_{i}) & =0\;,\label{eq:final-rho}\\
+\partial_{t}u_{i}+u_{j}\partial_{j}u_{i}+\alpha\frac{1}{\rho}\partial_{i}\rho & =g_{i}\;,\label{eq:final-u}
+\end{align}
+
+\end_inset
+
+with 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ as defined in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:alpha"
+
+\end_inset
+
+.
+ Summation over repeated indices is implied.
+\end_layout
+
+\begin_layout Subsection
+Notes on moving least squares space discretization
+\end_layout
+
+\begin_layout Standard
+Using moving least squares (MLS) for space discretization, we obtain explicit
+ access to the start-of-timestep values of the space derivatives.
+ Hence, we may simply replace the space differentiations in the original
+ continuum form by calls to the MLS algorithm; this allows us to keep the
+ space-discrete form of the equations formally the same as the original
+ continuum form.
+\end_layout
+
+\begin_layout Standard
+We also have the freedom to choose different sets of neighboring points
+ for different parts of the differential operator, e.g.
+ introducing upwinding only for the advection terms.
+\end_layout
+
+\begin_layout Standard
+At everywhere except obstacles, we may use 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates, with axis 
+\begin_inset Formula $1$
+\end_inset
+
+ taken as 
+\begin_inset Formula $x$
+\end_inset
+
+ and axis 
+\begin_inset Formula $2$
+\end_inset
+
+ as 
+\begin_inset Formula $y$
+\end_inset
+
+.
+ At points on an obstacle surface, we can use 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates, using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-comp-u1"
+
+\end_inset
+
+ to update 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ (the tangential component), and set the value of 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ (the normal component) from the boundary conditions.
+ This gives a velocity vector 
+\begin_inset Formula $\mathbf{u}=(u_{\tau},u_{n})$
+\end_inset
+
+, which can then be transformed into 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates.
+\end_layout
+
+\begin_layout Standard
+When using MLS, one approach to do this is to first rotate the set of neighborin
+g points (i.e.
+ those used for MLS evaluation) from the 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ system into the local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ system.
+ The distances between the points in the point cloud are of course invariant
+ with respect to the orientation of the coordinate axes, but the components
+ of the relative position vectors are not.
+\end_layout
+
+\begin_layout Standard
+After this rotation, MLS is used to compute derivatives in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates.
+ Then 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ are updated, and finally the updated velocity vector is transformed into
+ 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates.
+ This final conversion makes the new value of 
+\begin_inset Formula $\mathbf{u}=(u_{x},u_{y})$
+\end_inset
+
+ (at the point being processed) available for neighbors inside the domain
+ at the next timestep.
+\end_layout
+
+\begin_layout Standard
+Because we are dealing with a moving (vibrating) surface, this processing
+ must be repeated for every obstacle surface point at every timestep.
+ This is computationally heavy, but on the other hand points on the obstacle
+ surface are a small subset of all points in the flow domain.
+\end_layout
+
+\begin_layout Standard
+An alternative, cheaper approach is to observe that the gradient is invariant
+ with respect of rotations of the coordinate system, although its components
+ are not.
+ Thus we may compute the derivatives in the 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinate system for all points, and only transform the result at the
+ boundary points, which need it in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates.
+ Then, as above, 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ are updated, and the updated velocity vector is transformed into 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates.
+\end_layout
+
+\begin_layout Subsection
+Time integration
+\end_layout
+
+\begin_layout Standard
+One approach for time integration is to transform the problem into a standard
+ first-order system of ordinary differential equations (ODEs),
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\mathbf{w}}{\partial t}=f(\mathbf{w},t)\;,\label{eq:standard-form}
+\end{equation}
+
+\end_inset
+
+with the initial condition 
+\begin_inset Formula $\mathbf{w}(0)=\mathbf{w}_{0}$
+\end_inset
+
+, and then use classical time integrators for ODE systems.
+\end_layout
+
+\begin_layout Standard
+In the form 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:standard-form"
+
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{w}$
+\end_inset
+
+ is the space-discretized vector of unknowns.
+ Timestepping 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-comp-rho"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-comp-u2"
+
+\end_inset
+
+ by an explicit integration method, only the old (known) values of the unknown
+ fields are needed on the RHS.
+ Alternatively, for implicit methods, an iterative procedure may be used.
+\end_layout
+
+\begin_layout Standard
+To obtain an equation system in the form 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:standard-form"
+
+\end_inset
+
+, we simply move all terms except the time derivative to the right-hand
+ side in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-rho"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-u"
+
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align}
+\partial_{t}\rho\; & =\;-(\partial_{i}\rho)u_{i}-\rho(\partial_{i}u_{i})\;,\label{eq:final-rho-rk4ready}\\
+\partial_{t}u_{i}\; & =\;g_{i}-u_{j}\partial_{j}u_{i}-\alpha\frac{1}{\rho}\partial_{i}\rho\;.\label{eq:final-u-rk4ready}
+\end{align}
+
+\end_inset
+
+Even more explicitly, in component form (for convenience of software implementat
+ion)
+\begin_inset Formula 
+\begin{align}
+\partial_{t}\rho & =-(\partial_{1}\rho)u_{1}-(\partial_{2}\rho)u_{2}-\rho(\partial_{1}u_{1}+\partial_{2}u_{2})\;,\label{eq:final-comp-rho}\\
+\partial_{t}u_{1} & =g_{1}-u_{1}(\partial_{1}u_{1})-u_{2}(\partial_{2}u_{1})-\alpha\frac{1}{\rho}(\partial_{1}\rho)\;,\label{eq:final-comp-u1}\\
+\partial_{t}u_{2} & =g_{2}-u_{1}(\partial_{1}u_{2})-u_{2}(\partial_{2}u_{2})-\alpha\frac{1}{\rho}(\partial_{2}\rho)\;.\label{eq:final-comp-u2}
+\end{align}
+
+\end_inset
+
+Equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-comp-rho"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-comp-u2"
+
+\end_inset
+
+ are valid in any orthonormal coordinate system.
+\end_layout
+
+\begin_layout Standard
+For a summary and discussion of some commonly used time integrators, see
+ the separate document on integration of ODE systems (
+\family sans
+timeintegrators.pdf
+\family default
+).
+\end_layout
+
+\begin_layout Standard
+Note that MLS (in the form presented in this document) is of second order
+ in space.
+ Thus, if an explicit Runge--Kutta method is chosen, using RK3 or RK4 may
+ not help the overall accuracy much.
+ The second-order RK may be a preferable choice as the time integrator,
+ since then the error orders are balanced, and no computational effort is
+ wasted (at least judging asymptotically).
+\end_layout
+
+\begin_layout Subsection
+Spacetime MLS?
+\end_layout
+
+\begin_layout Standard
+One possible approach is to use MLS in both space and time.
+ This requires some extra thought, because the original MLS is designed
+ to evaluate right-hand sides of equations like 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-rho-rk4ready"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-u-rk4ready"
+
+\end_inset
+
+, so that some other method can then be used for utilizing the obtained
+ value of the time derivative.
+\end_layout
+
+\begin_layout Standard
+Theoretically, we may formulate an optimization problem to iteratively locally
+ modify the new values of the unknown field, such that the MLS approximation
+ of the time derivative (at the end of the timestep, evaluated using the
+ iterative guess) best matches the value obtained from the right-hand side
+ (also evaluated at the end of the timestep).
+ This produces an implicit integrator based on MLS.
+ It may be possible to bootstrap the iteration by a forward Euler initial
+ guess, using the value of the time derivative as obtained based on the
+ RHS at the start of the timestep.
+\end_layout
+
+\begin_layout Standard
+The foreseeable advantages are that first, this allows taking neighborhoods
+ in both space and time, and e.g.
+ limiting the set of neighbors to the cone in which information has had
+ time to travel during the timestep.
+ Secondly, the timestep may be different for each spatial point; the points
+ can be arbitrarily distributed in the spacetime domain, as long as there
+ are locally enough of them to resolve the features of the solution.
+\end_layout
+
+\begin_layout Standard
+However, as MLS is only of second order, this is probably not worth the
+ computational cost of an optimization procedure, cheaper second-order methods
+ being widely available.
+\end_layout
+
+\begin_layout Subsection
+Operator splitting
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Operator-splitting"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In computational fluid dynamics, operator splitting techniques are sometimes
+ employed.
+ Let us briefly review operator splitting.
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+For course material by prof.
+ D.
+ Kuzmin the following summary is based on, see
+\begin_inset Newline newline
+\end_inset
+
+
+\family sans
+
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.mathematik.uni-dortmund.de/~kuzmin/cfdintro/lecture11.pdf"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In 
+\emph on
+differential operator splitting
+\emph default
+, the problem is recast into subproblems, which represent different physical
+ processes.
+ This is convenient, as the advection step may be separated out from the
+ application of pressure and external forces.
+ The subproblems are typically easier to solve than the original equation,
+ and also, for certain standard subproblems, specialized solvers and algorithms
+ may be available.
+\end_layout
+
+\begin_layout Standard
+The original partial differential equation is
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial u}{\partial t}+\mathcal{L}u=0\;,\label{eq:PDE}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ is a differential operator (involving space derivatives).
+ In operator splitting, suboperators 
+\begin_inset Formula $\mathcal{L}_{k}$
+\end_inset
+
+ are chosen such that
+\begin_inset Formula 
+\begin{equation}
+\mathcal{L}=\underset{k=1}{\overset{n}{\sum}}\mathcal{L}_{k}\;.\label{eq:split}
+\end{equation}
+
+\end_inset
+
+In general, the splitting is not unique (this is trivial; just group the
+ terms of the original 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ differently when defining the suboperators 
+\begin_inset Formula $\mathcal{L}_{k}$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+The first-order Marchuk--Yanenko method (with splitting error 
+\begin_inset Formula $O(\Delta t)$
+\end_inset
+
+) works as follows:
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial u^{(k)}}{\partial t}+\mathcal{L}_{k}u^{(k)} & =0\quad\text{in }(\,t_{n},\;t_{n+1}\,)\quad\text{for }k=1,2,\dots,n\\
+u^{(k)}(t_{n}) & =u^{(k-1)}(t_{n+1})\;,\\
+u^{(0)}(t_{n+1}) & =u(t_{n})\;,\\
+u(t_{n+1}) & =u^{(n)}(t_{n+1})\;.
+\end{align*}
+
+\end_inset
+
+The first equation represents the subproblems, the second connects the substeps
+ (in a daisy chain, each one feeding its output as input to the next one),
+ the third one initializes the first substep, and the final equation just
+ specifies that the solution of the last subproblem is taken as the new
+ value of 
+\begin_inset Formula $u$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The second-order symmetrized Strang splitting method (with splitting error
+ 
+\begin_inset Formula $O(\,(\Delta t)^{2}\,)$
+\end_inset
+
+) for 
+\begin_inset Formula $n=2$
+\end_inset
+
+ works as follows:
+\begin_inset Formula 
+\[
+\frac{\partial u}{\partial t}+\mathcal{L}_{1}u=0\quad\text{in }(\,t_{n},\;t_{n+1/2}\,)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\partial u}{\partial t}+\mathcal{L}_{2}u=0\quad\text{in }(\,t_{n},\;t_{n+1}\,)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\partial u}{\partial t}+\mathcal{L}_{1}u=0\quad\text{in }(\,t_{n+1/2},\;t_{n+1}\,)
+\]
+
+\end_inset
+
+Cases with 
+\begin_inset Formula $n>2$
+\end_inset
+
+ can be reduced recursively to this one by grouping the suboperators.
+\end_layout
+
+\begin_layout Standard
+In the Strang method, the first subproblem evolves 
+\begin_inset Formula $u$
+\end_inset
+
+ into a half-timestep value using the 
+\begin_inset Formula $\mathcal{L}_{1}$
+\end_inset
+
+ subproblem.
+ The result is then re-interpreted as the value at the beginning of the
+ timestep for the 
+\begin_inset Formula $\mathcal{L}_{2}$
+\end_inset
+
+ subproblem, and evolved for a whole timestep.
+ Finally, this result is re-interpreted as the value at the half-timestep
+ point, and evolved (by half a timestep) to the end of the timestep using
+ the 
+\begin_inset Formula $\mathcal{L}_{1}$
+\end_inset
+
+ subproblem.
+\end_layout
+
+\begin_layout Standard
+In the lecture notes, it is pointed out that Strang splitting is second-order
+ accurate, and unconditionally stable if the discrete counterparts of 
+\begin_inset Formula $\mathcal{L}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{L}_{2}$
+\end_inset
+
+ are positive definite matrices
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Which, of course, is not the case for the advection subproblem.
+\end_layout
+
+\end_inset
+
+.
+ The timestepping procedures used for the subproblems must be at least second-or
+der accurate.
+\end_layout
+
+\begin_layout Subsubsection
+Semi-Lagrangean advection
+\end_layout
+
+\begin_layout Standard
+When using operator splitting, the advection subproblem is often solved
+ separately.
+ One approach to solving this subproblem is semi-Lagrangean advection, summarize
+d here.
+\end_layout
+
+\begin_layout Standard
+This approach is mostly suitable for methods that allow interpolation to
+ anywhere in the domain.
+ Thus, it is not suitable for use with MLS, but is documented here for future
+ extensions of this study into GPU computing.
+ On GPUs, for maximal speed a regular grid is preferable, because then no
+ geometry information needs to be communicated, and the exact same computational
+ kernel may be used for all pixels (or voxels in 3D) in the flow domain.
+ Additionally, GPUs have hardware support for bilinear/trilinear interpolation,
+ allowing fast interpolation of the solution field to any point in the domain.
+\end_layout
+
+\begin_layout Standard
+A scalar field 
+\begin_inset Formula $\phi$
+\end_inset
+
+, subjected to advection by a velocity field 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+, satisfies the first-order transport equation
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\phi}{\partial t}+\mathbf{u}\cdot\nabla\phi=0\;,\label{eq:transport}
+\end{equation}
+
+\end_inset
+
+when viewed in the Eulerian (laboratory) frame.
+ If the transported quantity is a vector or a tensor, its components (which
+ are scalar fields) can be treated independently.
+\end_layout
+
+\begin_layout Standard
+Semi-Lagrangean advection is based on the physical interpretation of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:transport"
+
+\end_inset
+
+, namely that the field 
+\begin_inset Formula $\phi$
+\end_inset
+
+ 
+\begin_inset Quotes eld
+\end_inset
+
+belongs
+\begin_inset Quotes erd
+\end_inset
+
+ to material particles, which are transported by the velocity field 
+\begin_inset Formula $\mathbf{u}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When taking a timestep of size 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+, although our representation of 
+\begin_inset Formula $\phi$
+\end_inset
+
+ is Eulerian, we may try to locate the old position of the material particle
+ now at the current position (following upwind along the streamlines of
+ the flow), and look up the field value there.
+ Then we assign that value to the current position.
+ Using a simple linear approximation to locate the old position, we have:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\phi^{n+1}(\mathbf{x})\leftarrow\phi^{n}(\;\mathbf{x}-\Delta t\cdot\mathbf{u}(\mathbf{x})\;)\;,\label{eq:semilag}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+ is the position vector (in any number of space dimensions) and 
+\begin_inset Formula $n$
+\end_inset
+
+ indexes the timestep.
+ Out-of-bounds data are filled based on the inflow boundary condition.
+ (Note that because we are moving against the flow, the procedure may end
+ up outside the domain only via parts of the boundary that experience inflow.
+ Strictly speaking this conclusion is valid only if the streamlines are
+ traced exactly, but in practice it is good enough.)
+\end_layout
+
+\begin_layout Standard
+This is a very simple, intuitive, physically based way to solve the transport
+ equation, but the drawbacks are that it must be possible to evaluate the
+ representation of 
+\begin_inset Formula $\phi$
+\end_inset
+
+ at an arbitrary point 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+ (not just at grid nodes!), and that in this simple form the method is only
+ first-order accurate (exhibiting large amounts of numerical diffusion).
+\end_layout
+
+\begin_layout Subsubsection
+MacCormack correction
+\end_layout
+
+\begin_layout Standard
+To bring the accuracy of the semi-Lagrangean advection procedure to second
+ order, the following sequence of operations may be used (refs CraneEtAl,
+ SelleEtAl):
+\begin_inset Formula 
+\begin{align*}
+\widehat{\phi}^{n+1} & \;\leftarrow\;A(\phi^{n})\\
+\widehat{\phi}^{n} & \;\leftarrow\;A^{-1}(\widehat{\phi}^{n+1})\\
+\phi^{n+1} & \;\leftarrow\;\widehat{\phi}^{n+1}+\frac{1}{2}(\phi^{n}-\widehat{\phi}^{n})\;,
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\phi$
+\end_inset
+
+ is any scalar field, 
+\begin_inset Formula $n$
+\end_inset
+
+ indexes the timestep, and 
+\begin_inset Formula $A(\cdot)$
+\end_inset
+
+ is the semi-Lagrangean advection procedure (with 
+\begin_inset Formula $A^{-1}$
+\end_inset
+
+ indicating advection backward in time).
+ This is a modified version of the classical MacCormack correction procedure,
+ requiring only two advection operations, due to ref SelleEtAl.
+ The procedure is based on estimating the error introduced by the semi-Lagrangea
+n advection; the estimate is then used to cancel most of the error.
+\end_layout
+
+\begin_layout Standard
+The disadvantage is that while the original semi-Lagrangean advection procedure
+ is unconditionally stable, this modified version is not, and will indeed
+ create new spurious extremal values, leading to the Gibbs phenomenon and
+ numerical instability.
+ The authors suggest remedying this by using a limiter (similarly to flux
+ limiters used in the finite volume method).
+ Two limiters were suggested.
+ Either
+\end_layout
+
+\begin_layout Enumerate
+Clamp the values of 
+\begin_inset Formula $\phi^{n+1}$
+\end_inset
+
+ between the 
+\begin_inset Formula $\min$
+\end_inset
+
+ and 
+\begin_inset Formula $\max$
+\end_inset
+
+ of 
+\begin_inset Formula $\phi^{n}$
+\end_inset
+
+, with the extrema searched over the set of grid nodes
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This uses the property of linear (bilinear, trilinear) interpolation that
+ it generates no new extrema; hence the extrema must be at the grid nodes.
+\end_layout
+
+\end_inset
+
+ which contribute to 
+\begin_inset Formula $\phi^{n+1}$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+Detect new extrema, and replace 
+\begin_inset Formula $\phi^{n+1}$
+\end_inset
+
+ at those points by 
+\begin_inset Formula $\widehat{\phi}^{n+1}$
+\end_inset
+
+ (i.e.
+ do not use the correction at those points; revert to the first-order solution
+ there).
+\end_layout
+
+\begin_layout Standard
+According to numerical tests by ref SelleEtAl, both limiters work well,
+ and it does not matter much which one is used.
+\end_layout
+
+\begin_layout Section
+Discretization by moving least squares (MLS)
+\end_layout
+
+\begin_layout Standard
+In this section, we will briefly explain the moving least squares method
+ (MLS).
+ As was noted in the introduction, MLS is a local Taylor series optimization
+ scheme to explicitly compute spatial derivatives (usually, up to 2nd order)
+ of fields defined by their values on a set of points.
+ It belongs to the family of collocation methods (sometimes called finite
+ point methods).
+ MLS is similar in spirit to finite differences, but generalized to arbitrary
+ geometries.
+\end_layout
+
+\begin_layout Standard
+The standard name 
+\begin_inset Quotes eld
+\end_inset
+
+moving least squares
+\begin_inset Quotes erd
+\end_inset
+
+ is a misnomer, as nothing actually moves in this method; the core idea
+ would be better described by 
+\begin_inset Quotes eld
+\end_inset
+
+local least squares
+\begin_inset Quotes erd
+\end_inset
+
+.
+ The 
+\begin_inset Quotes eld
+\end_inset
+
+moving
+\begin_inset Quotes erd
+\end_inset
+
+ in the name comes from early serial implementations, where the local fitting
+ procedure 
+\begin_inset Quotes eld
+\end_inset
+
+moves
+\begin_inset Quotes erd
+\end_inset
+
+ to each point in the point cloud in turn.
+ For different points in the point cloud, the optimization problems are
+ actually local and independent, so in practice it is preferable to process
+ them in parallel.
+\end_layout
+
+\begin_layout Standard
+Consider a set 
+\begin_inset Formula $P$
+\end_inset
+
+, consisting of 
+\begin_inset Formula $N$
+\end_inset
+
+ distinct points 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ (
+\begin_inset Formula $i=1,2,\dots,N$
+\end_inset
+
+) in 
+\begin_inset Formula $\mathbb{R}^{d}$
+\end_inset
+
+, which we will call the 
+\emph on
+point cloud
+\emph default
+.
+ The points in the set may be in any arbitrary order, and no mesh topology
+ is assumed.
+ Let us denote a set of geometric neighbors of the point 
+\begin_inset Formula $i$
+\end_inset
+
+ (excluding point 
+\begin_inset Formula $i$
+\end_inset
+
+ itself) by 
+\begin_inset Formula $S_{i}$
+\end_inset
+
+, with each 
+\begin_inset Formula $S_{i}$
+\end_inset
+
+ a subset of 
+\begin_inset Formula $P$
+\end_inset
+
+.
+ Let the global indices of the points 
+\begin_inset Formula $S_{i}$
+\end_inset
+
+ (i.e.
+ the 
+\begin_inset Formula $k$
+\end_inset
+
+ in 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ where
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ 
+\begin_inset Formula $x_{k}\in S_{i}$
+\end_inset
+
+) be denoted by 
+\begin_inset Formula $I_{i}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Usually, the set 
+\begin_inset Formula $S_{i}$
+\end_inset
+
+ is taken as the 
+\begin_inset Formula $m$
+\end_inset
+
+ nearest neighbors of 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ (by euclidean distance; for some arbitrarily chosen small integer 
+\begin_inset Formula $m$
+\end_inset
+
+), but considering that we are solving an advection-dominated problem, it
+ may be preferable, for numerical reasons, to look at the current value
+ of the velocity field at the point 
+\begin_inset Formula $i$
+\end_inset
+
+, and 
+\begin_inset Quotes eld
+\end_inset
+
+upwind
+\begin_inset Quotes erd
+\end_inset
+
+ the choice of neighbors to account for the direction of information flow.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $f_{i},\;i=1,\dots,N$
+\end_inset
+
+ be a given, discrete set of data values, and let 
+\begin_inset Formula $f$
+\end_inset
+
+ denote the mapping 
+\begin_inset Formula $f(x_{i})\mapsto f_{i}$
+\end_inset
+
+, defined on the points in 
+\begin_inset Formula $P$
+\end_inset
+
+.
+ We will discuss the case of scalar data.
+ If the data is rank-1 or higher (i.e.
+ a vector or tensor), it can be decomposed into component form, each component
+ treated separately.
+\end_layout
+
+\begin_layout Standard
+In MLS, in principle we seek a set of independent, sufficiently continuous
+ local approximations 
+\begin_inset Formula $\widehat{f}_{i}(x)$
+\end_inset
+
+, 
+\begin_inset Formula $x\in\mathbb{R}^{d}$
+\end_inset
+
+, with each 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+ defined in a small neighborhood of 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+.
+ We require that
+\begin_inset Formula 
+\begin{align}
+\widehat{f}_{i}(x_{i}) & =f_{i}\;,\label{eq:req1}\\
+\underset{k\in I_{i}}{\sum}\left[f_{k}-\widehat{f}_{i}(x_{k})\right]^{2} & \rightarrow\min\;.\label{eq:req2}
+\end{align}
+
+\end_inset
+
+In other words, each 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+ must coincide with the data value 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ at the point 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, and it must, in a least-squares sense, best fit the data values 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ over the chosen set of neighbor points 
+\begin_inset Formula $x_{k}\in S_{i}$
+\end_inset
+
+ (corresponding to 
+\begin_inset Formula $k\in I_{i}$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+For simplicity, we will restrict our consideration to the two-dimensional
+ case (
+\begin_inset Formula $d=2$
+\end_inset
+
+), and second-order derivatives.
+ Although the Euler flow equations are of the first order, this keeps the
+ presentation more general, while remaining reasonably simple.
+ Also, this makes the approximations second-order accurate (the first omitted
+ terms in the Taylor series being of the third order).
+ If we instead truncate the Taylor series after the linear terms, we obtain
+ only first-order accuracy.
+\end_layout
+
+\begin_layout Standard
+For the following discussion, let 
+\begin_inset Formula $i$
+\end_inset
+
+ be fixed.
+ Although we do not know the local approximation function 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+, we may write its value 
+\begin_inset Formula $\widehat{f}_{i}(x_{k})$
+\end_inset
+
+ for any 
+\begin_inset Formula $k\in I_{i}$
+\end_inset
+
+ (i.e.
+ the value of 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+ at one of the neighbors of 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+), via multivariate Taylor expansion up to the second order, as
+\begin_inset Formula 
+\begin{equation}
+\widehat{f}_{i}(x_{k})=\widehat{f}_{i}(x_{i})+h_{k}a_{1}+\ell_{k}a_{2}+\frac{h_{k}^{2}}{2}a_{3}+h_{k}\ell_{k}a_{4}+\frac{\ell_{k}^{2}}{2}a_{5}+O(h_{k}^{3}\,,\ell_{k}^{3})\;,\label{eq:Tay}
+\end{equation}
+
+\end_inset
+
+where
+\begin_inset Formula 
+\begin{align}
+h_{k} & :=(x_{k})_{1}-(x_{i})_{1}\;,\label{eq:hk}\\
+\ell_{k} & :=(x_{k})_{2}-(x_{i})_{2}\;,\label{eq:ellk}
+\end{align}
+
+\end_inset
+
+i.e.
+ 
+\begin_inset Formula $h_{k}$
+\end_inset
+
+ and 
+\begin_inset Formula $\ell_{k}$
+\end_inset
+
+ denote the 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+ components of the relative position vector taken pointing from 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ to 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+.
+ In order not to overburden the notation with indices, we have written simply
+ 
+\begin_inset Formula $h_{k}$
+\end_inset
+
+ and 
+\begin_inset Formula $\ell_{k}$
+\end_inset
+
+, although the relative position vector depends on both 
+\begin_inset Formula $i$
+\end_inset
+
+ and 
+\begin_inset Formula $k$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Generally, one must expand the Taylor series up to as many orders as is
+ the highest derivative one wishes to approximate.
+ This also specifies the degree of continuity required for 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+ (e.g.
+ 
+\begin_inset Formula $C^{2}$
+\end_inset
+
+ for second order, as here), as well as specifies the asymptotic accuracy
+ of the method (which depends on the first omitted terms).
+\end_layout
+
+\begin_layout Standard
+We can now trivially satisfy 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:req1"
+
+\end_inset
+
+ just by choosing 
+\begin_inset Formula $\widehat{f}_{i}(x_{i})=f_{i}$
+\end_inset
+
+, where the right-hand side is the data value 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+.
+ Only 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:req2"
+
+\end_inset
+
+ remains to be satisfied.
+ If we drop the asymptotic error term from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Tay"
+
+\end_inset
+
+, we obtain the approximation
+\begin_inset Formula 
+\begin{equation}
+\widehat{f}_{i}(x_{k})\approx f_{i}+h_{k}a_{1}+\ell_{k}a_{2}+\frac{h_{k}^{2}}{2}a_{3}+h_{k}\ell_{k}a_{4}+\frac{\ell_{k}^{2}}{2}a_{5}=:\overline{f}_{k}\;.\label{eq:approx}
+\end{equation}
+
+\end_inset
+
+By the Taylor expansion, the quantities 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, 
+\begin_inset Formula $j=1,2,\dots,5$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Tay"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+ are (note the numbering)
+\begin_inset Formula 
+\begin{align}
+a_{1} & =\frac{\partial\widehat{f}_{i}}{\partial x}\vert_{x=x_{i}}\;, & a_{2} & =\frac{\partial\widehat{f}_{i}}{\partial y}\vert_{x=x_{i}}\;,\nonumber \\
+a_{3} & =\frac{\partial^{2}\widehat{f}_{i}}{\partial x^{2}}\vert_{x=x_{i}}\;, & a_{5} & =\frac{\partial^{2}\widehat{f}_{i}}{\partial y^{2}}\vert_{x=x_{i}}\;,\nonumber \\
+a_{4} & =\frac{\partial^{2}\widehat{f}_{i}}{\partial x\partial y}\vert_{x=x_{i}}\;,\label{eq:aj}
+\end{align}
+
+\end_inset
+
+Note that the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ depend on 
+\begin_inset Formula $i$
+\end_inset
+
+ (because they are specific to the function 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+), but not on 
+\begin_inset Formula $k$
+\end_inset
+
+.
+ For all neighbor points 
+\begin_inset Formula $x_{k}\in S_{i}$
+\end_inset
+
+, we have the same 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Our problem reduces to finding these coefficients 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+.
+ Let us denote (again, note the numbering)
+\begin_inset Formula 
+\begin{align}
+c_{k}^{(1)} & :=h_{k}\;, & c_{k}^{(2)} & :=\ell_{k}\;,\nonumber \\
+c_{k}^{(3)} & :=\frac{h_{k}^{2}}{2}\;, & c_{k}^{(5)} & :=\frac{\ell_{k}^{2}}{2}\;,\nonumber \\
+c_{k}^{(4)} & :=h_{k}\ell_{k}\;.\label{eq:ck}
+\end{align}
+
+\end_inset
+
+Each of the quantities 
+\begin_inset Formula $c_{k}^{(j)}$
+\end_inset
+
+, which consist of the relative distances, depends on both 
+\begin_inset Formula $i$
+\end_inset
+
+ and 
+\begin_inset Formula $k$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Observe that by 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ck"
+
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\overline{f}_{k}}{\partial a_{j}}=c_{k}^{(j)}\;,\label{eq:dfkdaj}
+\end{equation}
+
+\end_inset
+
+which we will use later.
+\end_layout
+
+\begin_layout Standard
+The requirement 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:req2"
+
+\end_inset
+
+ seeks to best fit the local function 
+\begin_inset Formula $\widehat{f}_{i}$
+\end_inset
+
+ to the data values 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ at the points 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+.
+ However, we do not have access to the exact value 
+\begin_inset Formula $\widehat{f}_{i}(x_{k})$
+\end_inset
+
+; we have only its approximation 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+.
+ If the neighbor points 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ are close enough to 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, the asymptotic term in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Tay"
+
+\end_inset
+
+ is small, and in practice we may modify 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:req2"
+
+\end_inset
+
+ slightly, replacing it with
+\begin_inset Formula 
+\begin{equation}
+\underset{k\in I_{i}}{\sum}\left[f_{k}-\overline{f}_{k}\right]^{2}\rightarrow\min\;.\label{eq:req2-approx}
+\end{equation}
+
+\end_inset
+
+To solve 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:req2-approx"
+
+\end_inset
+
+, let us define the difference between the data 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ and the approximation 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ at point 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+e_{k}:=f_{k}-\overline{f}_{k}\;,\label{eq:ek}
+\end{equation}
+
+\end_inset
+
+and (one-half of) the total squared error
+\begin_inset Formula 
+\begin{equation}
+G(a_{1},\dots,a_{5}):=\frac{1}{2}\;\underset{k\in I_{i}}{\sum}\,e_{k}^{2}\;.\label{eq:G}
+\end{equation}
+
+\end_inset
+
+The function 
+\begin_inset Formula $G$
+\end_inset
+
+ depends on the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ via 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ek"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+.
+ Because 
+\begin_inset Formula $G\ge0$
+\end_inset
+
+ for any values of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, and 
+\begin_inset Formula $G$
+\end_inset
+
+ is a quadratic function of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, it has a unique extremal point, which is a minimum.
+ The least-squares fit is given by this unique minimum of 
+\begin_inset Formula $G$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\{a_{1},\dots,a_{5}\}_{\mathrm{optimal}}=\underset{a_{1},\dots,a_{5}}{\arg\min}\,G(a_{1},\dots,a_{5})\;.
+\]
+
+\end_inset
+
+To find this optimal point, we set all the partial derivatives of 
+\begin_inset Formula $G$
+\end_inset
+
+ to zero (w.r.t the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+), obtaining a system of five equations:
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial G}{\partial a_{j}}=0\;,\quad j=1,\dots,5\;.\label{eq:minG}
+\end{equation}
+
+\end_inset
+
+By solving the equation system 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:minG"
+
+\end_inset
+
+, we obtain the optimal 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+.
+ Let us write out 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:minG"
+
+\end_inset
+
+.
+ We have
+\begin_inset Formula 
+\begin{align}
+\frac{\partial G}{\partial a_{j}} & =\underset{k\in I_{i}}{\sum}e_{k}\frac{\partial e_{k}}{\partial a_{j}}\nonumber \\
+ & =\underset{k\in I_{i}}{\sum}[f_{k}-\overline{f}_{k}(a_{1},\dots,a_{5})]\left[-\frac{\partial\overline{f}_{k}}{\partial a_{j}}\right]=0\;,\quad j=1,\dots5\;,\label{eq:minG2}
+\end{align}
+
+\end_inset
+
+where we have used 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ek"
+
+\end_inset
+
+.
+ Note that the data value 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ does not depend on 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+.
+ Now the rest is essentially technique.
+ Expanding the first 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:minG2"
+
+\end_inset
+
+ by 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+, applying the minus sign from the last term, and inserting 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:dfkdaj"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\[
+\underset{k\in I_{i}}{\sum}\left(\left[-f_{k}+f_{i}+c_{k}^{(1)}a_{1}+c_{k}^{(2)}a_{2}+c_{k}^{(3)}a_{3}+c_{k}^{(4)}a_{4}+c_{k}^{(5)}a_{5}\right]c_{k}^{(j)}\right)=0\;,\quad j=1,\dots,5\;.
+\]
+
+\end_inset
+
+This can be written as a standard linear equation system
+\begin_inset Formula 
+\begin{equation}
+\underset{n=1}{\overset{5}{\sum}}A_{jn}a_{n}=b_{j}\;,\quad j=1,\dots,5\;,\label{eq:lineq}
+\end{equation}
+
+\end_inset
+
+where
+\begin_inset Formula 
+\begin{equation}
+A_{jn}=\underset{k\in I_{i}}{\sum}\;\,c_{k}^{(n)}c_{k}^{(j)}\;,\label{eq:Ajn}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+b_{j}=\underset{k\in I_{i}}{\sum}[f_{k}-f_{i}]c_{k}^{(j)}\;.\label{eq:bj}
+\end{equation}
+
+\end_inset
+
+Solving the linear equation system 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:lineq"
+
+\end_inset
+
+ produces the derivative approximations 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, up to the second order.
+\end_layout
+
+\begin_layout Standard
+The matrix 
+\begin_inset Formula $A_{jn}$
+\end_inset
+
+ is symmetric, 
+\begin_inset Formula $A_{jn}=A_{nj}$
+\end_inset
+
+.
+ Observe that the size of the system 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:lineq"
+
+\end_inset
+
+ does not depend on the number of neighbor points 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ used for the computation; the size is determined by the order of the Taylor
+ approximation.
+\end_layout
+
+\begin_layout Standard
+Finally, note that both 
+\begin_inset Formula $A_{jn}$
+\end_inset
+
+ and 
+\begin_inset Formula $b_{j}$
+\end_inset
+
+ depend on the index 
+\begin_inset Formula $i$
+\end_inset
+
+ (because of 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+, and the fact that 
+\begin_inset Formula $c_{k}^{(j)}$
+\end_inset
+
+ consist of relative distances; recall the definition 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ck"
+
+\end_inset
+
+).
+ That is, each point 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ comes with its own 
+\begin_inset Formula $A_{jn}$
+\end_inset
+
+ and 
+\begin_inset Formula $b_{j}$
+\end_inset
+
+, and thus 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Ajn"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:bj"
+
+\end_inset
+
+ must be re-evaluated and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:lineq"
+
+\end_inset
+
+ solved separately for each point 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ in 
+\begin_inset Formula $P$
+\end_inset
+
+.
+ However, the problems for different 
+\begin_inset Formula $i$
+\end_inset
+
+ are fully independent, and can be processed in parallel.
+\end_layout
+
+\begin_layout Section
+Initial and boundary conditions
+\end_layout
+
+\begin_layout Itemize
+Ambient (far-field, free-stream) values 
+\begin_inset Formula $u_{\infty}$
+\end_inset
+
+, 
+\begin_inset Formula $p_{\infty}$
+\end_inset
+
+ and 
+\begin_inset Formula $T_{\infty}$
+\end_inset
+
+ (implying also 
+\begin_inset Formula $e_{\infty}$
+\end_inset
+
+ and 
+\begin_inset Formula $\rho_{\infty}$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+Initial condition = ambient state.
+ At the obstacle, velocity field must be modified to account for the no-penetrat
+ion boundary condition.
+\end_layout
+
+\begin_layout Itemize
+Inlet values 
+\begin_inset Formula $u_{\mathrm{in}}$
+\end_inset
+
+, 
+\begin_inset Formula $p_{\mathrm{in}}$
+\end_inset
+
+ and 
+\begin_inset Formula $T_{\mathrm{in}}$
+\end_inset
+
+.
+ For compatibility, best to use the same values as for the initial conditions.
+\end_layout
+
+\begin_layout Itemize
+At an obstacle, 
+\begin_inset Formula $\mathbf{n}\cdot\mathbf{u}=\mathbf{n}\cdot\mathbf{u}_{\mathrm{structure}}$
+\end_inset
+
+, where 
+\begin_inset Formula $\mathbf{n}$
+\end_inset
+
+ is the unit normal vector of the surface of the obstacle.
+ (The local normal component of fluid velocity must match the normal velocity
+ of the obstacle.) For details on how to treat this for axially moving materials,
+ see refs BanichukEtAlBook JeronenPhd2011.
+\end_layout
+
+\begin_layout Itemize
+Normal vector of the obstacle determined from the transverse panel displacement
+ function 
+\begin_inset Formula $w(x)$
+\end_inset
+
+.
+ From geometry, we have 
+\begin_inset Formula $\partial w/\partial x=\tan(\theta)$
+\end_inset
+
+, where 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is the angle of the panel measured counterclockwise from 
+\begin_inset Formula $+x$
+\end_inset
+
+.
+ For compatibility, the panel may be taken to be initially perfectly flat.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+In 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates, 
+\begin_inset Formula $\mathbf{u}_{\mathrm{structure}}=(\,V_{0}+V_{0}{\displaystyle \frac{\partial u}{\partial x}+{\displaystyle \frac{\partial u}{\partial t}}},\;V_{0}{\displaystyle \frac{\partial w}{\partial x}+{\displaystyle \frac{\partial w}{\partial t}}}\,)$
+\end_inset
+
+, where 
+\begin_inset Formula $(u,w)$
+\end_inset
+
+ are, respectively, the axial and transverse displacement functions, and
+ 
+\begin_inset Formula $V_{0}$
+\end_inset
+
+ is the axial drive speed.
+ The axial displacement 
+\begin_inset Formula $u$
+\end_inset
+
+ is measured with respect to a reference state moving toward 
+\begin_inset Formula $+x$
+\end_inset
+
+ at constant velocity 
+\begin_inset Formula $V_{0}$
+\end_inset
+
+ (ref KoivurovaSalonen).
+\end_layout
+
+\begin_layout Itemize
+The tangent and normal vectors of the panel surface are, respectively, 
+\begin_inset Formula $\mathbf{t}=(\,\cos\theta,\;\sin\theta\,)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{n}=(\,-\sin\theta,\;\cos\theta\,)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Conversion from 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+ to 
+\begin_inset Formula $\mathbf{X}$
+\end_inset
+
+ coordinates in the plane:
+\begin_inset Formula 
+\[
+\mathbf{v}_{\mathbf{X}}=\mathbf{M}\mathbf{v}_{\mathbf{x}}\;,
+\]
+
+\end_inset
+
+where the projection matrix 
+\begin_inset Formula $\mathbf{M}$
+\end_inset
+
+ is
+\begin_inset Formula 
+\[
+\mathbf{M}=\left[\begin{array}{cc}
+\widehat{\mathbf{x}}\cdot\widehat{\mathbf{X}} & \widehat{\mathbf{y}}\cdot\widehat{\mathbf{X}}\\
+\widehat{\mathbf{x}}\cdot\widehat{\mathbf{Y}} & \widehat{\mathbf{y}}\cdot\widehat{\mathbf{Y}}
+\end{array}\right]\;,
+\]
+
+\end_inset
+
+and the axes of the coordinate systems are specified by the pairs of unit
+ vectors 
+\begin_inset Formula $(\widehat{\mathbf{x}},\widehat{\mathbf{y}})$
+\end_inset
+
+ and 
+\begin_inset Formula $(\widehat{\mathbf{X}},\widehat{\mathbf{Y}})$
+\end_inset
+
+, respectively.
+ In our case, 
+\begin_inset Formula $\widehat{\mathbf{x}}=(1,0)$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\mathbf{y}}=(0,1)$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\mathbf{X}}=\mathbf{t}$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\mathbf{Y}}=\mathbf{n}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\mathbf{M}=\left[\begin{array}{cc}
+\mathbf{t}_{x} & \mathbf{t}_{y}\\
+\mathbf{n}_{x} & \mathbf{n}_{y}
+\end{array}\right]=\left[\begin{array}{rr}
+\cos\theta & \sin\theta\\
+-\sin\theta & \cos\theta
+\end{array}\right]=\mathbf{R}(-\theta)\;,
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Rotation in the plane:
+\begin_inset Formula 
+\[
+\mathbf{v}_{\mathrm{rotated}}=\mathbf{R}\mathbf{v}_{\mathrm{original}}\;,
+\]
+
+\end_inset
+
+where the rotation matrix 
+\begin_inset Formula $\mathbf{R}=\mathbf{R}(\theta)$
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+\mathbf{R}(\theta)=\left[\begin{array}{rr}
+\cos\theta & -\sin\theta\\
+\sin\theta & \cos\theta
+\end{array}\right]\;.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The flow field at any time 
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ (and its corresponding position, velocity data for the structure component)
+ can be saved and later used as an initial condition.
+\end_layout
+
+\begin_layout Section
+Pressure difference across the structure
+\end_layout
+
+\begin_layout Standard
+At any given point in the flow, the dynamic pressure is
+\begin_inset Formula 
+\begin{equation}
+q=\frac{1}{2}\rho u^{2}\;,\label{eq:dynamic-pressure}
+\end{equation}
+
+\end_inset
+
+where the fields 
+\begin_inset Formula $\rho$
+\end_inset
+
+ and 
+\begin_inset Formula $u$
+\end_inset
+
+ are sampled at the desired point.
+ The total air pressure is
+\begin_inset Formula 
+\begin{equation}
+p=p_{\infty}-q=p_{\infty}-\frac{1}{2}\rho u^{2}\;,\label{eq:total-pressure}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $p_{\infty}$
+\end_inset
+
+ is the ambient pressure.
+ Thus the pressure difference across the panel, driving the aerodynamic
+ reaction force, is
+\begin_inset Formula 
+\begin{equation}
+\Delta p=p^{+}-p^{-}=\frac{1}{2}\left[\rho^{-}(u^{-})^{2}-\rho^{+}(u^{+})^{2}\right]\;,\label{eq:pdiff}
+\end{equation}
+
+\end_inset
+
+where we have accounted for the fact that the ambient pressure 
+\begin_inset Formula $p_{\infty}$
+\end_inset
+
+ is the same on both sides.
+ The plus and minus superscripts denote a limit from the indicated side
+ (
+\begin_inset Formula $+$
+\end_inset
+
+ = upper, 
+\begin_inset Formula $-$
+\end_inset
+
+ = lower).
+\end_layout
+
+\begin_layout Section
+Determining natural frequencies
+\end_layout
+
+\begin_layout Itemize
+Apply classical measurement techniques to the direct time simulation, which
+ plays the role of a physical experiment.
+ Two approaches:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Impulse response: knock the structure at the beginning, and then 
+\begin_inset Quotes eld
+\end_inset
+
+listen
+\begin_inset Quotes erd
+\end_inset
+
+: record time history and apply a fast Fourier transform (FFT) to obtain
+ the frequency spectrum
+\end_layout
+
+\begin_layout Itemize
+Forced harmonic oscillations: make one of the supports oscillate at a prescribed
+ frequency; change this frequency quasistatically (between simulations);
+ look for frequencies which produce the largest maximum amplitude
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The pressure data can also be used to record audio from any desired point
+ in the flow field.
+ (Maybe taking the average from a small local area to filter out noise.)
+\end_layout
+
+\end_body
+\end_document

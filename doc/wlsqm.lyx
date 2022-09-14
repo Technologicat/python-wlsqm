@@ -1,0 +1,1148 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman palatino
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\cite_engine natbib_authoryear
+\use_bibtopic false
+\paperorientation portrait
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Notes based on H.
+ Wang's meshless method presentation for the FSI team
+\end_layout
+
+\begin_layout Author
+Juha Jeronen
+\end_layout
+
+\begin_layout Abstract
+This technical note explains how to approximate derivatives of a known function,
+ defined as a set of values on a point cloud, where each point may have
+ arbitrary Cartesian coordinates.
+ This is a meshless method based on Taylor series expansion in a local set
+ of nearest neighbors.
+ It can be used for, e.g., integration of initial boundary value problems
+ using explicit methods (e.g.
+ RK4).
+\end_layout
+
+\begin_layout Abstract
+Also, a simple 
+\begin_inset Formula $O(d\, N\,\log N)$
+\end_inset
+
+ time algorithm for finding the nearest neighbors in 
+\begin_inset Formula $d$
+\end_inset
+
+ dimensions is presented for the sake of completeness.
+\end_layout
+
+\begin_layout Subsubsection*
+Derivative approximation --- the weighted least squares meshless method
+\end_layout
+
+\begin_layout Standard
+We will present the 
+\emph on
+weighted least squares
+\emph default
+ 
+\emph on
+meshless method
+\emph default
+ (WLSQ).
+ It belongs to the class of finite point methods (collocation methods),
+ so in spirit it is similar to finite differences.
+ Because the method only differentiates known quantities, it is best suited
+ for time evolution problems (initial boundary value problems; IBVP), which
+ are solved with explicit time integration methods such as RK4.
+ Dirichlet boundary conditions are very easy to enforce; Neumann and Robin
+ are much harder.
+\end_layout
+
+\begin_layout Standard
+To start with, consider a point cloud of 
+\begin_inset Formula $N$
+\end_inset
+
+ points in 
+\begin_inset Formula $\mathbb{R}^{d}$
+\end_inset
+
+.
+ Let 
+\begin_inset Formula $i$
+\end_inset
+
+ denote the index of the current node under consideration, and 
+\begin_inset Formula $k$
+\end_inset
+
+ the index of one of its nearest neighbors.
+ (For finding the 
+\begin_inset Formula $m$
+\end_inset
+
+ nearest neighbors of a point in a point cloud, refer to the final section
+ of this document.)
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $f=f(x_{k}),\; k=1,\dots,N$
+\end_inset
+
+ be a function defined on the point cloud.
+ Here we will only consider the two-dimensional case (
+\begin_inset Formula $d=2$
+\end_inset
+
+) for simplicity.
+ Let us shorten the notation by defining 
+\begin_inset Formula $f_{k}:=f(x_{k})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We would like to be able to approximate the derivatives of 
+\begin_inset Formula $f$
+\end_inset
+
+ at the point 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+, using only the point cloud data.
+ This has applications in e.g.
+ explicit time integration of PDEs with given initial data.
+\end_layout
+
+\begin_layout Standard
+Below, we will only consider the problem for one node 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+.
+ Trivially, the same procedure can be repeated for each node.
+\end_layout
+
+\begin_layout Standard
+Using multivariate Taylor expansion up to the second order, we can write
+ 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ (value of 
+\begin_inset Formula $f$
+\end_inset
+
+ at one of the nearest neighbors) in terms of 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ as
+\begin_inset Formula \begin{equation}
+f_{k}=f_{i}+h_{k}a_{1}+\ell_{k}a_{2}+\frac{h_{k}^{2}}{2}a_{3}+h_{k}\ell_{k}a_{4}+\frac{\ell_{k}^{2}}{2}a_{5}+O(h_{k}^{3},\ell_{k}^{3})\;,\label{eq:Tay}\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $h_{k}=(x_{k})_{1}-(x_{i})_{1}$
+\end_inset
+
+ (i.e.
+ the 
+\begin_inset Formula $x$
+\end_inset
+
+ component of the vector from 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ to 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+) and 
+\begin_inset Formula $\ell_{k}=(x_{k})_{2}-(x_{i})_{2}$
+\end_inset
+
+ (respectively, the 
+\begin_inset Formula $y$
+\end_inset
+
+ component).
+\end_layout
+
+\begin_layout Standard
+Note that generally, we must expand up to as many orders as is the highest
+ derivative we wish to approximate.
+ We will assume here for simplicity that we are building the approximation
+ for a second-order problem.
+\end_layout
+
+\begin_layout Standard
+If we drop the asymptotic term, we get the approximation
+\begin_inset Formula \begin{equation}
+\overline{f}_{k}=f_{i}+h_{k}a_{1}+\ell_{k}a_{2}+\frac{h_{k}^{2}}{2}a_{3}+h_{k}\ell_{k}a_{4}+\frac{\ell_{k}^{2}}{2}a_{5}\;.\label{eq:approx}\end{equation}
+
+\end_inset
+
+By the Taylor expansion, we would expect to have
+\begin_inset Formula \begin{align}
+a_{1} & =\frac{\partial f_{k}}{\partial x}\vert_{x=x_{i}}\nonumber \\
+a_{2} & =\frac{\partial f_{k}}{\partial y}\vert_{x=x_{i}}\nonumber \\
+a_{3} & =\frac{\partial^{2}f_{k}}{\partial x^{2}}\vert_{x=x_{i}}\nonumber \\
+a_{4} & =\frac{\partial^{2}f_{k}}{\partial x\partial y}\vert_{x=x_{i}}\nonumber \\
+a_{5} & =\frac{\partial^{2}f_{k}}{\partial y^{2}}\vert_{x=x_{i}}\;,\label{eq:aj}\end{align}
+
+\end_inset
+
+if 
+\begin_inset Formula $f$
+\end_inset
+
+ was defined on all of 
+\begin_inset Formula $\mathbb{R}^{2}$
+\end_inset
+
+.
+ Our problem is thus to find a good approximation for the values of the
+ 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Let us denote
+\begin_inset Formula \begin{align}
+c_{k}^{(1)} & :=h_{k}\nonumber \\
+c_{k}^{(2)} & :=\ell_{k}\nonumber \\
+c_{k}^{(3)} & :=\frac{h_{k}^{2}}{2}\nonumber \\
+c_{k}^{(3)} & :=h_{k}\ell_{k}\nonumber \\
+c_{k}^{(5)} & :=\frac{\ell_{k}^{2}}{2}\;.\label{eq:ck}\end{align}
+
+\end_inset
+
+We would like to minimize the approximation error.
+ Let us denote the error as
+\begin_inset Formula \begin{equation}
+e_{k}:=f_{k}-\overline{f}_{k}\;.\label{eq:ek}\end{equation}
+
+\end_inset
+
+We proceed by making a least squares approximation.
+ Let
+\begin_inset Formula \begin{equation}
+G:=\frac{1}{2}\underset{k}{\sum}e_{k}^{2}\label{eq:G}\end{equation}
+
+\end_inset
+
+where the sum is taken over the nearest-neighbor set of 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+.
+ The least-squares approximation is given by the minimum
+\begin_inset Formula \[
+\underset{a_{j}}{\min}\, G\;,\]
+
+\end_inset
+
+i.e.
+ such values for the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ that they minimize the squared error 
+\begin_inset Formula $G$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The minimum of the function 
+\begin_inset Formula $G=G(a_{1},\dots,a_{5})$
+\end_inset
+
+ is necessarily at an extremum point.
+ Thus, we set all its partial derivatives to zero (w.r.t the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+):
+\begin_inset Formula \begin{equation}
+\frac{\partial G}{\partial a_{j}}=0\quad\forall\; j=1,\dots,5\;.\label{eq:minG}\end{equation}
+
+\end_inset
+
+Because 
+\begin_inset Formula $G\ge0$
+\end_inset
+
+ for any values of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ and it is a quadratic function, this point is also necessarily the minimum.
+ Thus, solving equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:minG"
+
+\end_inset
+
+ gives us the optimal 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+One important thing to notice here is that we of course do not have the
+ value of the asymptotic term 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $O(h_{k}^{3},\ell_{k}^{3})$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Tay"
+
+\end_inset
+
+.
+ However, we do not need equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Tay"
+
+\end_inset
+
+ for computing the error 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ek"
+
+\end_inset
+
+.
+ This is because we already have the value of 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ directly, since it is one of the points in the data! Thus, for any set
+ of values for the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, the error 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ek"
+
+\end_inset
+
+ can be computed (by replacing 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ with the data point in question and computing 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Let us write out 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:minG"
+
+\end_inset
+
+.
+ We have
+\begin_inset Formula \begin{align}
+\frac{\partial G}{\partial a_{j}} & =\underset{k}{\sum}e_{k}\frac{\partial e_{k}}{\partial a_{j}}\nonumber \\
+ & =\underset{k}{\sum}[f_{k}-\overline{f}_{k}(a_{1},\dots,a_{5})]\left[-\frac{\partial\overline{f}_{k}}{\partial a_{j}}\right]=0\quad\forall\; j=1,\dots5\;,\label{eq:minG2}\end{align}
+
+\end_inset
+
+where we have replaced 
+\begin_inset Formula $e_{k}$
+\end_inset
+
+ by the difference of data 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ and the interpolate 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+, as noted above.
+\end_layout
+
+\begin_layout Standard
+Now the rest is essentially technique.
+ Expanding the first 
+\begin_inset Formula $\overline{f}_{k}$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:minG2"
+
+\end_inset
+
+ and taking the minus sign in front, we have
+\begin_inset Formula \[
+-\underset{k}{\sum}\left(\left[f_{k}-f_{i}-c_{k}^{(1)}a_{1}-c_{k}^{(2)}a_{2}-c_{k}^{(3)}a_{3}-c_{k}^{(4)}a_{4}-c_{k}^{(5)}a_{5}\right]\left[\frac{\partial\overline{f}_{k}}{\partial a_{j}}\right]\right)=0\quad\forall j\;.\]
+
+\end_inset
+
+This can be rewritten as a standard linear equation system
+\begin_inset Formula \begin{equation}
+A\mathbf{a}=\mathbf{b}\;,\label{eq:lineq}\end{equation}
+
+\end_inset
+
+where
+\begin_inset Formula \[
+\mathbf{a}=(a_{1},\dots,a_{5})^{T}\]
+
+\end_inset
+
+are the unknowns, and the 
+\begin_inset Formula $j$
+\end_inset
+
+th component of the load vector 
+\begin_inset Formula $\mathbf{b}$
+\end_inset
+
+ is
+\begin_inset Formula \begin{equation}
+b_{j}=\underset{k}{\sum}[f_{k}-f_{i}]\left[\frac{\partial\overline{f}_{k}}{\partial a_{j}}\right]=\underset{k}{\sum}[f_{k}-f_{i}]c_{k}^{(j)}\;,\label{eq:bj}\end{equation}
+
+\end_inset
+
+where in the last form we have used 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:approx"
+
+\end_inset
+
+ and the definition 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ck"
+
+\end_inset
+
+.
+ The sum, like above, is taken over the set of nearest neighbors.
+ Especially note that, as required, all the quantities on the right-hand
+ side of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:bj"
+
+\end_inset
+
+ are known.
+\end_layout
+
+\begin_layout Standard
+The element 
+\begin_inset Formula $A_{jn}$
+\end_inset
+
+ of the coefficient matrix 
+\begin_inset Formula $A$
+\end_inset
+
+ is
+\begin_inset Formula \begin{equation}
+A_{jn}=\underset{k}{\sum}c_{k}^{(n)}c_{k}^{(j)}\;.\label{eq:Ajn}\end{equation}
+
+\end_inset
+
+This sum, too, is taken over the set of nearest neighbors.
+ The matrix 
+\begin_inset Formula $A$
+\end_inset
+
+ is symmetric, 
+\begin_inset Formula $A=A^{T}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Solving 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:lineq"
+
+\end_inset
+
+, by e.g.
+ pivoted Gaussian elimination (routine DGESV in LAPACK, operator 
+\backslash
+ in MATLAB, scipy.linalg.solve() in Python, ...), produces the derivative approximati
+ons 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+, up to the second order.
+\end_layout
+
+\begin_layout Standard
+Note that both 
+\begin_inset Formula $A$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{b}$
+\end_inset
+
+ depend on the node index 
+\begin_inset Formula $i$
+\end_inset
+
+! That is, each node comes with its own 
+\begin_inset Formula $A$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{b}$
+\end_inset
+
+, and thus 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:bj"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Ajn"
+
+\end_inset
+
+ must be re-evaluated for each node where we wish to obtain the derivative
+ approximation.
+\end_layout
+
+\begin_layout Subsubsection*
+Sensitivity of the solution
+\end_layout
+
+\begin_layout Standard
+It is possible to also obtain the sensitivity of the solution 
+\begin_inset Formula $\mathbf{a}$
+\end_inset
+
+ 
+\begin_inset Formula $ $
+\end_inset
+
+in terms of small changes in the values of the data points 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+.
+ Consider, formally, manipulating 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:lineq"
+
+\end_inset
+
+ into
+\begin_inset Formula \[
+\mathbf{a}(f_{k})=A^{-1}\cdot\mathbf{b}(f_{k})\;.\]
+
+\end_inset
+
+Differentiation on both sides, and writing the equation in component form,
+ gives (the matrix 
+\begin_inset Formula $A$
+\end_inset
+
+ is constant w.r.t.
+ 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+)
+\begin_inset Formula \begin{align*}
+\frac{\partial a_{j}}{\partial f_{k}} & =\underset{n}{\sum}(A^{-1})_{jn}\frac{\partial b_{n}}{\partial f_{k}}\\
+ & =\underset{n}{\sum}(A^{-1})_{jn}c_{k}^{(n)}\;,\quad\forall\; j=1,\dots5\;,\end{align*}
+
+\end_inset
+
+which can be rewritten as
+\begin_inset Formula \begin{equation}
+A\frac{\partial\mathbf{a}}{\partial f_{k}}=(c_{k}^{(1)},c_{k}^{(2)},c_{k}^{(3)},c_{k}^{(4)},c_{k}^{(5)})^{T}\;.\label{eq:sens}\end{equation}
+
+\end_inset
+
+Thus we have a linear equation system, from which the sensitivities of each
+ of the 
+\begin_inset Formula $a_{j}$
+\end_inset
+
+ in terms of the node value 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ can be solved.
+ By changing 
+\begin_inset Formula $k$
+\end_inset
+
+ on the right-hand side and solving again for each 
+\begin_inset Formula $k$
+\end_inset
+
+, we obtain the sensitivity with respect to each of the neighbors.
+ (Note that there is 
+\series bold
+no
+\series default
+ sum over 
+\begin_inset Formula $k$
+\end_inset
+
+, except inside the matrix 
+\begin_inset Formula $A$
+\end_inset
+
+.)
+\end_layout
+
+\begin_layout Standard
+This sensitivity result may be useful for forcing Neumann boundary conditions
+ to hold during IBVP integration (at each timestep, changing the values
+ at the nodes belonging to the boundary until the BC is satisfied).
+\end_layout
+
+\begin_layout Standard
+Again, it should be noted that equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:sens"
+
+\end_inset
+
+ is valid for the node 
+\begin_inset Formula $i$
+\end_inset
+
+, and in principle must be solved separately for each node.
+\end_layout
+
+\begin_layout Standard
+However, we observe that the sensitivities depend on the (local) geometry
+ of the point cloud only.
+ Recall the definitions of 
+\begin_inset Formula $A$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{k}^{(n)}$
+\end_inset
+
+, equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Ajn"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ck"
+
+\end_inset
+
+; the only quantities that appear are the pairwise node distances.
+ This observation holds for any point cloud.
+\end_layout
+
+\begin_layout Standard
+If there is some regularity in the geometry, it may be possible to reuse
+ (some of) the results.
+ As a special case, if we have a regular Cartesian grid, the 
+\begin_inset Formula $c_{k}^{(n)}$
+\end_inset
+
+ are constant with respect to 
+\begin_inset Formula $k$
+\end_inset
+
+, and thus in this special case only, the sensitivities at each node follow
+ the same pattern.
+ This extends easily to other regular geometries; e.g.
+ for a grid based on the nodes of a hexagonal tiling, there will be only
+ two kinds of nodes with regard to the sensitivity.
+ The strength of the method, however, lies in being able to handle irregular
+ geometries: in the general case, one does not need to assume anything about
+ the distribution of the points.
+\end_layout
+
+\begin_layout Subsubsection*
+Finding nearest neighbors --- a simple algorithm
+\end_layout
+
+\begin_layout Standard
+In this section, we look into the problem of searching a given point cloud
+ for nearest neighbors.
+ We consider finding the neighbors within a given distance 
+\begin_inset Formula $R$
+\end_inset
+
+ from a given point, and finding the 
+\begin_inset Formula $m$
+\end_inset
+
+ nearest neighbors of a given point, with 
+\begin_inset Formula $m$
+\end_inset
+
+ given.
+\end_layout
+
+\begin_layout Standard
+An example MATLAB/Octave implementation of the ideas presented in this section
+ is provided in 
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+find_neighbors.m
+\family default
+ (in the SAVU project git repository).
+\end_layout
+
+\begin_layout Paragraph*
+Finding all neighbors within distance R
+\end_layout
+
+\begin_layout Standard
+For a static point cloud (in the sense of not changing during the simulation),
+ the nearest neighbor search problem can be solved in 
+\begin_inset Formula $O(d\, N\,\log\, N)$
+\end_inset
+
+ time (where 
+\begin_inset Formula $N$
+\end_inset
+
+ is the number of points in the whole cloud, and 
+\begin_inset Formula $d$
+\end_inset
+
+ is the dimensionality of the space 
+\begin_inset Formula $\mathbb{R}^{d}$
+\end_inset
+
+ where the points live in) using an indexed search procedure.
+ For a moving point cloud, the 
+\begin_inset Quotes eld
+\end_inset
+
+expensive
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $O(d\, N\,\log\, N)$
+\end_inset
+
+ step must be re-performed at each timestep.
+\end_layout
+
+\begin_layout Standard
+Initially, we create a sorted index of the data based on the coordinates
+ on each axis.
+ This gives us 
+\begin_inset Formula $d$
+\end_inset
+
+ sorted vectors of 
+\begin_inset Formula $(\text{coordinate along }j\text{th axis},\,\text{point ID})$
+\end_inset
+
+ pairs.
+ This enables us to search for the set of points, which belong to a given
+ interval on, say, the 
+\begin_inset Formula $x$
+\end_inset
+
+ axis (
+\begin_inset Formula $j=1$
+\end_inset
+
+; correspondingly for the other axes).
+ Each sort finishes in 
+\begin_inset Formula $O(N\,\log\, N)$
+\end_inset
+
+ time, and only needs to be done once (or until the point cloud changes;
+ then we must re-index).
+ Then, indexed search on this data can be done using the binary search procedure
+ in 
+\begin_inset Formula $O(\log\, N)$
+\end_inset
+
+ time for each dimension.
+\end_layout
+
+\begin_layout Standard
+To find the neighbors within distance 
+\begin_inset Formula $R$
+\end_inset
+
+ of a point with given coordinates in 
+\begin_inset Formula $\mathbb{R}^{d}$
+\end_inset
+
+ (allowed to be a point belonging to the cloud, but not necessary), we first
+ search along each axis, producing 
+\begin_inset Formula $d$
+\end_inset
+
+ filtered index sets in each of which the coordinates on the 
+\begin_inset Formula $k$
+\end_inset
+
+th axis match the desired interval 
+\begin_inset Formula $[(x_{0})_{k}-R/2,\;(x_{0})_{k}+R/2]$
+\end_inset
+
+.
+ Taking the set intersection of the result sets gives us the neighbor set
+ within distance 
+\begin_inset Formula $R$
+\end_inset
+
+ in the sense of the 
+\begin_inset Formula $\ell^{\infty}$
+\end_inset
+
+ metric.
+ The next step is to filter the result further.
+\end_layout
+
+\begin_layout Standard
+An important property here is that because 
+\begin_inset Formula $\Vert x\Vert_{\ell^{\infty}}\le\Vert x\Vert_{\ell^{p}}$
+\end_inset
+
+ for all 
+\begin_inset Formula $1\le p<\infty$
+\end_inset
+
+, the 
+\begin_inset Formula $\ell^{\infty}$
+\end_inset
+
+ neighbor set encloses all other 
+\begin_inset Formula $\ell^{p}$
+\end_inset
+
+ neighbor sets, including the Euclidean neighbor set (with 
+\begin_inset Formula $p=2$
+\end_inset
+
+).
+ Thus, all these other neighbor sets can be produced by filtering the 
+\begin_inset Formula $\ell^{\infty}$
+\end_inset
+
+ neighbor set.
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\ell^{\infty}$
+\end_inset
+
+ neighbor set, with 
+\begin_inset Formula $M$
+\end_inset
+
+ points, is for any practically interesting 
+\begin_inset Formula $R$
+\end_inset
+
+ much smaller than the whole cloud (
+\begin_inset Formula $M\ll N$
+\end_inset
+
+).
+ Thus, linear filtering of the result set, which takes 
+\begin_inset Formula $O(M)$
+\end_inset
+
+ time, is not a major cost.
+\end_layout
+
+\begin_layout Standard
+To find the 
+\begin_inset Formula $\ell^{2}$
+\end_inset
+
+ (Euclidean) neighbor set, we simply construct a new result set, including
+ in it only those points in the 
+\begin_inset Formula $\ell^{\infty}$
+\end_inset
+
+ neighbor set that also satisfy the 
+\begin_inset Formula $\ell^{2}$
+\end_inset
+
+ distance requirement 
+\begin_inset Formula $\Vert x_{j}-x_{0}\Vert_{\ell^{2}}\le R$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Paragraph*
+Finding the m nearest neighbors
+\end_layout
+
+\begin_layout Standard
+Finally, consider the question of finding 
+\begin_inset Formula $R$
+\end_inset
+
+ such that within this radius, there are exactly 
+\begin_inset Formula $m$
+\end_inset
+
+ neighbors (where 
+\begin_inset Formula $m$
+\end_inset
+
+ is user-specified).
+ This provides us a nearest-neighbor search procedure for user-definable
+ 
+\begin_inset Formula $m$
+\end_inset
+
+, which is what we need in the meshless method.
+\end_layout
+
+\begin_layout Standard
+We start from some 
+\begin_inset Formula $R=r_{0}$
+\end_inset
+
+ (this can be e.g.
+ some function of the size of the bounding box of the data, which can be
+ trivially found in 
+\begin_inset Formula $O(N)$
+\end_inset
+
+ time, and the number of points in the data (e.g.
+ assuming them to have uniform density and estimating average 
+\begin_inset Formula $R$
+\end_inset
+
+ from that)).
+ We then do a logarithmic search, counting the neighbors within radius 
+\begin_inset Formula $R$
+\end_inset
+
+ and, based on the result, we either double or halve 
+\begin_inset Formula $R$
+\end_inset
+
+ at each step.
+\end_layout
+
+\begin_layout Standard
+By this logarithmic search, we may get lucky and hit an 
+\begin_inset Formula $R$
+\end_inset
+
+ where there are exactly 
+\begin_inset Formula $m$
+\end_inset
+
+ neighbors.
+ In this case, we stop and return the current neighbor set.
+\end_layout
+
+\begin_layout Standard
+But most often, we will find an interval 
+\begin_inset Formula $R\in[R_{1},R_{2}]$
+\end_inset
+
+ where 
+\begin_inset Formula $R_{1}$
+\end_inset
+
+ has less then 
+\begin_inset Formula $m$
+\end_inset
+
+ neighbors, and 
+\begin_inset Formula $R_{2}=2R_{1}$
+\end_inset
+
+ has more than 
+\begin_inset Formula $m$
+\end_inset
+
+.
+ This interval can be refined using binary search on the variable 
+\begin_inset Formula $R$
+\end_inset
+
+.
+ This produces a sequence of shrinking intervals 
+\begin_inset Formula $[R_{a},R_{b}]$
+\end_inset
+
+, which converges onto (some) correct 
+\begin_inset Formula $R$
+\end_inset
+
+.
+ This works, because the number of neighbors as a function of distance is
+ a monotonic (although discontinuous and piecewise constant) function.
+ We stop the search once we find an 
+\begin_inset Formula $R$
+\end_inset
+
+ which has exactly 
+\begin_inset Formula $m$
+\end_inset
+
+ neighbors.
+\end_layout
+
+\begin_layout Standard
+The final pitfall is that in an arbitrary point cloud, for any given point,
+ the cloud may contain exactly two (or more) points at the exact same distance
+ from it.
+ In these cases, there might not exist a distance with exactly 
+\begin_inset Formula $m$
+\end_inset
+
+ neighbors for the given point! To protect against this possibility, we
+ set a tolerance 
+\begin_inset Formula $\varepsilon>0$
+\end_inset
+
+ for the length of the search interval 
+\begin_inset Formula $[R_{a},R_{b}]$
+\end_inset
+
+ in the above procedure.
+ If no matching 
+\begin_inset Formula $R$
+\end_inset
+
+ has been found, and 
+\begin_inset Formula $R_{b}-R_{a}<\varepsilon$
+\end_inset
+
+, we stop the search and return the neighbor set at 
+\begin_inset Formula $R_{b}$
+\end_inset
+
+ (along with e.g.
+ an error code or some other signal, so that the calling end knows that
+ extra neighbors have been returned).
+\end_layout
+
+\end_body
+\end_document
