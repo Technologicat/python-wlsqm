@@ -104,7 +104,8 @@ Return value : rank-1 array, function value at each x.
 
     cdef double[::1] out = np.empty( (nx,), dtype=np.float64 )
 
-    cdef double nan = 0./0.
+    cdef double zero = 0
+    cdef double nan = zero/zero
     cdef double x0, y0, z0
     if dimension >= 2:
         x0     = xi[0]

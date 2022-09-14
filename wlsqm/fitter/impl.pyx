@@ -733,7 +733,8 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
 #
 cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) nogil:
 
-    cdef double nan = 0./0.  # FIXME: a better way to get NaN than to abuse IEEE-754 specification?
+    cdef double zero = 0
+    cdef double nan = zero/zero  # FIXME: a better way to get NaN than to abuse IEEE-754 specification?
 
     cdef int no            = case.no
     cdef int nr            = case.nr
@@ -862,7 +863,8 @@ cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.gene
 #
 cdef void solve_contig( infra.Case* case, double* fk, double* fi, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) nogil:
 
-    cdef double nan = 0./0.  # FIXME: a better way to get NaN than to abuse IEEE-754 specification?
+    cdef double zero = 0
+    cdef double nan = zero/zero  # FIXME: a better way to get NaN than to abuse IEEE-754 specification?
 
     cdef int no            = case.no
     cdef int nr            = case.nr

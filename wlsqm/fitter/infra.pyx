@@ -46,8 +46,9 @@ cimport wlsqm.fitter.defs as defs  # C constants
 #   http://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer (algorithms, suggestions)
 #   https://gist.github.com/craffel/e470421958cad33df550 (Cython defs; on popcounting a NumPy array)
 #
-cdef extern int __builtin_popcount(unsigned int) nogil
-cdef extern int __builtin_popcountll(unsigned long long) nogil
+cdef extern from "popcount.h":
+    int __builtin_popcount(unsigned int) nogil
+    int __builtin_popcountll(unsigned long long) nogil
 
 #####################################
 # Helper functions
@@ -541,7 +542,8 @@ cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, 
             raise MemoryError("Out of memory trying to allocate a Case object")
 
     # tag unused components as NaN
-    cdef double nan = 0./0.  # NaN as per IEEE-754
+    cdef double zero = 0
+    cdef double nan = zero/zero  # NaN as per IEEE-754
     self.xi = xi
     self.yi = yi  if dimension >= 2  else  nan
     self.zi = zi  if dimension == 3  else  nan
