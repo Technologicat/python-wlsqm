@@ -20,8 +20,22 @@ add_project_arguments('-X', 'language_level=3', language: 'cython')
 
 py = import('python').find_installation(pure: false)
 
-# NumPy include directory (needed for Cython compilation against NumPy).
-numpy_dep = dependency('numpy')
+# NumPy include directory for Cython compilation against the NumPy C API.
+#
+# NumPy 2.0 ships `numpy-config` and meson's `dependency('numpy')` resolves
+# it. NumPy 1.x does not. Fall back to the Python introspection approach so
+# that users whose stacks are still pinned to NumPy 1.x (e.g. dependencies
+# that have not migrated to 2.x yet) can still build wlsqm from source.
+numpy_dep = dependency('numpy', required: false)
+if not numpy_dep.found()
+    numpy_include = run_command(
+        py,
+        ['-c', 'import numpy; print(numpy.get_include())'],
+        check: true,
+    ).stdout().strip()
+    message('Using NumPy < 2.0 headers from: ' + numpy_include)
+    numpy_dep = declare_dependency(include_directories: include_directories(numpy_include))
+endif
 
 # SciPy ships `scipy/linalg/cython_lapack.pxd`, which `lapackdrivers.pyx`
 # cimports at compile time. SciPy does NOT publish a pkg-config/cmake module,

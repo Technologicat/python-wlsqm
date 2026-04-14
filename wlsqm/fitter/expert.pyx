@@ -725,7 +725,7 @@ I    : If mode='nearest': override which local model to use for each point in x,
 
 Return value: tuple (out, I_out) where
         out   = function value (or derivative value, depending on "diff")
-        I_out = if mode='nearest', index of local model used for each point in x (array of shape (nx,), dtype np.long).
+        I_out = if mode='nearest', index of local model used for each point in x (array of shape (nx,), dtype np.int_, i.e. C long).
                 This can be passed back in as "I".
 
                 if mode='continuous', this is always None (i.e. currently not supported).
@@ -760,7 +760,11 @@ Return value: tuple (out, I_out) where
             if I is not None:
                 I_out = None  # if 'I' was given, don't bother copying it to I_out in expert_interpolate_nearest()
             else:
-                I_out = np.empty( (nx,), dtype=np.long )  # I_out[j] = index of the local model (in self.cases) that was used to produce out[j]
+                # np.int_ matches the Cython `long[::1]` view declared above,
+                # and — unlike the long-removed `np.long` — works on both
+                # NumPy 1.x and 2.x. (On Windows, C `long` is 32-bit; this is
+                # a pre-existing portability caveat noted in TODO_DEFERRED.md.)
+                I_out = np.empty( (nx,), dtype=np.int_ )  # I_out[j] = index of the local model (in self.cases) used to produce out[j]
 
             expert_interpolate_nearest( dimension, self.tree, manager, x, out, I_out, I, diff, ntasks )
 
