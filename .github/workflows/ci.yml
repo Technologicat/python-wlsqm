@@ -69,20 +69,76 @@ jobs:
       - name: Install wlsqm
         run: pip install --no-build-isolation -e .
 
-      # Diagnose Windows DLL-load failures: if importing simple fails, most
-      # of the time it is vcomp*.dll (MSVC OpenMP runtime) that cannot be
-      # found on the DLL search path. This step probes it explicitly and
-      # dumps the DELAY-LOAD dependencies of simple.pyd so the CI log
-      # pinpoints the missing dependency on the first try.
+      # Diagnose Windows DLL-load failures: first run said vcomp140 is
+      # resolvable via ctypes, so the problem is deeper in the chain. Use
+      # pefile to dump the DLL-level import table of every built .pyd, then
+      # probe each .pyd with ctypes.WinDLL (which only exercises the Windows
+      # loader — PyInit never runs, so a WinDLL failure means Windows could
+      # not resolve a direct DLL import, whereas a WinDLL success + Python
+      # import failure means the Cython cimport chain in PyInit is what
+      # fails).
       - name: Diagnose extension DLL dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          python -c "import sys; print('python:', sys.version); print('prefix:', sys.prefix)"
-          python -c "import ctypes; [ctypes.CDLL(name) and print(name, 'OK') for name in ('vcomp140.dll', 'vcomp140d.dll', 'vcruntime140.dll', 'msvcp140.dll')]" 2>&1 | Tee-Object -Append -FilePath dll-probe.log
-          Get-ChildItem -Recurse -Filter '*.pyd' wlsqm | ForEach-Object { "=== $($_.FullName) ==="; dumpbin /DEPENDENTS $_.FullName 2>&1 }
-          python -v -c "import wlsqm.fitter.defs" 2>&1 | Select-String -Pattern 'simple|defs|infra|omp|vcomp' | Select-Object -First 40
-          python -v -c "from wlsqm.fitter import simple" 2>&1 | Select-String -Pattern 'simple|omp|vcomp|DLL' | Select-Object -First 60 || $true
+          python -m pip install -q pefile
+          python - <<'PY'
+          import ctypes, glob, os, sys, traceback
+          import pefile
+
+          print('python:', sys.version)
+          print('prefix:', sys.prefix)
+
+          pyds = sorted(glob.glob('wlsqm/**/*.pyd', recursive=True))
+          print('=== built .pyd files ===')
+          for p in pyds:
+              print(' ', p)
+
+          print()
+          print('=== DLL-level imports per .pyd (pefile) ===')
+          for p in pyds:
+              try:
+                  pe = pefile.PE(p, fast_load=True)
+                  pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_IMPORT']])
+                  imports = [e.dll.decode(errors='replace') for e in getattr(pe, 'DIRECTORY_ENTRY_IMPORT', [])]
+                  print(f'  {p} ->')
+                  for name in imports:
+                      print(f'      {name}')
+                  pe.close()
+              except Exception as e:
+                  print(f'  {p} -> pefile error: {e}')
+
+          print()
+          print('=== ctypes.WinDLL probe per .pyd (DLL-level load only, no PyInit) ===')
+          for p in pyds:
+              try:
+                  ctypes.WinDLL(os.path.abspath(p))
+                  print(f'  WinDLL OK  : {p}')
+              except OSError as e:
+                  print(f'  WinDLL FAIL: {p} -- {e}')
+
+          print()
+          print('=== Python-level import probe in dependency order ===')
+          mods = [
+              'wlsqm.fitter.defs',
+              'wlsqm.fitter.infra',
+              'wlsqm.fitter.polyeval',
+              'wlsqm.utils.ptrwrap',
+              'wlsqm.utils.lapackdrivers',
+              'wlsqm.fitter.interp',
+              'wlsqm.fitter.impl',
+              'wlsqm.fitter.simple',
+              'wlsqm.fitter.expert',
+          ]
+          for name in mods:
+              try:
+                  __import__(name)
+                  print(f'  import OK  : {name}')
+              except Exception as e:
+                  print(f'  import FAIL: {name} -- {type(e).__name__}: {e}')
+                  traceback.print_exc()
+                  break
+          PY
         continue-on-error: true
 
       - name: Run tests
