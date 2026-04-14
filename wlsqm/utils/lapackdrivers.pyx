@@ -79,10 +79,12 @@ from scipy.linalg.cython_lapack cimport dgesv, dgetrf, dgetrs
 # other routines
 from scipy.linalg.cython_lapack cimport dgeequ, dgesvd
 
-# Module-level C constants used by the iterative scaler (rescale_ruiz2001_c,
-# rescale_scalgm_c), replacing old compile-time `DEF` constants.
+# Module-level C constant replacing the old compile-time `DEF epsilon`:
+# stopping tolerance shared by both iterative scalers. (The per-function
+# iteration bound `niters` is kept as a function-local cdef — otherwise GCC
+# cannot prove the `for k in range(niters)` loop body ever runs and warns
+# that the `return k + 1` at the tail may read an uninitialized `k`.)
 cdef double epsilon = 1e-15  # stopping tolerance at double precision
-cdef int    niters  = 100    # maximum number of iterations
 
 # fast inline min/max for C code
 #
@@ -549,6 +551,8 @@ Reference:
     return do_rescale( A, ScalingAlgo.ALGO_RUIZ2001 )
 
 cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
+    cdef int niters = 100  # maximum number of refinement iterations — function-local so GCC can constant-fold it through the loop bound
+
     # temporary work space
     cdef double* DR     = <double*>malloc( nrows*sizeof(double) )
     cdef double* DC     = <double*>malloc( ncols*sizeof(double) )
@@ -739,6 +743,8 @@ cdef void basic_scale_down_cols( double* A, int nrows, int ncols, double* rs, do
 
 # SCALGM driver
 cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
+    cdef int niters = 100  # maximum number of refinement iterations — function-local so GCC can constant-fold it through the loop bound
+
     # temporary work space
     cdef double* DR1 = <double*>malloc( nrows*sizeof(double) )
     cdef double* DC1 = <double*>malloc( ncols*sizeof(double) )
