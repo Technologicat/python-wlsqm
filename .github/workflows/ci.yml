@@ -94,9 +94,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Same MSVC activation as in the test job, and for the same reason:
+      # cibuildwheel does NOT automatically activate MSVC for meson-python
+      # builds on Windows (unlike distutils/setuptools-based projects where
+      # distutils auto-detects MSVC via the python-being-built-with logic).
+      # Without this step, meson picks up Strawberry Perl's bundled
+      # MinGW-w64 gcc from the runner PATH and the resulting .pyd files
+      # link against libgomp-1.dll / libgcc_s_seh-1.dll, which are not
+      # present in the wheel test environment.
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+
       # cibuildwheel config lives in pyproject.toml ([tool.cibuildwheel]) —
       # build list, skip list, test-requires, test-command, and the macOS
-      # before-all that installs libomp.
+      # before-all that installs conda-forge llvm-openmp via micromamba.
       - uses: pypa/cibuildwheel@v3.4
 
       - uses: actions/upload-artifact@v7
