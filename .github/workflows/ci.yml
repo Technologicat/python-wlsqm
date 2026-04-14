@@ -69,6 +69,22 @@ jobs:
       - name: Install wlsqm
         run: pip install --no-build-isolation -e .
 
+      # Diagnose Windows DLL-load failures: if importing simple fails, most
+      # of the time it is vcomp*.dll (MSVC OpenMP runtime) that cannot be
+      # found on the DLL search path. This step probes it explicitly and
+      # dumps the DELAY-LOAD dependencies of simple.pyd so the CI log
+      # pinpoints the missing dependency on the first try.
+      - name: Diagnose extension DLL dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -c "import sys; print('python:', sys.version); print('prefix:', sys.prefix)"
+          python -c "import ctypes; [ctypes.CDLL(name) and print(name, 'OK') for name in ('vcomp140.dll', 'vcomp140d.dll', 'vcruntime140.dll', 'msvcp140.dll')]" 2>&1 | Tee-Object -Append -FilePath dll-probe.log
+          Get-ChildItem -Recurse -Filter '*.pyd' wlsqm | ForEach-Object { "=== $($_.FullName) ==="; dumpbin /DEPENDENTS $_.FullName 2>&1 }
+          python -v -c "import wlsqm.fitter.defs" 2>&1 | Select-String -Pattern 'simple|defs|infra|omp|vcomp' | Select-Object -First 40
+          python -v -c "from wlsqm.fitter import simple" 2>&1 | Select-String -Pattern 'simple|omp|vcomp|DLL' | Select-Object -First 60 || $true
+        continue-on-error: true
+
       - name: Run tests
         run: pytest tests/ -v
 
