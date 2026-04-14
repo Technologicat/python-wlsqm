@@ -21,6 +21,12 @@ from libc.math cimport fma
 
 cimport wlsqm.fitter.defs as defs  # C constants
 
+# Module-level C constants, replacing the compile-time `DEF` constants that
+# older Cython supported. They are declared once at module scope and are
+# directly accessible from `nogil` code (they compile to plain C statics).
+cdef double onesixth = 1./6.
+cdef double one24th  = 1./24.
+
 ####################################################
 # Polynomial evaluation
 ####################################################
@@ -50,8 +56,6 @@ cimport wlsqm.fitter.defs as defs  # C constants
 # Return value: 0 on success, anything else indicates failure
 #
 cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil:
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     if order not in [0,1,2,3,4]:
         return -1
@@ -518,8 +522,6 @@ cdef int general_3D( int order, double* fi, double xi, double yi, double zi, dou
 # Return value: 0 on success, anything else indicates failure
 #
 cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil:
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     if order not in [0,1,2,3,4]:
         return -1
@@ -843,8 +845,6 @@ cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.
 # Return value: 0 on success, anything else indicates failure
 #
 cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) noexcept nogil:
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     if order not in [0,1,2,3,4]:
         return -1

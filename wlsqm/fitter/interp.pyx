@@ -23,6 +23,10 @@ import numpy as np  # needed by interpolate_fit() in Python API
 cimport wlsqm.fitter.defs     as defs      # C constants
 cimport wlsqm.fitter.polyeval as polyeval  # evaluation of Taylor expansions and general polynomials
 
+# Module-level C constants, replacing old compile-time `DEF` constants.
+cdef double onesixth = 1./6.
+cdef double one24th  = 1./24.
+
 ####################################################
 # Python API
 ####################################################
@@ -161,8 +165,6 @@ fi[] must be the coefficients output by one of the fitting functions (see wlsqm.
 The parameter "diff" allows lambdifying a derivative of the model instead of the function itself.
 See interpolate_fit() for the valid values. The default is to lambdify the function itself.
 """
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     if dimension not in [1,2,3]:
         raise ValueError( "dimension must be 1, 2 or 3; got %d" % dimension )
@@ -273,8 +275,6 @@ cdef int interpolate_nD( infra.Case* case, double[::view.generic,::view.contiguo
 # fi[] must contain the output the model fitting.
 #
 cdef int interpolate_3D( infra.Case* case, double[::view.generic,::view.contiguous] x, double* out, int diff ) noexcept nogil:
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     cdef int order = case.order
     cdef int k,n
@@ -671,8 +671,6 @@ cdef int interpolate_3D( infra.Case* case, double[::view.generic,::view.contiguo
 # fi[] must contain the output the model fitting.
 #
 cdef int interpolate_2D( infra.Case* case, double[::view.generic,::view.contiguous] x, double* out, int diff ) noexcept nogil:
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     cdef int order = case.order
     cdef int k,n
@@ -863,8 +861,6 @@ cdef int interpolate_2D( infra.Case* case, double[::view.generic,::view.contiguo
 # fi[] must contain the output from the model fitting.
 #
 cdef int interpolate_1D( infra.Case* case, double[::view.generic] x, double* out, int diff ) noexcept nogil:
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     cdef int order = case.order
     cdef int k,n

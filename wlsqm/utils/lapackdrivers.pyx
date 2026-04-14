@@ -79,6 +79,11 @@ from scipy.linalg.cython_lapack cimport dgesv, dgetrf, dgetrs
 # other routines
 from scipy.linalg.cython_lapack cimport dgeequ, dgesvd
 
+# Module-level C constants used by the iterative scaler (rescale_ruiz2001_c,
+# rescale_scalgm_c), replacing old compile-time `DEF` constants.
+cdef double epsilon = 1e-15  # stopping tolerance at double precision
+cdef int    niters  = 100    # maximum number of iterations
+
 # fast inline min/max for C code
 #
 cdef inline int cimin(int a, int b) noexcept nogil:
@@ -556,8 +561,6 @@ cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale,
 
     cdef int k, j, m
     cdef double acc, tmp
-    DEF epsilon = 1e-15  # maybe appropriate for double precision?
-    DEF niters = 100     # maximum number of iterations to take
     for k in range(niters):
         # compute new DR
         for j in range(nrows):
@@ -749,8 +752,6 @@ cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, d
     cdef int k, j, m
     cdef double acc, acc2, tmp
     cdef int operation_mode = 1
-    DEF epsilon = 1e-15  # maybe appropriate for double precision?
-    DEF niters = 100     # maximum number of iterations to take
     for k in range(niters):
         # let "original matrix" = the matrix at the start of the iteration.
 

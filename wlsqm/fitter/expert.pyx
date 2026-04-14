@@ -37,6 +37,14 @@ cimport wlsqm.fitter.interp as interp  # model interpolation
 import numpy as np
 import scipy.spatial
 
+# Module-level C constants used by expert_interpolate_continuous(), replacing
+# old compile-time DEFs. alpha here is 0. — at the maximum distance from the
+# origin of the fit, the weight drops all the way to zero (contrast with
+# Case_make_weights in infra.pyx, where alpha is 1e-4 so distant neighbors
+# keep a small but non-zero weight).
+cdef double expert_interpolate_continuous_alpha = 0.
+cdef double expert_interpolate_continuous_beta  = 1. - expert_interpolate_continuous_alpha
+
 
 ####################################################
 # Python API - expert mode
@@ -521,7 +529,6 @@ where order is the array that was passed to __init__().
         # the solve loop
         #
         cdef int j, nkj, taskid
-        DEF TASKID = 0  # for single-task case
         cdef int total_max_iterations_taken=0     # max across tasks (when solving in parallel, will be filled at the end)
         cdef int* max_iterations_taken = <int*>0  # max for each task
         cdef int iterations_taken=0               # current value in current task
@@ -553,10 +560,10 @@ where order is the array that was passed to __init__().
                     if do_sens:
                         for j in range(ncases):  # don't bother with OpenMP for single-task case
                             nkj = nk[j]
-                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID )
+                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, 0 )
                     else:
                         for j in range(ncases):
-                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nk[j]], NO_SENS, do_sens, TASKID )
+                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nk[j]], NO_SENS, do_sens, 0 )
 
                     # get solution
                     for j in range(ncases):
@@ -617,26 +624,26 @@ where order is the array that was passed to __init__().
                         if dimension >= 2:
                             for j in range(ncases):  # don't bother with OpenMP for single-task case
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID, max_iter, xkManyD[j,:nkj,:], dummy1D )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, 0, max_iter, xkManyD[j,:nkj,:], dummy1D )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
                         else: # dimension == 1:
                             for j in range(ncases):
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID, max_iter, dummyManyD, xk1D[j,:nkj] )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, 0, max_iter, dummyManyD, xk1D[j,:nkj] )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
                     else: # not do_sens:
                         if dimension >= 2:
                             for j in range(ncases):
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, TASKID, max_iter, xkManyD[j,:nkj,:], dummy1D )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, 0, max_iter, xkManyD[j,:nkj,:], dummy1D )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
                         else: # dimension == 1:
                             for j in range(ncases):
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, TASKID, max_iter, dummyManyD, xk1D[j,:nkj] )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, 0, max_iter, dummyManyD, xk1D[j,:nkj] )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
 
@@ -964,10 +971,8 @@ cdef void expert_interpolate_continuous( int dimension, xi, xi_tree, infra.CaseM
                 d2 = dx*dx
 
             # distance squared, flipped on the distance axis (fast falloff near origin)
-            DEF alpha = 0.  # weight remaining at maximum distance
-            DEF beta  = 1. - alpha
             tmp = 1. - sqrt(d2 / max_d2)
-            w = alpha + beta * tmp*tmp
+            w = expert_interpolate_continuous_alpha + expert_interpolate_continuous_beta * tmp*tmp
 
             acc   += w * value
             sum_w += w

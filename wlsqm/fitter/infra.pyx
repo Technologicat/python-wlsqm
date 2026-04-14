@@ -39,6 +39,12 @@ from libc.math cimport sqrt
 
 cimport wlsqm.fitter.defs as defs  # C constants
 
+# Module-level C constants for Case_make_weights(), replacing old DEFs.
+# alpha is the weight remaining at the maximum distance from the origin of
+# the fit — non-zero so that distant neighbors still carry a small weight.
+cdef double Case_make_weights_alpha = 1e-4
+cdef double Case_make_weights_beta  = 1. - Case_make_weights_alpha
+
 # use GCC's intrinsics for counting the number of set bits in an int
 #
 # See
@@ -688,10 +694,8 @@ cdef void Case_make_weights( Case* self, double max_d2 ) noexcept nogil:
             d2 = w[k]  # the array w originally contains squared distances (without normalization)
 
             # distance squared, flipped on the distance axis (fast falloff near origin)
-            DEF alpha = 1e-4  # weight remaining at maximum distance
-            DEF beta  = 1. - alpha
             tmp = 1. - sqrt(d2 / max_d2)
-            w[k] = alpha + beta * tmp*tmp
+            w[k] = Case_make_weights_alpha + Case_make_weights_beta * tmp*tmp
 
 # Determine how many bytes of memory this Case will need for storing its arrays.
 #

@@ -29,6 +29,14 @@ cimport wlsqm.fitter.defs   as defs    # C constants
 cimport wlsqm.fitter.infra  as infra   # centralized memory allocation infrastructure
 cimport wlsqm.fitter.interp as interp  # interpolation of fitted model
 
+# Module-level C constants, replacing old compile-time `DEF` constants.
+cdef double onesixth = 1./6.
+cdef double one24th  = 1./24.
+# Flags used inside solve_iterative when it calls the interpolation layer
+# during its iterative refinement step.
+cdef int DONT_DO_SENS = 0  # no sensitivity analysis for the refinement pass
+cdef int DIFF         = 0  # interpolate function value, not a derivative
+
 ####################################################
 # Distance matrix (c) generation
 ####################################################
@@ -87,8 +95,6 @@ cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] 
     # loop counters
     cdef int k       # neighbor points
 
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     # generate the c^(j)_k array (see the documentation)
     #
@@ -304,8 +310,6 @@ cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] 
     # loop counters
     cdef int k       # neighbor points
 
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     # generate the c^(j)_k array (see the documentation)
     #
@@ -465,8 +469,6 @@ cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) noexcept nogi
     # loop counters
     cdef int k       # neighbor points
 
-    DEF onesixth = 1./6.
-    DEF one24th  = 1./24.
 
     # generate the c^(j)_k array (see the documentation)
     #
@@ -988,8 +990,6 @@ cdef void solve_contig( infra.Case* case, double* fk, double* fi, double[::view.
 cdef int solve_iterative( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid, int max_iter,
                           double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) noexcept nogil:
 
-    DEF DONT_DO_SENS = 0  # value of do_sens when we don't want to do sensitivity analysis (used in the iterative refinement step)
-    DEF DIFF = 0  # interpolate function value (not a derivative)
 
     # First, as usual, fit the model against the original user-given data fk[], automatically updating case.fi:
     #
