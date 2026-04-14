@@ -85,13 +85,17 @@ jobs:
         run: |
           python -m pip install -q pefile
           python - <<'PY'
-          import ctypes, glob, os, sys, traceback
+          import ctypes, glob, importlib.util, os, sys, traceback
           import pefile
 
           print('python:', sys.version)
           print('prefix:', sys.prefix)
 
-          pyds = sorted(glob.glob('wlsqm/**/*.pyd', recursive=True))
+          # meson-python editable install drops the compiled .pyd files
+          # under build/<tag>/wlsqm/..., not under the source tree. The
+          # editable loader redirects imports there, so that is where we
+          # have to look.
+          pyds = sorted(glob.glob('build/**/*.pyd', recursive=True))
           print('=== built .pyd files ===')
           for p in pyds:
               print(' ', p)
@@ -111,7 +115,7 @@ jobs:
                   print(f'  {p} -> pefile error: {e}')
 
           print()
-          print('=== ctypes.WinDLL probe per .pyd (DLL-level load only, no PyInit) ===')
+          print('=== ctypes.WinDLL probe per .pyd (DLL-level LoadLibrary only, no PyInit) ===')
           for p in pyds:
               try:
                   ctypes.WinDLL(os.path.abspath(p))
@@ -120,24 +124,52 @@ jobs:
                   print(f'  WinDLL FAIL: {p} -- {e}')
 
           print()
-          print('=== Python-level import probe in dependency order ===')
-          mods = [
-              'wlsqm.fitter.defs',
-              'wlsqm.fitter.infra',
-              'wlsqm.fitter.polyeval',
-              'wlsqm.utils.ptrwrap',
-              'wlsqm.utils.lapackdrivers',
-              'wlsqm.fitter.interp',
-              'wlsqm.fitter.impl',
-              'wlsqm.fitter.simple',
-              'wlsqm.fitter.expert',
+          print('=== importlib spec-load probe (runs PyInit for each .pyd individually) ===')
+          # spec_from_file_location loads a .pyd by filesystem path and
+          # runs its PyInit without going through wlsqm/__init__.py. This
+          # isolates which module's PyInit is the first to raise.
+          #
+          # Extensions that `cimport` other wlsqm modules will still
+          # trigger Python-level imports during PyInit, and those
+          # DO go through the package machinery — but we load in
+          # dependency order below, so by the time simple.pyx's PyInit
+          # runs, its cimported deps are already in sys.modules.
+          load_order = [
+              ('wlsqm.fitter.defs',          'fitter/defs'),
+              ('wlsqm.fitter.infra',         'fitter/infra'),
+              ('wlsqm.fitter.polyeval',      'fitter/polyeval'),
+              ('wlsqm.utils.ptrwrap',        'utils/ptrwrap'),
+              ('wlsqm.utils.lapackdrivers',  'utils/lapackdrivers'),
+              ('wlsqm.fitter.interp',        'fitter/interp'),
+              ('wlsqm.fitter.impl',          'fitter/impl'),
+              ('wlsqm.fitter.simple',        'fitter/simple'),
+              ('wlsqm.fitter.expert',        'fitter/expert'),
           ]
-          for name in mods:
+          def find_pyd(subpath):
+              # subpath is like 'fitter/defs' or 'utils/lapackdrivers'.
+              # Match by subdir + filename stem; the ABI tag varies with
+              # the Python version in the test matrix, so we don't hardcode it.
+              subdir, stem = subpath.split('/')
+              for p in pyds:
+                  norm = p.replace('\\', '/')
+                  if f'/{subdir}/' in norm and os.path.basename(norm).split('.')[0] == stem:
+                      return p
+              return None
+
+          for fqname, subpath in load_order:
+              p = find_pyd(subpath)
+              if p is None:
+                  print(f'  not found : {fqname}')
+                  continue
               try:
-                  __import__(name)
-                  print(f'  import OK  : {name}')
+                  spec = importlib.util.spec_from_file_location(fqname, p)
+                  mod = importlib.util.module_from_spec(spec)
+                  sys.modules[fqname] = mod
+                  spec.loader.exec_module(mod)
+                  print(f'  PyInit OK : {fqname}  ({p})')
               except Exception as e:
-                  print(f'  import FAIL: {name} -- {type(e).__name__}: {e}')
+                  print(f'  PyInit FAIL: {fqname}  ({p})')
+                  print(f'             {type(e).__name__}: {e}')
                   traceback.print_exc()
                   break
           PY
