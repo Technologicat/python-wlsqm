@@ -119,8 +119,22 @@ skip = "*-win32 *-manylinux_i686 *-musllinux*"
 test-requires = ["pytest", "numpy", "scipy"]
 test-command = "pytest {project}/tests -v"
 
-[tool.cibuildwheel.macos]
-before-all = "brew install libomp"
+# macOS wheels ship without OpenMP. We could `brew install libomp` in a
+# `[tool.cibuildwheel.macos] before-all` step and let delocate-wheel bundle
+# libomp.dylib into the wheel, but Homebrew's current libomp (22.x) has a
+# minimum macOS target (15.0) newer than cibuildwheel's default arm64 target
+# (11.0). delocate-wheel correctly refuses to bundle it because the resulting
+# wheel would lie about its compatibility.
+#
+# We could either (a) bump MACOSX_DEPLOYMENT_TARGET to 15.0, shrinking the
+# supported macOS range by ~4 years, or (b) build libomp from source with a
+# lower target (complex CI). Instead, we lean on meson's
+# `dependency('openmp', required: false)` fallback: without libomp on the
+# build host, meson builds the extension in serial mode. Cython's `prange`
+# degrades to plain `range`, tests still pass, and macOS wheels are slower
+# but portable all the way back to macOS 11. Users who want parallel fits
+# on macOS can install from source: `brew install libomp` and then
+# `pip install --no-binary wlsqm wlsqm`. README.md documents this.
 
 [dependency-groups]
 dev = [

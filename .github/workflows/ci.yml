@@ -81,112 +81,6 @@ jobs:
       - name: Install wlsqm
         run: pip install --no-build-isolation -e .
 
-      # Diagnose Windows DLL-load failures: first run said vcomp140 is
-      # resolvable via ctypes, so the problem is deeper in the chain. Use
-      # pefile to dump the DLL-level import table of every built .pyd, then
-      # probe each .pyd with ctypes.WinDLL (which only exercises the Windows
-      # loader — PyInit never runs, so a WinDLL failure means Windows could
-      # not resolve a direct DLL import, whereas a WinDLL success + Python
-      # import failure means the Cython cimport chain in PyInit is what
-      # fails).
-      - name: Diagnose extension DLL dependencies (Windows)
-        if: runner.os == 'Windows'
-        # Use Git Bash so the Python heredoc works. PowerShell does not
-        # understand `python - <<'PY' ... PY` and chokes at parse time.
-        shell: bash
-        run: |
-          python -m pip install -q pefile
-          python - <<'PY'
-          import ctypes, glob, importlib.util, os, sys, traceback
-          import pefile
-
-          print('python:', sys.version)
-          print('prefix:', sys.prefix)
-
-          # meson-python editable install drops the compiled .pyd files
-          # under build/<tag>/wlsqm/..., not under the source tree. The
-          # editable loader redirects imports there, so that is where we
-          # have to look.
-          pyds = sorted(glob.glob('build/**/*.pyd', recursive=True))
-          print('=== built .pyd files ===')
-          for p in pyds:
-              print(' ', p)
-
-          print()
-          print('=== DLL-level imports per .pyd (pefile) ===')
-          for p in pyds:
-              try:
-                  pe = pefile.PE(p, fast_load=True)
-                  pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_IMPORT']])
-                  imports = [e.dll.decode(errors='replace') for e in getattr(pe, 'DIRECTORY_ENTRY_IMPORT', [])]
-                  print(f'  {p} ->')
-                  for name in imports:
-                      print(f'      {name}')
-                  pe.close()
-              except Exception as e:
-                  print(f'  {p} -> pefile error: {e}')
-
-          print()
-          print('=== ctypes.WinDLL probe per .pyd (DLL-level LoadLibrary only, no PyInit) ===')
-          for p in pyds:
-              try:
-                  ctypes.WinDLL(os.path.abspath(p))
-                  print(f'  WinDLL OK  : {p}')
-              except OSError as e:
-                  print(f'  WinDLL FAIL: {p} -- {e}')
-
-          print()
-          print('=== importlib spec-load probe (runs PyInit for each .pyd individually) ===')
-          # spec_from_file_location loads a .pyd by filesystem path and
-          # runs its PyInit without going through wlsqm/__init__.py. This
-          # isolates which module's PyInit is the first to raise.
-          #
-          # Extensions that `cimport` other wlsqm modules will still
-          # trigger Python-level imports during PyInit, and those
-          # DO go through the package machinery — but we load in
-          # dependency order below, so by the time simple.pyx's PyInit
-          # runs, its cimported deps are already in sys.modules.
-          load_order = [
-              ('wlsqm.fitter.defs',          'fitter/defs'),
-              ('wlsqm.fitter.infra',         'fitter/infra'),
-              ('wlsqm.fitter.polyeval',      'fitter/polyeval'),
-              ('wlsqm.utils.ptrwrap',        'utils/ptrwrap'),
-              ('wlsqm.utils.lapackdrivers',  'utils/lapackdrivers'),
-              ('wlsqm.fitter.interp',        'fitter/interp'),
-              ('wlsqm.fitter.impl',          'fitter/impl'),
-              ('wlsqm.fitter.simple',        'fitter/simple'),
-              ('wlsqm.fitter.expert',        'fitter/expert'),
-          ]
-          def find_pyd(subpath):
-              # subpath is like 'fitter/defs' or 'utils/lapackdrivers'.
-              # Match by subdir + filename stem; the ABI tag varies with
-              # the Python version in the test matrix, so we don't hardcode it.
-              subdir, stem = subpath.split('/')
-              for p in pyds:
-                  norm = p.replace('\\', '/')
-                  if f'/{subdir}/' in norm and os.path.basename(norm).split('.')[0] == stem:
-                      return p
-              return None
-
-          for fqname, subpath in load_order:
-              p = find_pyd(subpath)
-              if p is None:
-                  print(f'  not found : {fqname}')
-                  continue
-              try:
-                  spec = importlib.util.spec_from_file_location(fqname, p)
-                  mod = importlib.util.module_from_spec(spec)
-                  sys.modules[fqname] = mod
-                  spec.loader.exec_module(mod)
-                  print(f'  PyInit OK : {fqname}  ({p})')
-              except Exception as e:
-                  print(f'  PyInit FAIL: {fqname}  ({p})')
-                  print(f'             {type(e).__name__}: {e}')
-                  traceback.print_exc()
-                  break
-          PY
-        continue-on-error: true
-
       - name: Run tests
         run: pytest tests/ -v
 
@@ -194,6 +88,7 @@ jobs:
     needs: test
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
