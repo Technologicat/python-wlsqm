@@ -32,8 +32,6 @@ from libc.stdlib cimport malloc, free
 cimport cython.parallel
 cimport openmp
 
-from libc.math cimport fabs as c_abs
-
 cimport wlsqm.fitter.defs  as defs   # C constants
 cimport wlsqm.fitter.infra as infra  # centralized memory allocation infrastructure
 cimport wlsqm.fitter.impl  as impl   # low-level routines (implementation)

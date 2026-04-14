@@ -95,10 +95,7 @@ Return value : rank-1 array, function value at each x.
     if order not in [0,1,2,3,4]:
         raise ValueError( "order must be 0, 1, 2, 3 or 4; got %d" % order )
 
-    cdef double[::1] xiManyD
     cdef double[::view.generic,::view.contiguous] xManyD
-
-    cdef double xi1D
     cdef double[::view.generic] x1D
 
     cdef int nx

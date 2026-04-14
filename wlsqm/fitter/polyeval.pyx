@@ -91,7 +91,7 @@ cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, doub
     cdef double dx, dy, dz
     cdef double dxdy, dydz, dxdz
     cdef double acc1, acc2  # accumulators
-    cdef double resX, resY, resZ, resXY, resYZ, resXZ, resXYZ  # intermediate results
+    cdef double resX, resY, resZ, resXY, resYZ, resXZ  # intermediate results
 
     if order == 4:
         for k in range(n):
@@ -369,7 +369,7 @@ cdef int general_3D( int order, double* fi, double xi, double yi, double zi, dou
     cdef double dx, dy, dz
     cdef double dxdy, dydz, dxdz
     cdef double acc1, acc2  # accumulators
-    cdef double resX, resY, resZ, resXY, resYZ, resXZ, resXYZ  # intermediate results
+    cdef double resX, resY, resZ, resXY, resYZ, resXZ  # intermediate results
 
     if order == 4:
         for k in range(n):

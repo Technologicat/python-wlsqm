@@ -18,10 +18,7 @@
 
 
 from libc.stdlib cimport malloc, free
-from libc.math cimport sqrt, log10
 from libc.math cimport fabs as c_abs
-
-from numpy import asanyarray
 
 cimport wlsqm.utils.lapackdrivers as drivers
 
@@ -79,7 +76,7 @@ cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] 
     cdef double* c = case.c
     cdef double* w = case.w
     cdef int order = case.order
-    cdef int weighting_method = case.weighting_method
+    #cdef int weighting_method = case.weighting_method  # (not used in make_c_*; actual branching lives in Case_make_weights)
     cdef int no    = case.no  # required size
     cdef int nk    = case.nk  # number of neighbors (data points used in fit) (usually the same as xk.shape[0])
     cdef double xi = case.xi
@@ -295,7 +292,7 @@ cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] 
     cdef double* c = case.c
     cdef double* w = case.w
     cdef int order = case.order
-    cdef int weighting_method = case.weighting_method
+    #cdef int weighting_method = case.weighting_method  # (not used in make_c_*; actual branching lives in Case_make_weights)
     cdef int no    = case.no  # required size
     cdef int nk    = case.nk  # number of neighbors (data points used in fit) (usually the same as xk.shape[0])
     cdef double xi = case.xi
@@ -458,7 +455,7 @@ cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) noexcept nogi
     cdef double* c = case.c
     cdef double* w = case.w
     cdef int order = case.order
-    cdef int weighting_method = case.weighting_method
+    #cdef int weighting_method = case.weighting_method  # (not used in make_c_*; actual branching lives in Case_make_weights)
     cdef int no    = case.no  # required size
     cdef int nk    = case.nk  # number of neighbors (data points used in fit) (usually the same as xk.shape[0])
     cdef double xi = case.xi
@@ -583,8 +580,8 @@ cdef void make_A( infra.Case* case ) noexcept nogil:
     cdef int nk           = case.nk
     cdef int nr           = case.nr
     cdef int no           = case.no
-    cdef long long knowns = case.knowns
-    cdef int* o2r         = case.o2r
+    #cdef long long knowns = case.knowns  # (available; make_A works only on the reduced system via r2o)
+    #cdef int* o2r         = case.o2r     # (available; we only need r2o here)
     cdef int* r2o         = case.r2o
 
     # construct the reduced system (naively, without scaling; preconditioning is applied later in preprocess_A())
@@ -631,8 +628,8 @@ cdef void preprocess_A( infra.Case* case, int debug ) noexcept nogil:
     cdef double* row_scale = case.row_scale
     cdef double* col_scale = case.col_scale
     cdef int nr            = case.nr
-    cdef int* o2r          = case.o2r
-    cdef int* r2o          = case.r2o
+    #cdef int* o2r          = case.o2r  # (available; preprocess_A only needs nr and the scaling arrays)
+    #cdef int* r2o          = case.r2o  # (same)
 
     # all tagged as knowns --> nothing to solve
     #
@@ -653,7 +650,8 @@ cdef void preprocess_A( infra.Case* case, int debug ) noexcept nogil:
     # relative accuracy is O(kappa(A) * machine_epsilon), where at double precision, machine_epsilon ~ 1e-16.
     # ( http://scicomp.stackexchange.com/questions/19289/are-direct-solvers-affect-by-the-condition-number-of-a-matrix )
     #
-    cdef int iterations_taken = drivers.rescale_ruiz2001_c( A, nr, nr, row_scale, col_scale )  # compute row and column scaling factors
+    #cdef int iterations_taken = drivers.rescale_ruiz2001_c( A, nr, nr, row_scale, col_scale )  # (note: rescale_ruiz2001_c returns the iteration count; we could surface it for diagnostics)
+    drivers.rescale_ruiz2001_c( A, nr, nr, row_scale, col_scale )  # compute row and column scaling factors
     drivers.apply_scaling_c( A, nr, nr, row_scale, col_scale )     # using the computed factors, scale A in-place
 
     # Compute the condition numbers before factorizing A.
@@ -661,8 +659,6 @@ cdef void preprocess_A( infra.Case* case, int debug ) noexcept nogil:
     # We can't use dgecon() (which would use the factorized A), because we want the 2-norm condition number and dgecon() only supports 1-norm and infinity-norm.
     #
     cdef double* S = <double*>0
-    cdef double cond_orig, cond_scaled
-    cdef int j
     if debug:
         # Estimate the condition number (before and after scaling) and save it to the Case instance.
         #
@@ -750,7 +746,7 @@ cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.gene
 
     cdef double* c         = case.c
     cdef double* w         = case.w
-    cdef int* o2r          = case.o2r
+    #cdef int* o2r          = case.o2r  # (available; solve only walks the reduced system via r2o)
     cdef int* r2o          = case.r2o
 
     cdef double* LU        = case.A  # case.A has already been factored when solve() is called
@@ -880,7 +876,7 @@ cdef void solve_contig( infra.Case* case, double* fk, double* fi, double[::view.
 
     cdef double* c         = case.c
     cdef double* w         = case.w
-    cdef int* o2r          = case.o2r
+    #cdef int* o2r          = case.o2r  # (available; solve only walks the reduced system via r2o)
     cdef int* r2o          = case.r2o
 
     cdef double* LU        = case.A  # case.A has already been factored when solve() is called
@@ -1014,10 +1010,9 @@ cdef int solve_iterative( infra.Case* case, double[::view.generic] fk, double[::
 
     cdef int i=0, k  # the user may have accidentally given max_iter=0 so we must initialize i here
     cdef double tmp, norm, prev_norm=-1.
-    cdef int dimension = case.dimension
-    cdef int order     = case.order
+    #cdef int dimension = case.dimension  # (available on the Case; handy for debug prints at this use site)
+    #cdef int order     = case.order      # (same)
     cdef double* fi    = case.fi  # the array has case.no elements
-#    DEF epsilon = 1e-15
     for i in range(max_iter):
         # Using the latest fi[], interpolate the fitted model to the points xk, overwriting wrk_fk.
         #

@@ -446,7 +446,7 @@ computation is internally done during prepare()). Otherwise calling this raises 
 
         cdef int ncases = self.ncases
         cdef int j
-        cdef infra.Case* case
+        #cdef infra.Case* case  # (kept commented to mirror the idea-that-didn't-work block below, which wanted to compute the cond number via np.linalg.cond on case.A)
         cdef double[::1] out = np.empty( (ncases,), dtype=np.float64 )
         for j in range(ncases):
             out[j] = manager.cases[j].cond_scaled  # prepare() fills this in if the debug flag is set
@@ -834,7 +834,7 @@ cdef void expert_interpolate_nearest( int dimension, xi_tree, infra.CaseManager*
     #
     cdef long[::1] I  # scipy.spatial.cKDTree.query() returns an array of long
     if I_in is None:  # usual case
-        dummy, I = xi_tree.query( x, k=1 )  # distances,indices = ...  (in this case, we don't need the distances (TODO: could be a useful quality metric?))
+        _distances, I = xi_tree.query( x, k=1 )  # TODO: _distances could be a useful quality metric
     else:  # use the caller-specified model indices (useful when re-interpolating an updated model for the same points x)
         I = I_in
 

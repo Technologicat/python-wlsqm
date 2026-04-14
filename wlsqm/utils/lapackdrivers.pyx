@@ -1207,7 +1207,7 @@ ipiv : shape (n, nlhs), must have been allocated by caller (dtype=np.int32, orde
         msymmetricfactor_c( &A[0,0,0], &ipiv[0,0], n, nlhs )
 
 cdef int msymmetricfactor_c( double* A, int* ipiv, int n, int nlhs ) except -1 nogil:
-    cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem (and actually unused since we only use DSYSV to query work size)
+    cdef int info, nelems=n*n
     cdef char uplo='U'
 
     # query optimal work size (will be written at &worksize[0]).
@@ -1284,7 +1284,7 @@ ntasks : number of threads for OpenMP
         msymmetricfactorp_c( &A[0,0,0], &ipiv[0,0], n, nlhs, ntasks )
 
 cdef int msymmetricfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) except -1 nogil:
-    cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem (and actually unused since we only use DSYSV to query work size)
+    cdef int info, nelems=n*n
     cdef char uplo='U'
 
     # query optimal work size (will be written at &worksize[0])
