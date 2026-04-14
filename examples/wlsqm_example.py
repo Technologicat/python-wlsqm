@@ -5,7 +5,6 @@
 -JJ 2016-11-10
 """
 
-from __future__ import division, print_function, absolute_import
 
 import time
 

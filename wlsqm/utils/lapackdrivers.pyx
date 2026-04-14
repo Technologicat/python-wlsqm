@@ -55,7 +55,6 @@ See the function docstrings for details.
 JJ 2016-10-07
 """
 
-from __future__ import division, print_function, absolute_import
 
 cimport cython
 cimport cython.parallel
@@ -65,6 +64,8 @@ from libc.math cimport sqrt
 from libc.math cimport fabs   as c_abs
 
 from libc.stdlib cimport malloc, free
+
+from enum import IntEnum
 
 import numpy as np
 
@@ -80,9 +81,9 @@ from scipy.linalg.cython_lapack cimport dgeequ, dgesvd
 
 # fast inline min/max for C code
 #
-cdef inline int cimin(int a, int b) nogil:
+cdef inline int cimin(int a, int b) noexcept nogil:
     return a if a < b else b
-cdef inline int cimax(int a, int b) nogil:
+cdef inline int cimax(int a, int b) noexcept nogil:
     return a if a > b else b
 
 
@@ -107,7 +108,7 @@ Distribute work items (numbered 0, 1, ..., nitems-1) across ntasks tasks, assumi
 #
 # All arrays must be allocated by caller!
 #
-cdef void distribute_items_c( int nitems, int ntasks, int* blocksizes, int* baseidxs ) nogil:  # C implementation
+cdef void distribute_items_c( int nitems, int ntasks, int* blocksizes, int* baseidxs ) noexcept nogil:  # C implementation
     cdef int baseblocksize = nitems // ntasks   # how many items per task
     cdef int remainder     = nitems %  ntasks
     if baseblocksize == 0:  # no whole blocks?
@@ -139,7 +140,7 @@ O must have the same shape as I, and must have been allocated by the caller.
     with nogil:
         copygeneral_c( &O[0,0], &I[0,0], nrows, ncols )
 
-cdef void copygeneral_c( double* O, double* I, int nrows, int ncols ) nogil:
+cdef void copygeneral_c( double* O, double* I, int nrows, int ncols ) noexcept nogil:
     cdef int nelems=ncols*nrows
     cdef int e  # element storage offset as counted from the beginning of the matrix
     for e in range(nelems):  # TODO: maybe we could even memcpy(&O[0], &I[0], nelems*sizeof(double))?
@@ -159,7 +160,7 @@ O must have the same shape as I, and must have been allocated by the caller.
     with nogil:
         copysymmu_c( &O[0,0], &I[0,0], nrows, ncols )
 
-cdef void copysymmu_c( double* O, double* I, int nrows, int ncols ) nogil:
+cdef void copysymmu_c( double* O, double* I, int nrows, int ncols ) noexcept nogil:
     cdef int j, i, colbaseidx, e
     for j in range(ncols):        # column
         colbaseidx = j*nrows
@@ -181,7 +182,7 @@ This is a fast Cython implementation of:
     with nogil:
         symmetrize_c( &A[0,0], nrows, ncols )
 
-cdef void symmetrize_c( double* A, int nrows, int ncols ) nogil:
+cdef void symmetrize_c( double* A, int nrows, int ncols ) noexcept nogil:
     cdef int i, j
     cdef double tmp
 
@@ -208,7 +209,7 @@ This is a fast Cython implementation of:
     with nogil:
         msymmetrize_c( &A[0,0,0], nrows, ncols, nlhs )
 
-cdef void msymmetrize_c( double* A, int nrows, int ncols, int nlhs ) nogil:
+cdef void msymmetrize_c( double* A, int nrows, int ncols, int nlhs ) noexcept nogil:
     cdef int nelems=nrows*ncols
     cdef int i, j, k
     cdef double tmp
@@ -234,7 +235,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         msymmetrizep_c( &A[0,0,0], nrows, ncols, nlhs, ntasks )
 
-cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks ) nogil:
+cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks ) noexcept nogil:
     cdef int nelems=nrows*ncols
     cdef int i, j, k
     cdef double tmp
@@ -274,7 +275,7 @@ cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks 
 # col_scale : out, vector of column scalings, size (ncols,)  (needed by caller for scaling the solution; final_x[m] = scaled_x[m] * col_scale[m])
 
 # Initialize scaling for rows and columns of a general matrix A.
-cdef void init_scaling_c( int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef void init_scaling_c( int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     cdef int j, m
     for m in range(ncols):  # col
         col_scale[m] = 1.
@@ -282,7 +283,7 @@ cdef void init_scaling_c( int nrows, int ncols, double* row_scale, double* col_s
         row_scale[j] = 1.
 
 # Freeze the given scaling factors by applying them to A in-place.
-cdef void apply_scaling_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef void apply_scaling_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     cdef int j, m
     cdef double c
     for m in range(ncols):
@@ -294,8 +295,13 @@ cdef void apply_scaling_c( double* A, int nrows, int ncols, double* row_scale, d
 # Helpers for do_rescale()
 #
 ctypedef int (*rescale_func_ptr)(double*, int, int, double*, double*) nogil
-class ScalingAlgo:  # enum (TODO: use real enum type for Python 3.4+)
-    """Enum for scaling algorithms for do_rescale()."""
+class ScalingAlgo(IntEnum):
+    """Enum for scaling algorithms for do_rescale().
+
+    Members are plain ints at the C level, so the `algo == ScalingAlgo.ALGO_*`
+    dispatch in `do_rescale` keeps working unchanged when the caller passes
+    either an int literal or an enum member.
+    """
     ALGO_COLS_EUCL = 1
     ALGO_ROWS_EUCL = 2
     ALGO_TWOPASS   = 3
@@ -356,9 +362,18 @@ Return value: tuple (row_scale, col_scale), where
     else:
         raise ValueError("Unknown algorithm identifier, got %d" % (algo))
 
+    # The return value of scaler() is non-zero on success, 0 on failure. The
+    # non-dgeequ routines are pure arithmetic and always succeed (they return 1
+    # unconditionally). rescale_dgeequ_c delegates to LAPACK's DGEEQU, which
+    # signals singular rows/columns (info > 0) and argument errors (info < 0)
+    # through its info parameter; we propagate that as a LinAlgError.
+    cdef int ok
     with nogil:
-        scaler( &A[0,0], nrows, ncols, &row_scale[0], &col_scale[0] )  # internally calls init_scaling_c()
-        apply_scaling_c( &A[0,0], nrows, ncols, &row_scale[0], &col_scale[0] )
+        ok = scaler( &A[0,0], nrows, ncols, &row_scale[0], &col_scale[0] )  # internally calls init_scaling_c()
+        if ok != 0:
+            apply_scaling_c( &A[0,0], nrows, ncols, &row_scale[0], &col_scale[0] )
+    if ok == 0:
+        raise np.linalg.LinAlgError("Matrix scaling failed (e.g. singular row or column).")
 
     return (row_scale, col_scale)
 
@@ -386,7 +401,7 @@ Do not call this directly; instead, use do_rescale(). This function is exported 
 """
     return do_rescale( A, ScalingAlgo.ALGO_COLS_EUCL )
 
-cdef int rescale_columns_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef int rescale_columns_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     init_scaling_c(       nrows, ncols, row_scale, col_scale )
 
     cdef int j, m
@@ -418,7 +433,7 @@ Do not call this directly; instead, use do_rescale(). This function is exported 
 """
     return do_rescale( A, ScalingAlgo.ALGO_ROWS_EUCL )
 
-cdef int rescale_rows_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef int rescale_rows_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     init_scaling_c(       nrows, ncols, row_scale, col_scale )
 
     cdef int j, m
@@ -454,7 +469,7 @@ See rescale_ruiz2001() and rescale_scalgm().
 
     return do_rescale( A, ScalingAlgo.ALGO_TWOPASS )
 
-cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     init_scaling_c(       nrows, ncols, row_scale, col_scale )
 
     cdef int j, m
@@ -495,12 +510,20 @@ See:
 """
     return do_rescale( A, ScalingAlgo.ALGO_DGEEQU )
 
-# FIXME: Unfortunately, we must ignore exceptions to fit the rescale_func_ptr signature.
-cdef int rescale_dgeequ_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+# The rescale_func_ptr signature is `nogil` without an exception spec, so we
+# cannot raise from here directly. Instead we return 0 on failure and 1 on
+# success, and do_rescale() checks the return value after the with-nogil block.
+# DGEEQU's `info` output is:
+#     info == 0 : success
+#     info <  0 : argument `-info` had an illegal value (caller bug)
+#     info >  0 : row/column `info` is exactly zero (singular matrix)
+cdef int rescale_dgeequ_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     # SUBROUTINE DGEEQU( M, N, A, LDA, R, C, ROWCND, COLCND, AMAX, INFO )
     cdef double rowcnd, colcnd, amax
     cdef int info
     dgeequ( &nrows, &ncols, A, &nrows, row_scale, col_scale, &rowcnd, &colcnd, &amax, &info )
+    if info != 0:
+        return 0
     return 1
 
 
@@ -520,7 +543,7 @@ Reference:
 """
     return do_rescale( A, ScalingAlgo.ALGO_RUIZ2001 )
 
-cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     # temporary work space
     cdef double* DR     = <double*>malloc( nrows*sizeof(double) )
     cdef double* DC     = <double*>malloc( ncols*sizeof(double) )
@@ -612,7 +635,7 @@ Reference:
     return do_rescale( A, ScalingAlgo.ALGO_SCALGM )
 
 # Helper for SCALGM
-cdef void basic_scale_up_rows( double* A, int nrows, int ncols, double* rs, double* cs, double* mod_cs, double* new_rs ) nogil:
+cdef void basic_scale_up_rows( double* A, int nrows, int ncols, double* rs, double* cs, double* mod_cs, double* new_rs ) noexcept nogil:
     cdef int j, m
     cdef double r, acc, tmp
     if mod_cs != <double*>0:  # multiplicative modifier from previous column scaling not yet applied in current rs,cs
@@ -637,7 +660,7 @@ cdef void basic_scale_up_rows( double* A, int nrows, int ncols, double* rs, doub
             new_rs[j] = 1./acc  # acc = smallest non-zero magnitude of any element on row j
 
 # Helper for SCALGM
-cdef void basic_scale_up_cols( double* A, int nrows, int ncols, double* rs, double* mod_rs, double* cs, double* new_cs ) nogil:
+cdef void basic_scale_up_cols( double* A, int nrows, int ncols, double* rs, double* mod_rs, double* cs, double* new_cs ) noexcept nogil:
     cdef int j, m
     cdef double c, acc, tmp
     if mod_rs != <double*>0:  # multiplicative modifier from previous row scaling not yet applied in current rs,cs
@@ -662,7 +685,7 @@ cdef void basic_scale_up_cols( double* A, int nrows, int ncols, double* rs, doub
             new_cs[m] = 1./acc  # acc = smallest non-zero magnitude of any element in column m
 
 # Helper for SCALGM
-cdef void basic_scale_down_rows( double* A, int nrows, int ncols, double* rs, double* cs, double* mod_cs, double* new_rs ) nogil:
+cdef void basic_scale_down_rows( double* A, int nrows, int ncols, double* rs, double* cs, double* mod_cs, double* new_rs ) noexcept nogil:
     cdef int j, m
     cdef double r, acc, tmp
     if mod_cs != <double*>0:  # multiplicative modifier from previous column scaling not yet applied in current rs,cs
@@ -687,7 +710,7 @@ cdef void basic_scale_down_rows( double* A, int nrows, int ncols, double* rs, do
             new_rs[j] = 1./acc  # acc = largest magnitude of any element on row j
 
 # Helper for SCALGM
-cdef void basic_scale_down_cols( double* A, int nrows, int ncols, double* rs, double* mod_rs, double* cs, double* new_cs ) nogil:
+cdef void basic_scale_down_cols( double* A, int nrows, int ncols, double* rs, double* mod_rs, double* cs, double* new_cs ) noexcept nogil:
     cdef int j, m
     cdef double c, acc, tmp
     if mod_rs != <double*>0:  # multiplicative modifier from previous row scaling not yet applied in current rs,cs
@@ -712,7 +735,7 @@ cdef void basic_scale_down_cols( double* A, int nrows, int ncols, double* rs, do
             new_cs[m] = 1./acc  # acc = largest magnitude of any element in column m
 
 # SCALGM driver
-cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil:
+cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil:
     # temporary work space
     cdef double* DR1 = <double*>malloc( nrows*sizeof(double) )
     cdef double* DC1 = <double*>malloc( ncols*sizeof(double) )
@@ -821,8 +844,8 @@ cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, d
 # Simple example (tridiagonal matrices)
 ##############################################################################################################
 
-cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) nogil except -1:
-    """cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) nogil except -1:
+cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) except -1 nogil:
+    """cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) except -1 nogil:
 
 Tridiagonal solver example from:
 
@@ -867,7 +890,7 @@ b : rank-1 arraylike, shape (2,)
 """
     symmetric2x2_c( &A[0,0], &b[0] )
 
-cdef int symmetric2x2_c( double* A, double* b ) nogil except -1:
+cdef int symmetric2x2_c( double* A, double* b ) except -1 nogil:
     # Ainv = 1/Adet * [ [A22, -A12], [-A21, A11] ]
     # x = Ainv*b
     #
@@ -906,7 +929,7 @@ b : rank-1 arraylike, shape (n,)
     with nogil:
         symmetrics_c( &A[0,0], &b[0], n, 1 )
 
-cdef int symmetric_c( double* A, double* b, int n ) nogil except -1:
+cdef int symmetric_c( double* A, double* b, int n ) except -1 nogil:
     return symmetrics_c( A, b, n, 1 )
 
 
@@ -928,7 +951,7 @@ Return value:
         symmetricfactor_c( &A[0,0], &ipiv[0], n )
     return ipiv
 
-cdef int symmetricfactor_c( double* A, int* ipiv, int n ) nogil except -1:
+cdef int symmetricfactor_c( double* A, int* ipiv, int n ) except -1 nogil:
     return msymmetricfactor_c( A, ipiv, n, 1 )
 
 def symmetricfactored( double[::1,:] A, int[::1] ipiv, double[::1] b ):
@@ -960,7 +983,7 @@ b : rank-1 arraylike, shape (n,)
     with nogil:
         symmetricfactored_c( &A[0,0], &ipiv[0], &b[0], n )
 
-cdef int symmetricfactored_c( double* A, int* ipiv, double* b, int n ) nogil except -1:
+cdef int symmetricfactored_c( double* A, int* ipiv, double* b, int n ) except -1 nogil:
     return msymmetricfactored_c( A, ipiv, b, n, 1 )
 
 
@@ -983,7 +1006,7 @@ b : shape (n, nrhs)
     with nogil:
         symmetrics_c( &A[0,0], &b[0,0], n, nrhs )
 
-cdef int symmetrics_c( double* A, double* b, int n, int nrhs ) nogil except -1:
+cdef int symmetrics_c( double* A, double* b, int n, int nrhs ) except -1 nogil:
     cdef int info
     cdef char uplo='U'
 
@@ -1028,7 +1051,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         symmetricsp_c( &A[0,0], &b[0,0], n, nrhs, ntasks )
 
-cdef int symmetricsp_c( double* A, double* b, int n, int nrhs, int ntasks ) nogil except -1:
+cdef int symmetricsp_c( double* A, double* b, int n, int nrhs, int ntasks ) except -1 nogil:
     cdef int info, nelems=n*n  # nelems = total number of elements in A
     cdef char uplo='U'
 
@@ -1092,7 +1115,7 @@ b : shape (n, nlhs)
     with nogil:
         msymmetric_c( &A[0,0,0], &b[0,0], n, nlhs )
 
-cdef int msymmetric_c( double* A, double* b, int n, int nlhs ) nogil except -1:
+cdef int msymmetric_c( double* A, double* b, int n, int nlhs ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
     cdef char uplo='U'
 
@@ -1139,7 +1162,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         msymmetricp_c( &A[0,0,0], &b[0,0], n, nlhs, ntasks )
 
-cdef int msymmetricp_c( double* A, double* b, int n, int nlhs, int ntasks ) nogil except -1:
+cdef int msymmetricp_c( double* A, double* b, int n, int nlhs, int ntasks ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
     cdef char uplo='U'
 
@@ -1182,7 +1205,7 @@ ipiv : shape (n, nlhs), must have been allocated by caller (dtype=np.int32, orde
     with nogil:
         msymmetricfactor_c( &A[0,0,0], &ipiv[0,0], n, nlhs )
 
-cdef int msymmetricfactor_c( double* A, int* ipiv, int n, int nlhs ) nogil except -1:
+cdef int msymmetricfactor_c( double* A, int* ipiv, int n, int nlhs ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem (and actually unused since we only use DSYSV to query work size)
     cdef char uplo='U'
 
@@ -1230,7 +1253,7 @@ b: shape (n, nlhs)
     with nogil:
         msymmetricfactored_c( &A[0,0,0], &ipiv[0,0], &b[0,0], n, nlhs )
 
-cdef int msymmetricfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) nogil except -1:
+cdef int msymmetricfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
     cdef char uplo='U'
 
@@ -1259,7 +1282,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         msymmetricfactorp_c( &A[0,0,0], &ipiv[0,0], n, nlhs, ntasks )
 
-cdef int msymmetricfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) nogil except -1:
+cdef int msymmetricfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem (and actually unused since we only use DSYSV to query work size)
     cdef char uplo='U'
 
@@ -1312,7 +1335,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         msymmetricfactoredp_c( &A[0,0,0], &ipiv[0,0], &b[0,0], n, nlhs, ntasks )
 
-cdef int msymmetricfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) nogil except -1:
+cdef int msymmetricfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
     cdef char uplo='U'
     cdef int k
@@ -1342,7 +1365,7 @@ b : rank-1 arraylike, shape (2,)
 """
     general2x2_c( &A[0,0], &b[0] )
 
-cdef int general2x2_c( double* A, double* b ) nogil except -1:
+cdef int general2x2_c( double* A, double* b ) except -1 nogil:
     # Ainv = 1/Adet * [ [A22, -A12], [-A21, A11] ]
     # x = Ainv*b
 
@@ -1378,7 +1401,7 @@ b : rank-1 arraylike, shape (n,)
     with nogil:
         generals_c( &A[0,0], &b[0], n, 1 )
 
-cdef int general_c( double* A, double* b, int n ) nogil except -1:
+cdef int general_c( double* A, double* b, int n ) except -1 nogil:
     return generals_c( A, b, n, 1 )
 
 
@@ -1400,7 +1423,7 @@ Return value:
         generalfactor_c( &A[0,0], &ipiv[0], n )
     return ipiv
 
-cdef int generalfactor_c( double* A, int* ipiv, int n ) nogil except -1:
+cdef int generalfactor_c( double* A, int* ipiv, int n ) except -1 nogil:
     return mgeneralfactor_c( A, ipiv, n, 1 )
 
 # Solve a linear equation system using an already factored A and pivot data.
@@ -1428,7 +1451,7 @@ b : rank-1 arraylike, shape (n,)
     with nogil:
         generalfactored_c( &A[0,0], &ipiv[0], &b[0], n )
 
-cdef int generalfactored_c( double* A, int* ipiv, double* b, int n ) nogil except -1:
+cdef int generalfactored_c( double* A, int* ipiv, double* b, int n ) except -1 nogil:
     return mgeneralfactored_c( A, ipiv, b, n, 1 )
 
 
@@ -1451,7 +1474,7 @@ b : shape (n, nrhs)
     with nogil:
         generals_c( &A[0,0], &b[0,0], n, nrhs )
 
-cdef int generals_c( double* A, double* b, int n, int nrhs ) nogil except -1:
+cdef int generals_c( double* A, double* b, int n, int nrhs ) except -1 nogil:
     cdef int info
     cdef int* p_ipiv = <int*>malloc( n*sizeof(int) )
 
@@ -1487,7 +1510,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         generalsp_c( &A[0,0], &b[0,0], n, nrhs, ntasks )
 
-cdef int generalsp_c( double* A, double* b, int n, int nrhs, int ntasks ) nogil except -1:
+cdef int generalsp_c( double* A, double* b, int n, int nrhs, int ntasks ) except -1 nogil:
     cdef int info, nelems=n*n  # nelems = total number of elements in A
 
     # Compute block sizes and start indices
@@ -1536,7 +1559,7 @@ b : shape (n, nlhs)
     with nogil:
         mgeneral_c( &A[0,0,0], &b[0,0], n, nlhs )
 
-cdef int mgeneral_c( double* A, double* b, int n, int nlhs ) nogil except -1:
+cdef int mgeneral_c( double* A, double* b, int n, int nlhs ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
 
     cdef int* p_ipivs = <int*>malloc( nlhs*n*sizeof(int) )
@@ -1567,7 +1590,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         mgeneralp_c( &A[0,0,0], &b[0,0], n, nlhs, ntasks )
 
-cdef int mgeneralp_c( double* A, double* b, int n, int nlhs, int ntasks ) nogil except -1:
+cdef int mgeneralp_c( double* A, double* b, int n, int nlhs, int ntasks ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
 
     cdef int* p_ipivs = <int*>malloc( nlhs*n*sizeof(int) )
@@ -1595,7 +1618,7 @@ ipiv : shape (n, nlhs), must have been allocated by caller (dtype=np.int32, orde
     with nogil:
         mgeneralfactor_c( &A[0,0,0], &ipiv[0,0], n, nlhs )
 
-cdef int mgeneralfactor_c( double* A, int* ipiv, int n, int nlhs ) nogil except -1:
+cdef int mgeneralfactor_c( double* A, int* ipiv, int n, int nlhs ) except -1 nogil:
     cdef int info, nelems=n*n
 
     cdef int k
@@ -1624,7 +1647,7 @@ b: shape (n, nlhs)
     with nogil:
         mgeneralfactored_c( &A[0,0,0], &ipiv[0,0], &b[0,0], n, nlhs )
 
-cdef int mgeneralfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) nogil except -1:
+cdef int mgeneralfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
     cdef char transpose='N'
 
@@ -1652,7 +1675,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         mgeneralfactorp_c( &A[0,0,0], &ipiv[0,0], n, nlhs, ntasks )
 
-cdef int mgeneralfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) nogil except -1:
+cdef int mgeneralfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) except -1 nogil:
     cdef int info, nelems=n*n
 
     cdef int k
@@ -1682,7 +1705,7 @@ ntasks : number of threads for OpenMP
     with nogil:
         mgeneralfactoredp_c( &A[0,0,0], &ipiv[0,0], &b[0,0], n, nlhs, ntasks )
 
-cdef int mgeneralfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) nogil except -1:
+cdef int mgeneralfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) except -1 nogil:
     cdef int nrhs=1, info, nelems=n*n  # here nrhs is per problem
     cdef char transpose='N'
 
@@ -1723,7 +1746,7 @@ Return value:
 
     return S
 
-cdef int svd_c( double* A, int m, int n, double* S ) nogil except -1:
+cdef int svd_c( double* A, int m, int n, double* S ) except -1 nogil:
     cdef int info, ldu=1, ldvt=1  # ldu and ldvt must be >= 1 even though they are not used if jobu='N' and jobvt='N'.
     cdef char jobu  = 'N'
     cdef char jobvt = 'N'

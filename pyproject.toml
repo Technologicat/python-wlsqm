@@ -1,0 +1,119 @@
+[build-system]
+requires = ["meson-python>=0.17", "Cython>=3.0", "numpy>=1.25", "scipy>=1.9"]
+build-backend = "mesonpy"
+
+[project]
+name = "wlsqm"
+dynamic = ["version"]
+description = "Fast and accurate weighted least squares meshless interpolator for Python"
+readme = "README.md"
+license = "BSD-2-Clause"
+requires-python = ">=3.11"
+authors = [
+    {name = "Juha Jeronen", email = "juha.jeronen@jamk.fi"},
+]
+keywords = [
+    "numerical", "interpolation", "differentiation",
+    "curve-fitting", "least-squares", "meshless",
+    "numpy", "cython",
+]
+dependencies = [
+    "numpy>=1.25",
+    "scipy>=1.9",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+[project.urls]
+Homepage = "https://github.com/Technologicat/python-wlsqm"
+Repository = "https://github.com/Technologicat/python-wlsqm"
+Issues = "https://github.com/Technologicat/python-wlsqm/issues"
+Changelog = "https://github.com/Technologicat/python-wlsqm/blob/master/CHANGELOG.md"
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    "00_stuff",
+]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "SIM"]
+ignore = [
+    # pycodestyle
+    "E203",   # whitespace before ':' — needed for slice alignment
+    "E265",   # block comment should start with '# ' — commented-out code, markers
+    "E301",   # expected 1 blank line — blank lines are semantic paragraph breaks
+    "E302",   # expected 2 blank lines before def — same
+    "E305",   # expected 2 blank lines after end — same
+    "E306",   # expected blank line before nested def — same
+    "E402",   # module level import not at top — conditional/deferred imports
+    "E501",   # line too long — advisory, not enforced
+    "E731",   # lambda assignment — closures are idiomatic in this codebase
+    # flake8-simplify
+    "SIM102",  # collapsible if — nested ifs often represent distinct semantic guards
+    # Note: SIM103 (return condition directly) is intentionally NOT ignored here.
+    # It is enabled as an advisory — CI runs it in a non-failing second pass.
+    "SIM105",  # contextlib.suppress — try/except/pass is more flexible and explicit
+    "SIM108",  # ternary instead of if/else — often less readable, no real gain
+    "SIM114",  # combine if branches — match-casing style; autofix would damage semantics
+    "SIM117",  # combine with statements — nesting shows parent/child relationships
+    "SIM118",  # in-dict-keys — explicit .keys() marks the variable as a dictlike
+    "SIM300",  # yoda conditions — natural reading order preferred
+    "SIM910",  # dict.get with None default — explicit None documents programmer intent
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]  # re-exports via star-import
+
+[tool.cython-lint]
+max-line-length = 200
+ignore = ["E115", "E201", "E202", "E221", "E231", "E302", "W293", "W391"]
+
+[tool.cibuildwheel]
+build = "cp311-* cp312-* cp313-* cp314-*"
+skip = "*-win32 *-manylinux_i686 *-musllinux*"
+test-requires = ["pytest", "numpy", "scipy"]
+test-command = "pytest {project}/tests -v"
+
+[tool.cibuildwheel.macos]
+before-all = "brew install libomp"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pip",
+    "cython-lint",
+    "Cython>=3.0",
+    "ruff>=0.14.0",
+    "flake8",
+    "autopep8",
+    "importmagic",
+    "epc",
+    "jedi>=0.19.2",
+    "scipy>=1.9",
+    "matplotlib",
+    # Needed in the venv (not just the isolated build env) so meson-python's
+    # editable loader can rebuild the extension on import after .pyx/.pxd edits.
+    "meson-python>=0.17",
+    "meson",
+    "ninja",
+]

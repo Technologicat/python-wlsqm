@@ -9,15 +9,14 @@
 #
 # JJ 2016-11-30
 
-from __future__ import absolute_import
 
 #################################################
 # Helper functions
 #################################################
 
-cdef int number_of_dofs( int dimension, int order ) nogil
-cdef int number_of_reduced_dofs( int n, long long mask ) nogil
-cdef int remap( int* o2r, int* r2o, int n, long long mask ) nogil
+cdef int number_of_dofs( int dimension, int order ) noexcept nogil
+cdef int number_of_reduced_dofs( int n, long long mask ) noexcept nogil
+cdef int remap( int* o2r, int* r2o, int n, long long mask ) noexcept nogil
 
 #################################################
 # class Allocator:
@@ -33,11 +32,11 @@ cdef struct Allocator:
     void* p        # first currently unused address in buffer
     int size_used  # bytes used up to now
 
-cdef Allocator* Allocator_new( int mode, int total_size_bytes ) nogil except <Allocator*>0
-cdef void* Allocator_malloc( Allocator* self, int size_bytes ) nogil
-cdef void Allocator_free( Allocator* self, void* p ) nogil
-cdef int Allocator_size_remaining( Allocator* self ) nogil
-cdef void Allocator_del( Allocator* self ) nogil
+cdef Allocator* Allocator_new( int mode, int total_size_bytes ) except <Allocator*>0 nogil
+cdef void* Allocator_malloc( Allocator* self, int size_bytes ) noexcept nogil
+cdef void Allocator_free( Allocator* self, void* p ) noexcept nogil
+cdef int Allocator_size_remaining( Allocator* self ) noexcept nogil
+cdef void Allocator_del( Allocator* self ) noexcept nogil
 
 #################################################
 # class CaseManager:
@@ -101,12 +100,12 @@ cdef struct CaseManager:
     int do_sens
     int iterative
 
-cdef CaseManager* CaseManager_new( int dimension, int do_sens, int iterative, int max_cases, int ntasks ) nogil except <CaseManager*>0
-cdef int CaseManager_add( CaseManager* self, Case* case ) nogil except -1
-cdef int CaseManager_commit( CaseManager* self ) nogil except -1
+cdef CaseManager* CaseManager_new( int dimension, int do_sens, int iterative, int max_cases, int ntasks ) except <CaseManager*>0 nogil
+cdef int CaseManager_add( CaseManager* self, Case* case ) except -1 nogil
+cdef int CaseManager_commit( CaseManager* self ) except -1 nogil
 #cdef int CaseManager_allocate( CaseManager* self ) nogil except -1  # private (not exported from the module)
 #cdef void CaseManager_deallocate( CaseManager* self ) nogil         # private
-cdef void CaseManager_del( CaseManager* self ) nogil
+cdef void CaseManager_del( CaseManager* self ) noexcept nogil
 
 #################################################
 # class Case:
@@ -182,15 +181,14 @@ cdef struct Case:
     double* fk_tmp
     double* fi_tmp
 
-cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, int nk, long long knowns, int weighting_method, int do_sens, int iterative, CaseManager* manager, Case* host ) nogil except <Case*>0
-cdef double* Case_get_wrk( Case* self, int taskid ) nogil
-cdef double* Case_get_fk_tmp( Case* self, int taskid ) nogil
-cdef double* Case_get_fi_tmp( Case* self, int taskid ) nogil
-cdef void Case_make_weights( Case* self, double max_d2 ) nogil  # mainly for use by wlsqm.fitter.impl.make_c_nd()
-cdef void Case_set_fi( Case* self, double* fi ) nogil
-cdef void Case_get_fi( Case* self, double* out ) nogil
+cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, int nk, long long knowns, int weighting_method, int do_sens, int iterative, CaseManager* manager, Case* host ) except <Case*>0 nogil
+cdef double* Case_get_wrk( Case* self, int taskid ) noexcept nogil
+cdef double* Case_get_fk_tmp( Case* self, int taskid ) noexcept nogil
+cdef double* Case_get_fi_tmp( Case* self, int taskid ) noexcept nogil
+cdef void Case_make_weights( Case* self, double max_d2 ) noexcept nogil  # mainly for use by wlsqm.fitter.impl.make_c_nd()
+cdef void Case_set_fi( Case* self, double* fi ) noexcept nogil
+cdef void Case_get_fi( Case* self, double* out ) noexcept nogil
 #cdef void Case_determine_sizes( Case* self, BufferSizes* sizes ) nogil  # private
 #cdef int Case_allocate( Case* self ) nogil except -1  # private
 #cdef void Case_deallocate( Case* self ) nogil  # private
-cdef void Case_del( Case* self ) nogil
-
+cdef void Case_del( Case* self ) noexcept nogil

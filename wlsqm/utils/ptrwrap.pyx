@@ -8,9 +8,7 @@
 #
 # JJ 2016-02-29
 
-from __future__ import division, print_function, absolute_import
 
 cdef class PointerWrapper:
     cdef set_ptr(self, void * input):
         self.ptr = input
-

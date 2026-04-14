@@ -16,15 +16,8 @@
 # cython: boundscheck = False
 # cython: cdivision   = True
 
-from __future__ import division, print_function, absolute_import
 
-# BUG in Cython 0.20.1post0: /usr/lib/python2.7/dist-packages/Cython/Includes/libc/math.pxd
-# defines fma(double x, double y), but it should be fma(double x, double y, double z)
-# so we import it manually.
-#
-#from libc.math cimport fma   # this works in newer Cythons, the bug has been fixed
-cdef extern from "<math.h>" nogil:
-    double fma(double x, double y, double z)
+from libc.math cimport fma
 
 cimport wlsqm.fitter.defs as defs  # C constants
 
@@ -56,7 +49,7 @@ cimport wlsqm.fitter.defs as defs  # C constants
 #
 # Return value: 0 on success, anything else indicates failure
 #
-cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -337,7 +330,7 @@ cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, doub
 #
 # Now fi[ i3_F_c ] is the constant term, fi[ i3_X ] is the coefficient of (x - xi), fi[ i3_Y ] is the coefficient of (y - yi), fi[ i3_X2 ] is the coefficient of (x - xi)**2, ...
 #
-cdef int general_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int general_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil:
     if order not in [0,1,2,3,4]:
         return -1
 #        with gil:
@@ -524,7 +517,7 @@ cdef int general_3D( int order, double* fi, double xi, double yi, double zi, dou
 #
 # Return value: 0 on success, anything else indicates failure
 #
-cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -717,7 +710,7 @@ cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.g
 #
 # Now fi[ i2_F_c ] is the constant term, fi[ i2_X ] is the coefficient of (x - xi), fi[ i2_Y ] is the coefficient of (y - yi), fi[ i2_X2 ] is the coefficient of (x - xi)**2, ...
 #
-cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil:
+cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil:
     if order not in [0,1,2,3,4]:
         return -1
 #        with gil:
@@ -849,7 +842,7 @@ cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.
 #
 # Return value: 0 on success, anything else indicates failure
 #
-cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil:
+cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) noexcept nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -932,7 +925,7 @@ cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, 
 #
 # Now fi[ i1_F_c ] is the constant term, fi[ i1_X ] is the coefficient of (x - xi), fi[ i2_X2 ] is the coefficient of (x - xi)**2, ...
 #
-cdef int general_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil:
+cdef int general_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) noexcept nogil:
     if order not in [0,1,2,3,4]:
         return -1
 #        with gil:

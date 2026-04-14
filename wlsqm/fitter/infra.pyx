@@ -33,7 +33,6 @@
 #           - max(nk_j) here too, same reason
 #      - ntasks*no*sizeof(double) bytes for fi_tmp
 
-from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
@@ -59,7 +58,7 @@ cdef extern from "popcount.h":
 # dimension : in, number of space dimensions (1, 2 or 3)
 # order     : in, the order of the polynomial to be fitted
 #
-cdef int number_of_dofs( int dimension, int order ) nogil:
+cdef int number_of_dofs( int dimension, int order ) noexcept nogil:
     if dimension not in [1,2,3]:
         return -1
 #        with gil:
@@ -111,7 +110,7 @@ cdef int number_of_dofs( int dimension, int order ) nogil:
 # n    : in, number of DOFs in the original (unreduced) system
 # mask : in, bitmask of knowns
 #
-cdef int number_of_reduced_dofs( int n, long long mask ) nogil:
+cdef int number_of_reduced_dofs( int n, long long mask ) noexcept nogil:
     cdef int ne = __builtin_popcountll(mask)  # number of eliminated DOFs = number of bits set in mask
     return n - ne  # remaining DOFs
 
@@ -137,7 +136,7 @@ cdef int number_of_reduced_dofs( int n, long long mask ) nogil:
 # In r2o (reduced->original), non-existent DOFs are those with  index >= n_reduced,
 # where  n_reduced = (n - n_eliminated),  since the reduced system has only n_reduced DOFs in total.
 #
-cdef int remap( int* o2r, int* r2o, int n, long long mask ) nogil:  # o = original, r = reduced
+cdef int remap( int* o2r, int* r2o, int n, long long mask ) noexcept nogil:  # o = original, r = reduced
     # We always start the elimination with a full range(n) of DOFs.
     #
     # For example, if we have 4 DOFs, and we would like to eliminate the DOF "1",
@@ -225,7 +224,7 @@ cdef int ALLOC_MODE_ONEBIGBUFFER = 2  # pre-allocate one big buffer to fit every
 # Note that ALLOC_MODE_PASSTRHOUGH doesn't use total_size_bytes, but .pxd files do not support default values for function arguments,
 # and Cython's "int total_size_bytes=*" syntax (in the .pxd file) does not support nogil functions.
 #
-cdef Allocator* Allocator_new( int mode, int total_size_bytes ) nogil except <Allocator*>0:
+cdef Allocator* Allocator_new( int mode, int total_size_bytes ) except <Allocator*>0 nogil:
     cdef Allocator* self = <Allocator*>malloc( sizeof(Allocator) )
     if self == <Allocator*>0:  # we promised Cython not to return NULL, so we must raise if the malloc fails
         with gil:
@@ -246,7 +245,7 @@ cdef Allocator* Allocator_new( int mode, int total_size_bytes ) nogil except <Al
 
     return self
 
-cdef void* Allocator_malloc( Allocator* self, int size_bytes ) nogil:
+cdef void* Allocator_malloc( Allocator* self, int size_bytes ) noexcept nogil:
     if self.mode == ALLOC_MODE_PASSTHROUGH:
 #        with gil:
 #            print( "directly allocating %d bytes" % (size_bytes) )  # DEBUG
@@ -274,16 +273,16 @@ cdef void* Allocator_malloc( Allocator* self, int size_bytes ) nogil:
 
     return p
 
-cdef void Allocator_free( Allocator* self, void* p ) nogil:
+cdef void Allocator_free( Allocator* self, void* p ) noexcept nogil:
     if self.mode == ALLOC_MODE_PASSTHROUGH:
         free( p )
     # else do nothing; this simplistic allocator doesn't reuse blocks once they are allocated
 
-cdef int Allocator_size_remaining( Allocator* self ) nogil:
+cdef int Allocator_size_remaining( Allocator* self ) noexcept nogil:
     return self.size_total - self.size_used
 
 # Destructor.
-cdef void Allocator_del( Allocator* self ) nogil:
+cdef void Allocator_del( Allocator* self ) noexcept nogil:
     if self != <Allocator*>0:
         free( self.buffer )
         free( self )
@@ -300,7 +299,7 @@ cdef void Allocator_del( Allocator* self ) nogil:
 # ntasks is for parallel processing at solve time; effectively, it specifies how many per-task arrays to allocate.
 # When processing serially, use the value 1.
 #
-cdef CaseManager* CaseManager_new( int dimension, int do_sens, int iterative, int max_cases, int ntasks ) nogil except <CaseManager*>0:
+cdef CaseManager* CaseManager_new( int dimension, int do_sens, int iterative, int max_cases, int ntasks ) except <CaseManager*>0 nogil:
     # Generally speaking, fixing the array size at instantiation time is stupid (an automatically expanding buffer would be better),
     # but considering that this class has only one actual user, where we do know max_cases in advance, it is fine for our purposes.
     if max_cases < 1:
@@ -351,7 +350,7 @@ cdef CaseManager* CaseManager_new( int dimension, int do_sens, int iterative, in
 #
 # Case_new() will call this automatically, if a manager is specified.
 #
-cdef int CaseManager_add( CaseManager* self, Case* case ) nogil except -1:
+cdef int CaseManager_add( CaseManager* self, Case* case ) except -1 nogil:
     # sanity check remaining space
     if self.ncases == self.max_cases:
         with gil:
@@ -378,12 +377,12 @@ cdef int CaseManager_add( CaseManager* self, Case* case ) nogil except -1:
 #
 # This should be called exactly once (per instance of CaseManager), after all cases have been CaseManager_add()'d.
 #
-cdef int CaseManager_commit( CaseManager* self ) nogil except -1:
+cdef int CaseManager_commit( CaseManager* self ) except -1 nogil:
     return CaseManager_allocate( self )
 
 # Create the memory buffer that will contain the data arrays for all cases.
 #
-cdef int CaseManager_allocate( CaseManager* self ) nogil except -1:
+cdef int CaseManager_allocate( CaseManager* self ) except -1 nogil:
     cdef int j, problem_instance_bytes=0, task_bytes=0
     cdef int max_nk=0, max_no=0, max_nr=0
     cdef int size_wrk=0, size_fk_tmp=0, size_fi_tmp=0
@@ -465,7 +464,7 @@ cdef int CaseManager_allocate( CaseManager* self ) nogil except -1:
 
 # The opposite of CaseManager_allocate().
 #
-cdef void CaseManager_deallocate( CaseManager* self ) nogil:
+cdef void CaseManager_deallocate( CaseManager* self ) noexcept nogil:
     if self != <CaseManager*>0:
         self.bytes_needed = 0
 
@@ -487,7 +486,7 @@ cdef void CaseManager_deallocate( CaseManager* self ) nogil:
 
 # Destructor. Destroys also the managed Case objects.
 #
-cdef void CaseManager_del( CaseManager* self ) nogil:
+cdef void CaseManager_del( CaseManager* self ) noexcept nogil:
     cdef int j
     if self != <CaseManager*>0:
         CaseManager_deallocate( self )
@@ -535,7 +534,7 @@ cdef void CaseManager_del( CaseManager* self ) nogil:
 #
 #          If null, the geometry data will be allocated locally.
 #
-cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, int nk, long long knowns, int weighting_method, int do_sens, int iterative, CaseManager* manager, Case* host ) nogil except <Case*>0:
+cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, int nk, long long knowns, int weighting_method, int do_sens, int iterative, CaseManager* manager, Case* host ) except <Case*>0 nogil:
     cdef Case* self = <Case*>malloc( sizeof(Case) )
     if self == <Case*>0:  # we promised Cython not to return NULL, so we must raise if the malloc fails
         with gil:
@@ -628,19 +627,19 @@ cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, 
 #
 # In unmanaged mode, each Case has its own work space.
 #
-cdef double* Case_get_wrk( Case* self, int taskid ) nogil:
+cdef double* Case_get_wrk( Case* self, int taskid ) noexcept nogil:
     if self.have_manager:
         return self.manager.wrks[taskid]
     else:
         return self.wrk
 
-cdef double* Case_get_fk_tmp( Case* self, int taskid ) nogil:
+cdef double* Case_get_fk_tmp( Case* self, int taskid ) noexcept nogil:
     if self.have_manager:
         return self.manager.fk_tmps[taskid]
     else:
         return self.fk_tmp
 
-cdef double* Case_get_fi_tmp( Case* self, int taskid ) nogil:
+cdef double* Case_get_fi_tmp( Case* self, int taskid ) noexcept nogil:
     if self.have_manager:
         return self.manager.fi_tmps[taskid]
     else:
@@ -656,7 +655,7 @@ cdef double* Case_get_fi_tmp( Case* self, int taskid ) nogil:
 # weighting_method : in, one of the constants WEIGHT_*. Specifies the type of weighting to use;
 #                    different weightings are good for different use cases of WLSQM.
 #
-cdef void Case_make_weights( Case* self, double max_d2 ) nogil:
+cdef void Case_make_weights( Case* self, double max_d2 ) noexcept nogil:
     cdef double* w = self.w
     cdef int nk    = self.nk
     cdef int weighting_method = self.weighting_method
@@ -698,7 +697,7 @@ cdef void Case_make_weights( Case* self, double max_d2 ) nogil:
 #
 # Write the result into the given BufferSizes struct.
 #
-cdef void Case_determine_sizes( Case* self, BufferSizes* sizes ) nogil:
+cdef void Case_determine_sizes( Case* self, BufferSizes* sizes ) noexcept nogil:
     cdef int no        = self.no
     cdef int nr        = self.nr
     cdef int nk        = self.nk
@@ -770,7 +769,7 @@ cdef void Case_determine_sizes( Case* self, BufferSizes* sizes ) nogil:
 #
 # This can be used to populate knowns.
 #
-cdef void Case_set_fi( Case* self, double* fi ) nogil:
+cdef void Case_set_fi( Case* self, double* fi ) noexcept nogil:
     cdef double* my_fi = self.fi
     cdef int no        = self.no
     cdef int om
@@ -780,7 +779,7 @@ cdef void Case_set_fi( Case* self, double* fi ) nogil:
 # Populate user-given array of length self.no
 # with the solution data (coefficients self.fi).
 #
-cdef void Case_get_fi( Case* self, double* out ) nogil:
+cdef void Case_get_fi( Case* self, double* out ) noexcept nogil:
     cdef double* my_fi = self.fi
     cdef int no        = self.no
     cdef int om
@@ -789,7 +788,7 @@ cdef void Case_get_fi( Case* self, double* out ) nogil:
 
 # Perform memory allocation.
 #
-cdef int Case_allocate( Case* self ) nogil except -1:
+cdef int Case_allocate( Case* self ) except -1 nogil:
     # At this point, the constructor has finished, so we have no, nr, nk and the flags (do_sens, iterative).
     #
     # Calculate the (space-)optimal buffer size for ONEBIGBUFFER mode.
@@ -867,7 +866,7 @@ cdef int Case_allocate( Case* self ) nogil except -1:
 
 # The opposite of Case_allocate().
 #
-cdef void Case_deallocate( Case* self ) nogil:
+cdef void Case_deallocate( Case* self ) noexcept nogil:
     if self != <Case*>0:
         # No guarantee that we'll be called only from the destructor;
         # we must set any deallocated pointers to NULL.
@@ -916,7 +915,7 @@ cdef void Case_deallocate( Case* self ) nogil:
 
 # Destructor.
 #
-cdef void Case_del( Case* self ) nogil:
+cdef void Case_del( Case* self ) noexcept nogil:
     if self != <Case*>0:
         Case_deallocate( self )
 

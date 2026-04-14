@@ -26,7 +26,6 @@ JJ 2016-11-07
 # - no contiguous buffer in the prep stage to allow generating the input by slicing an array (very useful); but the generated matrices will be contiguous!
 #   --> need to read only the function value data (fk[]) non-contiguously in the solve stage
 
-from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 
@@ -608,7 +607,7 @@ Return value:
 # This is used to work around the static typing in C to allow a single dimension-agnostic implementation for fitting.
 #
 cdef int generic_fit_basic( int dimension, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D, double[::view.generic] fk, double[::1] xiManyD, double xi1D, double[::1] fi,
-                                           double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int debug ) nogil except -1:
+                                           double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int debug ) except -1 nogil:
 
     DEF TASKID = 0  # no parallel processing, so we have only one task
 
@@ -657,7 +656,7 @@ cdef int generic_fit_basic( int dimension, double[::view.generic,::view.contiguo
 # This is used to work around the static typing in C to allow a single dimension-agnostic implementation for fitting.
 #
 cdef int generic_fit_iterative( int dimension, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D, double[::view.generic] fk, double[::1] xiManyD, double xi1D, double[::1] fi,
-                                               double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int max_iter, int debug ) nogil except -1:
+                                               double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int max_iter, int debug ) except -1 nogil:
 
     DEF TASKID = 0  # no parallel processing, so we have only one task
 
@@ -724,7 +723,7 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
                                                 double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                 double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug ) nogil except -1:
+                                                int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug ) except -1 nogil:
 
     DEF NTASKS = 1
     DEF TASKID = 0     # no parallel processing, so we have only one task
@@ -845,7 +844,7 @@ cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view
                                                     double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                     double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                     double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                    int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int debug ) nogil except -1:
+                                                    int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int debug ) except -1 nogil:
 
     DEF NTASKS = 1
     DEF TASKID = 0     # no parallel processing, so we have only one task
@@ -951,7 +950,7 @@ cdef int generic_fit_basic_many_parallel( int dimension, double[::view.generic,:
                                                          double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                          double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                         int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks, int debug ) nogil except -1:
+                                                         int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks, int debug ) except -1 nogil:
 
     DEF ITERATIVE = 0  # basic algorithm, not iterative
 
@@ -1064,7 +1063,7 @@ cdef int generic_fit_iterative_many_parallel( int dimension, double[::view.gener
                                                              double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                              double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                              double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                             int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int ntasks, int debug ) nogil except -1:
+                                                             int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int ntasks, int debug ) except -1 nogil:
 
     DEF ITERATIVE = 1  # iterative algorithm
 

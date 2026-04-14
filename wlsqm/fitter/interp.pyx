@@ -17,7 +17,6 @@ Interpolation of fitted surrogate model.
 JJ 2016-11-30
 """
 
-from __future__ import division, print_function, absolute_import
 
 import numpy as np  # needed by interpolate_fit() in Python API
 
@@ -251,7 +250,7 @@ See interpolate_fit() for the valid values. The default is to lambdify the funct
 #
 # This is used to work around the static typing in C to allow a single dimension-agnostic implementation for functions needing model interpolation.
 #
-cdef int interpolate_nD( infra.Case* case, double[::view.generic,::view.contiguous] xManyD, double[::view.generic] x1D, double* out, int diff ) nogil:
+cdef int interpolate_nD( infra.Case* case, double[::view.generic,::view.contiguous] xManyD, double[::view.generic] x1D, double* out, int diff ) noexcept nogil:
     if case.dimension == 3:
         return interpolate_3D( case, xManyD, out, diff )
     elif case.dimension == 2:
@@ -273,7 +272,7 @@ cdef int interpolate_nD( infra.Case* case, double[::view.generic,::view.contiguo
 # Note that the same xi and order must be passed here as for the model fitting.
 # fi[] must contain the output the model fitting.
 #
-cdef int interpolate_3D( infra.Case* case, double[::view.generic,::view.contiguous] x, double* out, int diff ) nogil:
+cdef int interpolate_3D( infra.Case* case, double[::view.generic,::view.contiguous] x, double* out, int diff ) noexcept nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -671,7 +670,7 @@ cdef int interpolate_3D( infra.Case* case, double[::view.generic,::view.contiguo
 # Note that the same xi and order must be passed here as for the model fitting.
 # fi[] must contain the output the model fitting.
 #
-cdef int interpolate_2D( infra.Case* case, double[::view.generic,::view.contiguous] x, double* out, int diff ) nogil:
+cdef int interpolate_2D( infra.Case* case, double[::view.generic,::view.contiguous] x, double* out, int diff ) noexcept nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 
@@ -863,7 +862,7 @@ cdef int interpolate_2D( infra.Case* case, double[::view.generic,::view.contiguo
 # Note that the same xi and order must be passed here as for the model fitting.
 # fi[] must contain the output from the model fitting.
 #
-cdef int interpolate_1D( infra.Case* case, double[::view.generic] x, double* out, int diff ) nogil:
+cdef int interpolate_1D( infra.Case* case, double[::view.generic] x, double* out, int diff ) noexcept nogil:
     DEF onesixth = 1./6.
     DEF one24th  = 1./24.
 

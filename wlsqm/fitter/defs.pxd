@@ -11,7 +11,6 @@
 #
 # JJ 2016-11-30
 
-from __future__ import absolute_import
 
 # Algorithms for the solve step (expert mode).
 #
@@ -228,4 +227,3 @@ cdef long long b3_X3Z_c
 cdef long long b3_X2YZ_c
 cdef long long b3_XY2Z_c
 cdef long long b3_XYZ2_c
-

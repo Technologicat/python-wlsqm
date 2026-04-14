@@ -17,7 +17,6 @@ This module contains the Python API for an "expert mode" in the LAPACK sense, wi
 JJ 2016-12-07
 """
 
-from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 from libc.math   cimport sqrt
@@ -774,7 +773,7 @@ Return value: tuple (out, I_out) where
 # Internal C-level helpers for ExpertSolver
 ####################################################
 
-cdef void expert_prepare_one_3D( infra.Case* case, double *pxi, double[::view.generic,::view.contiguous] xk, int debug ) nogil:
+cdef void expert_prepare_one_3D( infra.Case* case, double *pxi, double[::view.generic,::view.contiguous] xk, int debug ) noexcept nogil:
     # update the position of the origin of the fit for this problem instance
     case.xi = pxi[0]
     case.yi = pxi[1]
@@ -785,7 +784,7 @@ cdef void expert_prepare_one_3D( infra.Case* case, double *pxi, double[::view.ge
     impl.make_A( case )
     impl.preprocess_A( case, debug )
 
-cdef void expert_prepare_one_2D( infra.Case* case, double *pxi, double[::view.generic,::view.contiguous] xk, int debug ) nogil:
+cdef void expert_prepare_one_2D( infra.Case* case, double *pxi, double[::view.generic,::view.contiguous] xk, int debug ) noexcept nogil:
     # update the position of the origin of the fit for this problem instance
     case.xi = pxi[0]
     case.yi = pxi[1]
@@ -796,7 +795,7 @@ cdef void expert_prepare_one_2D( infra.Case* case, double *pxi, double[::view.ge
     impl.preprocess_A( case, debug )
 
 
-cdef void expert_prepare_one_1D( infra.Case* case, double xi, double[::view.generic] xk, int debug ) nogil:
+cdef void expert_prepare_one_1D( infra.Case* case, double xi, double[::view.generic] xk, int debug ) noexcept nogil:
     # update the position of the origin of the fit for this problem instance
     case.xi = xi
 
@@ -806,12 +805,12 @@ cdef void expert_prepare_one_1D( infra.Case* case, double xi, double[::view.gene
     impl.preprocess_A( case, debug )
 
 
-cdef void expert_solve_one_basic( infra.Case* case, double* fi, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) nogil:
+cdef void expert_solve_one_basic( infra.Case* case, double* fi, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) noexcept nogil:
     infra.Case_set_fi( case, fi )  # populate knowns
     impl.solve( case, fk, sens, do_sens, taskid )
 
 cdef int expert_solve_one_iterative( infra.Case* case, double* fi, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens,
-                                        int taskid, int max_iter, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) nogil:
+                                        int taskid, int max_iter, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) noexcept nogil:
     infra.Case_set_fi( case, fi )  # populate knowns
     return impl.solve_iterative( case, fk, sens, do_sens, taskid, max_iter, xkManyD, xk1D )
 

@@ -59,7 +59,6 @@ Examples:
 JJ 2016-11-30
 """
 
-from __future__ import division, print_function, absolute_import
 
 #################################################
 # C definitions (Cython level)
@@ -501,4 +500,3 @@ b3_X3Z    = b3_X3Z_c
 b3_X2YZ   = b3_X2YZ_c
 b3_XY2Z   = b3_XY2Z_c
 b3_XYZ2   = b3_XYZ2_c
-

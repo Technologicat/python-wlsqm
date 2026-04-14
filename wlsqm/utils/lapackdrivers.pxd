@@ -38,20 +38,19 @@
 #
 # JJ 2016-11-07
 
-from __future__ import absolute_import
 
 ##############################################################################################################
 # Helpers
 ##############################################################################################################
 
-cdef void distribute_items_c( int nitems, int ntasks, int* blocksizes, int* baseidxs ) nogil  # distribute work items across tasks, assuming equal load per item.
+cdef void distribute_items_c( int nitems, int ntasks, int* blocksizes, int* baseidxs ) noexcept nogil  # distribute work items across tasks, assuming equal load per item.
 
-cdef void copygeneral_c( double* O, double* I, int nrows, int ncols ) nogil  # copy general square array
-cdef void copysymmu_c( double* O, double* I, int nrows, int ncols ) nogil  # copy symmetric square array, upper triangle only
+cdef void copygeneral_c( double* O, double* I, int nrows, int ncols ) noexcept nogil  # copy general square array
+cdef void copysymmu_c( double* O, double* I, int nrows, int ncols ) noexcept nogil  # copy symmetric square array, upper triangle only
 
-cdef void symmetrize_c( double* A, int nrows, int ncols ) nogil
-cdef void msymmetrize_c( double* A, int nrows, int ncols, int nlhs ) nogil
-cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks ) nogil
+cdef void symmetrize_c( double* A, int nrows, int ncols ) noexcept nogil
+cdef void msymmetrize_c( double* A, int nrows, int ncols, int nlhs ) noexcept nogil
+cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks ) noexcept nogil
 
 ##############################################################################################################
 # Preconditioning (scaling)
@@ -62,70 +61,69 @@ cdef void msymmetrizep_c( double* A, int nrows, int ncols, int nlhs, int ntasks 
 # The return value is the number of iterations taken; always 1 for non-iterative algorithms.
 
 # helpers
-cdef void init_scaling_c( int nrows, int ncols, double* row_scale, double* col_scale ) nogil  # init all scaling factors to 1.0
-cdef void apply_scaling_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil  # freeze the scaling by applying it in-place
+cdef void init_scaling_c( int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil  # init all scaling factors to 1.0
+cdef void apply_scaling_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil  # freeze the scaling by applying it in-place
 
 # simple, fast methods; these destroy the possible symmetry of A
-cdef int rescale_columns_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
-cdef int rescale_rows_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
-cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil  # scale columns, then rows
-cdef int rescale_dgeequ_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
+cdef int rescale_columns_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil
+cdef int rescale_rows_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil
+cdef int rescale_twopass_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil  # scale columns, then rows
+cdef int rescale_dgeequ_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil
 
 # symmetry-preserving methods (iterative)
-cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
-cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) nogil
+cdef int rescale_ruiz2001_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil
+cdef int rescale_scalgm_c( double* A, int nrows, int ncols, double* row_scale, double* col_scale ) noexcept nogil
 
 ##############################################################################################################
 # Tridiagonal matrices
 ##############################################################################################################
 
-cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) nogil except -1
+cpdef int tridiag( double[::1] a, double[::1] b, double[::1] c, double[::1] x ) except -1 nogil
 
 ##############################################################################################################
 # Symmetric matrices
 ##############################################################################################################
 
-cdef int symmetric2x2_c( double* A, double* b ) nogil except -1
+cdef int symmetric2x2_c( double* A, double* b ) except -1 nogil
 
-cdef int symmetric_c( double* A, double* b, int n ) nogil except -1
-cdef int symmetricfactor_c( double* A, int* ipiv, int n ) nogil except -1
-cdef int symmetricfactored_c( double* A, int* ipiv, double* b, int n ) nogil except -1
+cdef int symmetric_c( double* A, double* b, int n ) except -1 nogil
+cdef int symmetricfactor_c( double* A, int* ipiv, int n ) except -1 nogil
+cdef int symmetricfactored_c( double* A, int* ipiv, double* b, int n ) except -1 nogil
 
-cdef int symmetrics_c( double* A, double* b, int n, int nrhs ) nogil except -1
-cdef int symmetricsp_c( double* A, double* b, int n, int nrhs, int ntasks ) nogil except -1
+cdef int symmetrics_c( double* A, double* b, int n, int nrhs ) except -1 nogil
+cdef int symmetricsp_c( double* A, double* b, int n, int nrhs, int ntasks ) except -1 nogil
 
-cdef int msymmetric_c( double* A, double* b, int n, int nlhs ) nogil except -1
-cdef int msymmetricp_c( double* A, double* b, int n, int nlhs, int ntasks ) nogil except -1
+cdef int msymmetric_c( double* A, double* b, int n, int nlhs ) except -1 nogil
+cdef int msymmetricp_c( double* A, double* b, int n, int nlhs, int ntasks ) except -1 nogil
 
-cdef int msymmetricfactor_c( double* A, int* ipiv, int n, int nlhs ) nogil except -1
-cdef int msymmetricfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) nogil except -1
-cdef int msymmetricfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) nogil except -1
-cdef int msymmetricfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) nogil except -1
+cdef int msymmetricfactor_c( double* A, int* ipiv, int n, int nlhs ) except -1 nogil
+cdef int msymmetricfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) except -1 nogil
+cdef int msymmetricfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) except -1 nogil
+cdef int msymmetricfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) except -1 nogil
 
 ##############################################################################################################
 # General matrices
 ##############################################################################################################
 
-cdef int general2x2_c( double* A, double* b ) nogil except -1
+cdef int general2x2_c( double* A, double* b ) except -1 nogil
 
-cdef int general_c( double* A, double* b, int n ) nogil except -1
-cdef int generalfactor_c( double* A, int* ipiv, int n ) nogil except -1
-cdef int generalfactored_c( double* A, int* ipiv, double* b, int n ) nogil except -1
+cdef int general_c( double* A, double* b, int n ) except -1 nogil
+cdef int generalfactor_c( double* A, int* ipiv, int n ) except -1 nogil
+cdef int generalfactored_c( double* A, int* ipiv, double* b, int n ) except -1 nogil
 
-cdef int generals_c( double* A, double* b, int n, int nrhs ) nogil except -1
-cdef int generalsp_c( double* A, double* b, int n, int nrhs, int ntasks ) nogil except -1
+cdef int generals_c( double* A, double* b, int n, int nrhs ) except -1 nogil
+cdef int generalsp_c( double* A, double* b, int n, int nrhs, int ntasks ) except -1 nogil
 
-cdef int mgeneral_c( double* A, double* b, int n, int nlhs ) nogil except -1
-cdef int mgeneralp_c( double* A, double* b, int n, int nlhs, int ntasks ) nogil except -1
+cdef int mgeneral_c( double* A, double* b, int n, int nlhs ) except -1 nogil
+cdef int mgeneralp_c( double* A, double* b, int n, int nlhs, int ntasks ) except -1 nogil
 
-cdef int mgeneralfactor_c( double* A, int* ipiv, int n, int nlhs ) nogil except -1
-cdef int mgeneralfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) nogil except -1
-cdef int mgeneralfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) nogil except -1
-cdef int mgeneralfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) nogil except -1
+cdef int mgeneralfactor_c( double* A, int* ipiv, int n, int nlhs ) except -1 nogil
+cdef int mgeneralfactored_c( double* A, int* ipiv, double* b, int n, int nlhs ) except -1 nogil
+cdef int mgeneralfactorp_c( double* A, int* ipiv, int n, int nlhs, int ntasks ) except -1 nogil
+cdef int mgeneralfactoredp_c( double* A, int* ipiv, double* b, int n, int nlhs, int ntasks ) except -1 nogil
 
 ##############################################################################################################
 # Other stuff
 ##############################################################################################################
 
-cdef int svd_c( double* A, int m, int n, double* S ) nogil except -1
-
+cdef int svd_c( double* A, int m, int n, double* S ) except -1 nogil

@@ -4,7 +4,6 @@
 JJ 2017-03-28
 """
 
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 

@@ -46,7 +46,6 @@ JJ 2012-03-12 (Python version)
 JJ 2017-04-25 (Python3 compatibility, NumPyDoc style docstring, define __version__)
 """
 
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 

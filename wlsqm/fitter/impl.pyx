@@ -16,7 +16,6 @@
 # cython: boundscheck = False
 # cython: cdivision   = True
 
-from __future__ import division, print_function, absolute_import
 
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, log10
@@ -40,7 +39,7 @@ cimport wlsqm.fitter.interp as interp  # interpolation of fitted model
 #
 # This is used to work around the static typing in C to allow a single dimension-agnostic implementation for the high-level fitting routines.
 #
-cdef void make_c_nD( infra.Case* case, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) nogil:
+cdef void make_c_nD( infra.Case* case, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) noexcept nogil:
     if case.dimension == 3:
         make_c_3D( case, xkManyD )
     elif case.dimension == 2:
@@ -63,7 +62,7 @@ cdef void make_c_nD( infra.Case* case, double[::view.generic,::view.contiguous] 
 #
 # xk       : in, size (nk,3); neighbor points; x[k,:] is the kth point
 #
-cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) nogil:
+cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) noexcept nogil:
 
     # no-op in guest mode
     if not case.geometry_owned:
@@ -281,7 +280,7 @@ cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] 
 #
 # xk       : in, size (nk,2); neighbor points; x[k,:] is the kth point
 #
-cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) nogil:
+cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) noexcept nogil:
 
     # no-op in guest mode
     if not case.geometry_owned:
@@ -446,7 +445,7 @@ cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] 
 #
 # xk       : in, size (nk,); neighbor points; x[k] is the kth point
 #
-cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) nogil:
+cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) noexcept nogil:
 
     # no-op in guest mode
     if not case.geometry_owned:
@@ -565,7 +564,7 @@ cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) nogil:
 #     o2r    : out, array of size (no,), will contain DOF mapping original --> reduced   (must be allocated by caller!)
 #     r2o    : out, array of size (no,), will contain DOF mapping reduced  --> original  (must be allocated by caller!)
 #
-cdef void make_A( infra.Case* case ) nogil:
+cdef void make_A( infra.Case* case ) noexcept nogil:
 
     # no-op in guest mode
     if not case.geometry_owned:
@@ -619,7 +618,7 @@ cdef void make_A( infra.Case* case ) nogil:
 # debug     : in, boolean. If debug is True, compute the condition number (2-norm directly via SVD) of the original and scaled A.
 #             The condition numbers are written in case.cond_orig and case.cond_scaled.
 #
-cdef void preprocess_A( infra.Case* case, int debug ) nogil:
+cdef void preprocess_A( infra.Case* case, int debug ) noexcept nogil:
 
     # no-op in guest mode
     if not case.geometry_owned:
@@ -731,7 +730,7 @@ cdef void preprocess_A( infra.Case* case, int debug ) nogil:
 # taskid    : in, number of parallel processing task (0, 1, ..., ntasks-1)
 #             Used to get access to the RHS work space.
 #
-cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) nogil:
+cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) noexcept nogil:
 
     cdef double zero = 0
     cdef double nan = zero/zero  # FIXME: a better way to get NaN than to abuse IEEE-754 specification?
@@ -861,7 +860,7 @@ cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.gene
 # - the number of elements in fk is taken from case.nk
 # - the number of elements in fi is taken from case.no
 #
-cdef void solve_contig( infra.Case* case, double* fk, double* fi, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) nogil:
+cdef void solve_contig( infra.Case* case, double* fk, double* fi, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) noexcept nogil:
 
     cdef double zero = 0
     cdef double nan = zero/zero  # FIXME: a better way to get NaN than to abuse IEEE-754 specification?
@@ -987,7 +986,7 @@ cdef void solve_contig( infra.Case* case, double* fk, double* fi, double[::view.
 # In any case, the data stored in the Case object is dependent on xk and xi not changing on the fly. If xi or xk suddenly change, the c and A matrices must be re-generated.
 #
 cdef int solve_iterative( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid, int max_iter,
-                          double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) nogil:
+                          double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) noexcept nogil:
 
     DEF DONT_DO_SENS = 0  # value of do_sens when we don't want to do sensitivity analysis (used in the iterative refinement step)
     DEF DIFF = 0  # interpolate function value (not a derivative)

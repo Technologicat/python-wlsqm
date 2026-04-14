@@ -19,7 +19,6 @@
 # This module contains "driver" routines in the LAPACK sense.
 # The low-level C routines are contained in wlsqm.fitter.impl.
 
-from __future__ import absolute_import
 
 from cython cimport view  # for usage, see http://cython.readthedocs.io/en/latest/src/userguide/memoryviews.html#specifying-more-general-memory-layouts
 
@@ -28,10 +27,10 @@ from cython cimport view  # for usage, see http://cython.readthedocs.io/en/lates
 ####################################################
 
 cdef int generic_fit_basic( int dimension, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D, double[::view.generic] fk, double[::1] xiManyD, double xi1D, double[::1] fi,
-                                           double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int debug ) nogil except -1
+                                           double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int debug ) except -1 nogil
 
 cdef int generic_fit_iterative( int dimension, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D, double[::view.generic] fk, double[::1] xiManyD, double xi1D, double[::1] fi,
-                                               double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int max_iter, int debug ) nogil except -1
+                                               double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int max_iter, int debug ) except -1 nogil
 
 ####################################################
 # Many cases, single-threaded
@@ -42,13 +41,13 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
                                                 double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                 double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                 double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug ) nogil except -1
+                                                int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug ) except -1 nogil
 
 cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view.generic,::view.contiguous] xkManyD, double[::view.generic,::view.generic] xk1D,
                                                     double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                     double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                     double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                    int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int debug ) nogil except -1
+                                                    int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int debug ) except -1 nogil
 
 ####################################################
 # Many cases, multithreaded
@@ -58,11 +57,10 @@ cdef int generic_fit_basic_many_parallel( int dimension, double[::view.generic,:
                                                          double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                          double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                         int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks, int debug ) nogil except -1
+                                                         int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks, int debug ) except -1 nogil
 
 cdef int generic_fit_iterative_many_parallel( int dimension, double[::view.generic,::view.generic,::view.contiguous] xkManyD, double[::view.generic,::view.generic] xk1D,
                                                              double[::view.generic,::view.generic] fk, int[::view.generic] nk,
                                                              double[::view.generic,::view.contiguous] xiManyD, double[::view.generic] xi1D, double[::view.generic,::view.contiguous] fi,
                                                              double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
-                                                             int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int ntasks, int debug ) nogil except -1
-
+                                                             int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int ntasks, int debug ) except -1 nogil

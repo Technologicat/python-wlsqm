@@ -16,7 +16,6 @@
 # cython: boundscheck = False
 # cython: cdivision   = True
 
-from __future__ import absolute_import
 
 from cython cimport view
 
@@ -27,23 +26,22 @@ cimport wlsqm.fitter.infra as infra
 # Distance matrix (c) generation
 ####################################################
 
-cdef void make_c_nD( infra.Case* case, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) nogil
-cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) nogil
-cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) nogil
-cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) nogil
+cdef void make_c_nD( infra.Case* case, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) noexcept nogil
+cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) noexcept nogil
+cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] xk ) noexcept nogil
+cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) noexcept nogil
 
 ####################################################
 # Problem matrix (A) generation
 ####################################################
 
-cdef void make_A( infra.Case* case ) nogil
-cdef void preprocess_A( infra.Case* case, int debug ) nogil
+cdef void make_A( infra.Case* case ) noexcept nogil
+cdef void preprocess_A( infra.Case* case, int debug ) noexcept nogil
 
 ####################################################
 # RHS handling and solving
 ####################################################
 
-cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) nogil
+cdef void solve( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid ) noexcept nogil
 cdef int solve_iterative( infra.Case* case, double[::view.generic] fk, double[::view.generic,::view.contiguous] sens, int do_sens, int taskid, int max_iter,
-                          double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) nogil
-
+                          double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D ) noexcept nogil

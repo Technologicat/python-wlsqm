@@ -8,16 +8,14 @@
 #
 # JJ 2016-12-09
 
-from __future__ import absolute_import
 
 from cython cimport view
 
-cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil
-cdef int general_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) nogil
+cdef int taylor_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil
+cdef int general_3D( int order, double* fi, double xi, double yi, double zi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil
 
-cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil
-cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) nogil
+cdef int taylor_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil
+cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.generic,::view.contiguous] x, double* out ) noexcept nogil
 
-cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil
-cdef int general_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) nogil
-
+cdef int taylor_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) noexcept nogil
+cdef int general_1D( int order, double* fi, double xi, double[::view.generic] x, double* out ) noexcept nogil
