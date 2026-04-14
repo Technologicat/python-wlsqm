@@ -40,6 +40,18 @@ Potential arXiv tutorial target — rewrite them with the "surrogate model,
 not Taylor series" framing, and mention that the same method appears in the
 literature under several names (MLS, WLSQM, "diffuse approximation").
 
+## Windows `long` width in ExpertSolver.interpolate
+
+`ExpertSolver.interpolate()` in `wlsqm/fitter/expert.pyx` backs its
+`I_out` return array with a Cython `long[::1]` view and an allocation of
+`dtype=np.int_`. On Linux/macOS 64-bit, C `long` is 64 bits; on Windows
+64-bit (MSVC) it is 32 bits. The function therefore silently produces
+different element widths across platforms, and cannot address more than
+2**31 local models on Windows. Low priority (no one has a WLSQM setup
+with > 2 billion neighborhoods) but the fix is small: switch both the
+cdef view type and the numpy dtype to a fixed width, e.g. `np.int64_t`
+/ `np.int64`.
+
 ## Weighting function support
 
 The literature distinguishes MLS variants mainly by the weighting function
