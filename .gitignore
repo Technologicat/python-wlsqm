@@ -10,6 +10,10 @@ dist/
 *.egg-info/
 .pdm-build/
 .pdm-python
+# Library, not app — see `~/.claude/PROJECT-SETUP-NOTES.md` under "Lockfile policy".
+# CI and downstream users fresh-resolve against pyproject.toml's declared floors;
+# committing pdm.lock would hide upstream breakage we want to see early.
+pdm.lock
 .python-version
 .venv/
 .spyproject/
