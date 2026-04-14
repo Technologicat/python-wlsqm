@@ -79,7 +79,9 @@ jobs:
       # fails).
       - name: Diagnose extension DLL dependencies (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        # Use Git Bash so the Python heredoc works. PowerShell does not
+        # understand `python - <<'PY' ... PY` and chokes at parse time.
+        shell: bash
         run: |
           python -m pip install -q pefile
           python - <<'PY'
