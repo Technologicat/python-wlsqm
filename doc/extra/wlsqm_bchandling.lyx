@@ -1,0 +1,4124 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "palatino" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2cm
+\topmargin 2cm
+\rightmargin 2cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Handling Neumann boundary conditions in WLSQM
+\end_layout
+
+\begin_layout Section
+Example: The heat equation
+\end_layout
+
+\begin_layout Standard
+Consider the general initial boundary value problem (IBVP) of the heat equation,
+ with both Dirichlet and Neumann boundary conditions, and an initial condition:
+\begin_inset Formula 
+\begin{align}
+\frac{\partial u}{\partial t} & =c\nabla\cdot\nabla u\quad\text{in }\Omega\times[0,t_{\mathrm{f}}]\;,\label{eq:PDE}\\
+u & =u_{D}\quad\text{on }\Gamma_{D}\times[0,t_{\mathrm{f}}]\;,\label{eq:BC-Dirichlet}\\
+\widehat{\boldsymbol{n}}\cdot\nabla u & =q_{N}\quad\text{on }\Gamma_{N}\times[0,t_{\mathrm{f}}]\;,\label{eq:BC-Neumann}\\
+u & =u_{0}\quad\text{on }\Omega\times\{t=0\}\;,\label{eq:IC}
+\end{align}
+
+\end_inset
+
+where 
+\begin_inset Formula $\Omega\subset\mathbb{R}^{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\Gamma_{D}\subset\partial\Omega$
+\end_inset
+
+, 
+\begin_inset Formula $\Gamma_{N}\subset\partial\Omega$
+\end_inset
+
+, and 
+\begin_inset Formula $\Gamma_{D}\cap\Gamma_{N}=\emptyset$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When solving this problem with WLSQM, the main technical issue is implementing
+ the Neumann boundary conditions.
+ The initial condition and the Dirichlet boundary conditions are trivial;
+ one can simply set the function values at the nodes.
+\end_layout
+
+\begin_layout Standard
+In this document, we assume that we can easily obtain a pseudonormal (in
+ the computer graphics sense) for each Neumann boundary point in the discretizat
+ion.
+ The main issue of interest is then how to insert the information from equation
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:BC-Neumann"
+
+\end_inset
+
+ into the discretization.
+\end_layout
+
+\begin_layout Standard
+Consider now the standard 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinate system, and a local tangential–normal coordinate system 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ rotated counterclockwise in the 
+\begin_inset Formula $xy$
+\end_inset
+
+ plane by an angle 
+\begin_inset Formula $\theta$
+\end_inset
+
+ (with the normal direction taken to coincide with the local outer normal
+ of 
+\begin_inset Formula $\Gamma_{N}$
+\end_inset
+
+).
+ Let 
+\begin_inset Formula 
+\begin{equation}
+c:=\cos\theta\;,\quad s:=\sin\theta\;.\label{eq:c-and-s}
+\end{equation}
+
+\end_inset
+
+We can express the unit vectors of the rotated system in terms of the unit
+ vectors of the standard system by (
+\series bold
+###TODO: add picture
+\series default
+)
+\begin_inset Formula 
+\begin{align}
+\widehat{\boldsymbol{\tau}} & =c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y}\;,\label{eq:tau}\\
+\widehat{\boldsymbol{n}} & =-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y}\;.\label{eq:n}
+\end{align}
+
+\end_inset
+
+Let us invert 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:tau"
+
+\end_inset
+
+–
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:n"
+
+\end_inset
+
+.
+ Multiplying the first equation by 
+\begin_inset Formula $c$
+\end_inset
+
+ and the second by 
+\begin_inset Formula $s$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{align*}
+c\widehat{\boldsymbol{\tau}} & =c^{2}\widehat{\boldsymbol{e}}_{x}+cs\widehat{\boldsymbol{e}}_{y}\;,\\
+s\widehat{\boldsymbol{n}} & =-s^{2}\widehat{\boldsymbol{e}}_{x}+cs\widehat{\boldsymbol{e}}_{y}\;.
+\end{align*}
+
+\end_inset
+
+Subtracting these, we obtain
+\begin_inset Formula 
+\begin{equation}
+\widehat{\boldsymbol{e}}_{x}=c\widehat{\boldsymbol{\tau}}-s\widehat{\boldsymbol{n}}\;.\label{eq:ex}
+\end{equation}
+
+\end_inset
+
+Similarly, multiplying the first equation by 
+\begin_inset Formula $s$
+\end_inset
+
+ and the second by 
+\begin_inset Formula $c$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{align*}
+s\widehat{\boldsymbol{\tau}} & =cs\widehat{\boldsymbol{e}}_{x}+s^{2}\widehat{\boldsymbol{e}}_{y}\;,\\
+c\widehat{\boldsymbol{n}} & =-cs\widehat{\boldsymbol{e}}_{x}+c^{2}\widehat{\boldsymbol{e}}_{y}\;,
+\end{align*}
+
+\end_inset
+
+which leads to
+\begin_inset Formula 
+\begin{equation}
+\widehat{\boldsymbol{e}}_{y}=s\widehat{\boldsymbol{\tau}}+c\widehat{\boldsymbol{n}}\;.\label{eq:ey}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $u$
+\end_inset
+
+ be a scalar field and 
+\begin_inset Formula $\boldsymbol{q}:=\nabla u$
+\end_inset
+
+ its gradient.
+ The gradient itself is invariant with respect to rotations, but its component
+ representations are not.
+ We can express the gradient in either coordinate system, as
+\begin_inset Formula 
+\begin{equation}
+\boldsymbol{q}=q_{\tau}\widehat{\boldsymbol{\tau}}+q_{n}\widehat{\boldsymbol{n}}=q_{x}\widehat{\boldsymbol{e}}_{x}+q_{y}\widehat{\boldsymbol{e}}_{y}\;.\label{eq:q}
+\end{equation}
+
+\end_inset
+
+In WLSQM, when handling Neumann boundary conditions for arbitrarily oriented
+ boundaries, we would like to work in the 
+\begin_inset Formula $xy$
+\end_inset
+
+ coordinate system, because this would save us the trouble of rotating the
+ coordinate system locally at each boundary point in the discretization.
+\end_layout
+
+\begin_layout Standard
+The coordinate transformations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:tau"
+
+\end_inset
+
+–
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:n"
+
+\end_inset
+
+ allow us to write
+\begin_inset Formula 
+\begin{align}
+\boldsymbol{q} & =q_{\tau}\widehat{\boldsymbol{\tau}}+q_{n}\widehat{\boldsymbol{n}}\nonumber \\
+ & =q_{\tau}(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})+q_{n}(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(cq_{\tau}-sq_{n})\widehat{\boldsymbol{e}}_{x}+(sq_{\tau}+cq_{n})\widehat{\boldsymbol{e}}_{y}\;,\label{eq:temp}
+\end{align}
+
+\end_inset
+
+whence
+\begin_inset Formula 
+\begin{equation}
+q_{x}=cq_{\tau}-sq_{n}\;,\quad q_{y}=sq_{\tau}+cq_{n}\;.\label{eq:qx-and-qy}
+\end{equation}
+
+\end_inset
+
+Alternatively, the inverse transformation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ex"
+
+\end_inset
+
+–
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ey"
+
+\end_inset
+
+ gives
+\begin_inset Formula 
+\begin{align}
+\boldsymbol{q} & =q_{x}\widehat{\boldsymbol{e}}_{x}+q_{y}\widehat{\boldsymbol{e}}_{y}\nonumber \\
+ & =q_{x}(c\widehat{\boldsymbol{\tau}}-s\widehat{\boldsymbol{n}})+q_{y}(s\widehat{\boldsymbol{\tau}}+c\widehat{\boldsymbol{n}})\nonumber \\
+ & =(cq_{x}+sq_{y})\widehat{\boldsymbol{\tau}}+(-sq_{x}+cq_{y})\widehat{\boldsymbol{n}}\;,\label{eq:temp2}
+\end{align}
+
+\end_inset
+
+whence
+\begin_inset Formula 
+\begin{equation}
+q_{\tau}=cq_{x}+sq_{y}\;,\quad q_{n}=-sq_{x}+cq_{y}\;.\label{eq:qt-and-qn}
+\end{equation}
+
+\end_inset
+
+In the general case, if we use 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:qt-and-qn"
+
+\end_inset
+
+ on the second line of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:temp"
+
+\end_inset
+
+, we obtain
+\begin_inset Formula 
+\begin{align}
+\boldsymbol{q} & =q_{\tau}(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})+q_{n}(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(cq_{x}+sq_{y})(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})+(-sq_{x}+cq_{y})(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(c^{2}q_{x}+csq_{y})\widehat{\boldsymbol{e}}_{x}+(csq_{x}+s^{2}q_{y})\widehat{\boldsymbol{e}}_{y}+(s^{2}q_{x}-csq_{y})\widehat{\boldsymbol{e}}_{x}+(-csq_{x}+c^{2}q_{Y})\widehat{\boldsymbol{e}}_{y}\nonumber \\
+ & =(c^{2}+s^{2})q_{x}\widehat{\boldsymbol{e}}_{x}+(s^{2}+c^{2})q_{y}\widehat{\boldsymbol{e}}_{y}\nonumber \\
+ & =q_{x}\widehat{\boldsymbol{e}}_{x}+q_{y}\widehat{\boldsymbol{e}}_{y}\;,\label{eq:temp3}
+\end{align}
+
+\end_inset
+
+which only tells us that the transformations are correct.
+\end_layout
+
+\begin_layout Standard
+A typical Neumann boundary condition is the zero normal gradient condition:
+\begin_inset Formula 
+\begin{equation}
+(\widehat{\boldsymbol{n}}\cdot\nabla u)\vert_{\Gamma_{N}}=(\widehat{\boldsymbol{n}}\cdot\boldsymbol{q})\vert_{\Gamma_{N}}=0\;.\label{eq:zero-normal-BC}
+\end{equation}
+
+\end_inset
+
+On the other hand, in terms of the (
+\begin_inset Formula $\tau,n$
+\end_inset
+
+) component representation of 
+\begin_inset Formula $\boldsymbol{q}$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:q"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{equation}
+\widehat{\boldsymbol{n}}\cdot\boldsymbol{q}=\widehat{\boldsymbol{n}}\cdot(q_{\tau}\widehat{\boldsymbol{\tau}}+q_{n}\widehat{\boldsymbol{n}})=q_{n}\;.\label{eq:wehave}
+\end{equation}
+
+\end_inset
+
+By 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:zero-normal-BC"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:wehave"
+
+\end_inset
+
+, on 
+\begin_inset Formula $\Gamma_{N}$
+\end_inset
+
+ it holds that 
+\begin_inset Formula $q_{n}=0$
+\end_inset
+
+.
+ Using this on the second line of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:temp"
+
+\end_inset
+
+, we have only the first term on the first line of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:temp3"
+
+\end_inset
+
+, obtaining
+\begin_inset Formula 
+\begin{align}
+\boldsymbol{q}\vert_{\Gamma_{N}} & =q_{\tau}(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(cq_{x}+sq_{y})(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(c^{2}q_{x}+csq_{y})\widehat{\boldsymbol{e}}_{x}+(csq_{x}+s^{2}q_{y})\widehat{\boldsymbol{e}}_{y}\;.\label{eq:q-at-Neumann-boundary}
+\end{align}
+
+\end_inset
+
+Now because 
+\begin_inset Formula $q_{n}=0$
+\end_inset
+
+, the extra terms do not cancel.
+\end_layout
+
+\begin_layout Standard
+Finally, recall that 
+\begin_inset Formula $\boldsymbol{q}=\nabla u$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $q_{x}=\partial u/\partial x$
+\end_inset
+
+ and 
+\begin_inset Formula $q_{y}=\partial u/\partial y$
+\end_inset
+
+.
+ Thus, using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:q-at-Neumann-boundary"
+
+\end_inset
+
+, we can write
+\begin_inset Formula 
+\begin{align}
+(\nabla\cdot\nabla u)\vert_{\Gamma_{N}} & =\frac{\partial}{\partial x}(c^{2}q_{x}+csq_{y})+\frac{\partial}{\partial y}(csq_{x}+s^{2}q_{y})\nonumber \\
+ & =\frac{\partial}{\partial x}(c^{2}\frac{\partial u}{\partial x}+cs\frac{\partial u}{\partial y})+\frac{\partial}{\partial y}(cs\frac{\partial u}{\partial x}+s^{2}\frac{\partial u}{\partial y})\nonumber \\
+ & =c^{2}\frac{\partial^{2}u}{\partial x^{2}}+2cs\frac{\partial^{2}u}{\partial x\partial y}+s^{2}\frac{\partial^{2}u}{\partial y^{2}}\;.\label{eq:final-result}
+\end{align}
+
+\end_inset
+
+Equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-result"
+
+\end_inset
+
+ lets us evaluate — directly in the original 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinate system — the right-hand side of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:PDE"
+
+\end_inset
+
+ at the Neumann boundary points of the discretization, with the boundary
+ condition 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:zero-normal-BC"
+
+\end_inset
+
+ 
+\begin_inset Quotes eld
+\end_inset
+
+baked in
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+(This is similar in spirit to how Neumann boundary conditions are handled
+ in the finite element method; the PDE itself is enforced also for the Neumann
+ boundary degrees of freedom, with additional data from the boundary condition
+ inserted.)
+\end_layout
+
+\begin_layout Standard
+Note that physically, timestepping 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:PDE"
+
+\end_inset
+
+ with 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-result"
+
+\end_inset
+
+ inserted into the RHS will smooth out curvature only in the 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}$
+\end_inset
+
+ direction (because 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:q-at-Neumann-boundary"
+
+\end_inset
+
+ forces 
+\begin_inset Formula $\boldsymbol{q}=\nabla u$
+\end_inset
+
+ to be aligned with 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}$
+\end_inset
+
+), ignoring any curvature near the boundary along the 
+\begin_inset Formula $\widehat{\boldsymbol{n}}$
+\end_inset
+
+ direction — which is exactly how a temperature field should behave at a
+ Neumann (heat-insulating) boundary.
+\end_layout
+
+\begin_layout Standard
+For nonzero prescribed 
+\begin_inset Formula $q_{n}=q_{N}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\boldsymbol{q}\vert_{\Gamma_{N}} & =q_{\tau}(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})+q_{n}(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(cq_{x}+sq_{y})(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})+q_{N}(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =(c^{2}q_{x}+csq_{y})\widehat{\boldsymbol{e}}_{x}+(csq_{x}+s^{2}q_{y})\widehat{\boldsymbol{e}}_{y}+q_{N}(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\nonumber \\
+ & =\left(c^{2}q_{x}+csq_{y}-sq_{N}\right)\widehat{\boldsymbol{e}}_{x}+\left(csq_{x}+s^{2}q_{y}+cq_{N}\right)\widehat{\boldsymbol{e}}_{y}\;.\label{eq:nonzero-Neumann}
+\end{align}
+
+\end_inset
+
+Again, 
+\begin_inset Formula $\boldsymbol{q}=\nabla u$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $q_{x}=\partial u/\partial x$
+\end_inset
+
+ and 
+\begin_inset Formula $q_{y}=\partial u/\partial y$
+\end_inset
+
+, so we obtain
+\begin_inset Formula 
+\begin{align}
+(\nabla\cdot\nabla u)\vert_{\Gamma_{N}} & =\frac{\partial}{\partial x}(c^{2}q_{x}+csq_{y}-sq_{N})+\frac{\partial}{\partial y}(csq_{x}+s^{2}q_{y}+cq_{N})\nonumber \\
+ & =\frac{\partial}{\partial x}(c^{2}\frac{\partial u}{\partial x}+cs\frac{\partial u}{\partial y}-sq_{N})+\frac{\partial}{\partial y}(cs\frac{\partial u}{\partial x}+s^{2}\frac{\partial u}{\partial y}+cq_{N})\nonumber \\
+ & =c^{2}\frac{\partial^{2}u}{\partial x^{2}}+2cs\frac{\partial^{2}u}{\partial x\partial y}+s^{2}\frac{\partial^{2}u}{\partial y^{2}}+\left(-s\frac{\partial}{\partial x}+c\frac{\partial}{\partial y}\right)q_{N}\nonumber \\
+ & =c^{2}\frac{\partial^{2}u}{\partial x^{2}}+2cs\frac{\partial^{2}u}{\partial x\partial y}+s^{2}\frac{\partial^{2}u}{\partial y^{2}}+\widehat{\boldsymbol{n}}\cdot\nabla q_{N}\;.\label{eq:final-result-2}
+\end{align}
+
+\end_inset
+
+If we have a prescribed value for 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla q_{N}$
+\end_inset
+
+, we can enforce it using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:final-result-2"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Application to Euler flow
+\end_layout
+
+\begin_layout Standard
+Similar tricks can be used to treat boundary conditions in other IBVPs.
+ For Euler flow, the 
+\emph on
+no-penetration
+\emph default
+ boundary condition is similar to the Neumann condition of the heat equation
+ in that the normal component of a quantity is known (zero!), but the tangential
+ component remains free (to be computed from the PDE).
+\end_layout
+
+\begin_layout Standard
+In Euler flow, instead of 
+\begin_inset Formula $\boldsymbol{q}$
+\end_inset
+
+, we have the vector-valued velocity field 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}=0\;.
+\]
+
+\end_inset
+
+Let
+\begin_inset Formula 
+\[
+\boldsymbol{u}=u_{\tau}\widehat{\boldsymbol{\tau}}+u_{n}\widehat{\boldsymbol{n}}=u_{x}\widehat{\boldsymbol{e}}_{x}+u_{y}\widehat{\boldsymbol{e}}_{y}\;.
+\]
+
+\end_inset
+
+By the above coordinate transformation considerations, we can write
+\begin_inset Formula 
+\[
+\boldsymbol{u}=u_{\tau}(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})+u_{n}(-s\widehat{\boldsymbol{e}}_{x}+c\widehat{\boldsymbol{e}}_{y})\;.
+\]
+
+\end_inset
+
+Again, similarly to 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:q-at-Neumann-boundary"
+
+\end_inset
+
+, at the no-penetration boundary 
+\begin_inset Formula $\Gamma_{N}$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\begin{align*}
+\boldsymbol{u}\vert_{\Gamma_{N}} & =u_{\tau}(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})\\
+ & =(cu_{x}+su_{y})(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y})\\
+ & =(c^{2}u_{x}+csu_{y})\widehat{\boldsymbol{e}}_{x}+(csu_{x}+s^{2}u_{y})\widehat{\boldsymbol{e}}_{y}\;.
+\end{align*}
+
+\end_inset
+
+Here 
+\begin_inset Formula $u_{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{y}$
+\end_inset
+
+ are unknowns, to be updated based on the PDE.
+ The additional condition that connects 
+\begin_inset Formula $u_{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{y}$
+\end_inset
+
+, representing 
+\begin_inset Formula $u_{n}=0$
+\end_inset
+
+, is given by equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:qt-and-qn"
+
+\end_inset
+
+ as 
+\begin_inset Formula 
+\begin{equation}
+-su_{x}+cu_{y}=0\;.\label{eq:normal-velocity-zero}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+###TODO: do this properly
+\series default
+:
+\end_layout
+
+\begin_layout Itemize
+write out the Euler flow PDE (for velocity) on 
+\begin_inset Formula $\Gamma_{N}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+expand in the 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ system, writing in terms of 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+, 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\boldsymbol{n}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+use 
+\begin_inset Formula $u_{n}=0$
+\end_inset
+
+, this eliminates a few terms
+\end_layout
+
+\begin_layout Itemize
+express remaining stuff in terms of 
+\begin_inset Formula $u_{x}$
+\end_inset
+
+, 
+\begin_inset Formula $u_{y}$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\boldsymbol{e}}_{x}$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\boldsymbol{e}}_{y}$
+\end_inset
+
+ (as was done for the heat equation above)
+\end_layout
+
+\begin_layout Itemize
+obtain velocity PDE that holds on 
+\begin_inset Formula $\Gamma_{N}$
+\end_inset
+
+ (note: one equation only, the other is 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:normal-velocity-zero"
+
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+do the same stuff for the density equation
+\end_layout
+
+\begin_layout Subsection
+Euler flow
+\end_layout
+
+\begin_layout Standard
+Compressible flow.
+ Time evolution equations for fluid density and flow velocity, in an Eulerian
+ frame, in index notation:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+(\partial_{t}+u_{j}\partial_{j})\rho & =-\rho\partial_{j}u_{j}\label{eq:rho-index}\\
+(\partial_{t}+u_{j}\partial_{j})u_{i} & =-\frac{\alpha}{\rho}\partial_{i}\rho+g_{i}\label{eq:u-index}
+\end{align}
+
+\end_inset
+
+We may also write this in direct notation: 
+\begin_inset Formula 
+\begin{align}
+\left(\frac{\partial}{\partial t}+\boldsymbol{u}\cdot\nabla\right)\rho & =-\rho\nabla\cdot\boldsymbol{u}\label{eq:rho-direct}\\
+\left(\frac{\partial}{\partial t}+\boldsymbol{u}\cdot\nabla\right)\boldsymbol{u} & =-\frac{\alpha}{\rho}\nabla\rho+\boldsymbol{g}\label{eq:u-direct}
+\end{align}
+
+\end_inset
+
+To keep WLSQM fast (to avoid the need to re-generate neighborhoods with
+ upwinding), we use operator splitting (second-order symmetrized Strang)
+ to separate the transport into a subproblem that can be handled by a specialize
+d algorithm.
+\end_layout
+
+\begin_layout Standard
+Note that in the splitting, each subproblem gets its own copy of the 
+\begin_inset Formula $\partial/\partial t$
+\end_inset
+
+ term; one cannot simply sum the subproblems to get the original problem.
+\end_layout
+
+\begin_layout Standard
+Subproblems for fluid density 
+\begin_inset Formula $\rho$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align}
+\frac{\partial\rho}{\partial t} & =-\rho\nabla\cdot\boldsymbol{u}\label{eq:rhosource}\\
+\left(\frac{\partial}{\partial t}+\boldsymbol{u}\cdot\nabla\right)\rho & =0\label{eq:rho-advect}
+\end{align}
+
+\end_inset
+
+Subproblems for (Eulerian) flow velocity 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align}
+\frac{\partial\boldsymbol{u}}{\partial t} & =-\frac{\alpha}{\rho}\nabla\rho+\boldsymbol{g}\label{eq:u-pressure}\\
+\left(\frac{\partial}{\partial t}+\boldsymbol{u}\cdot\nabla\right)\boldsymbol{u} & =0\label{eq:u-advect}
+\end{align}
+
+\end_inset
+
+For both 
+\begin_inset Formula $\rho$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, the second subproblem is pure advection at velocity 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+.
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Using an explicit time integrator, integrating from 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+ to 
+\begin_inset Formula $t=t_{0}+\Delta t$
+\end_inset
+
+, we interpret this as advection by the old (last known) 
+\begin_inset Formula $\boldsymbol{u}(t_{0})=:\boldsymbol{u}_{0}$
+\end_inset
+
+,
+\begin_inset Formula 
+\[
+\left(\frac{\partial}{\partial t}+\boldsymbol{u}_{0}\cdot\nabla\right)\rho=0\;,
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\left(\frac{\partial}{\partial t}+\boldsymbol{u}_{0}\cdot\nabla\right)\boldsymbol{u}=0\;.
+\]
+
+\end_inset
+
+Thus over each timestep, we have a linear hyperbolic first-order transport
+ problem.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The advection subproblem for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-advect"
+
+\end_inset
+
+, is fully decoupled; the field 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ transports itself, with 
+\begin_inset Formula $\rho$
+\end_inset
+
+ having no effect.
+ In the advection problem for 
+\begin_inset Formula $\rho$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rho-advect"
+
+\end_inset
+
+, there is one-way coupling; the field 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ transports the field 
+\begin_inset Formula $\rho$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The other two subproblems, equations 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rhosource"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+, are bidirectionally coupled in 
+\begin_inset Formula $(\rho,\boldsymbol{u})$
+\end_inset
+
+.
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+The advection subproblems require inflow BCs.
+\end_layout
+
+\end_inset
+
+
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+In the coupled system, the term 
+\begin_inset Formula $\nabla\cdot\boldsymbol{u}$
+\end_inset
+
+ suggests we need to prescribe 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ at the boundaries.
+\end_layout
+
+\end_inset
+
+ Equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rhosource"
+
+\end_inset
+
+ accounts for changes in density caused by sources and sinks in the flow
+ velocity field, while equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+ accounts for local acceleration due to body forces (such as gravity) and
+ the pressure response.
+\end_layout
+
+\begin_layout Standard
+Note that 
+\begin_inset Formula $(1/\rho)\nabla\rho\equiv\nabla(\ln\rho)$
+\end_inset
+
+, but the left-hand side is more convenient for the solver.
+ Note also that 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is large (for air, on the order of 
+\begin_inset Formula $10^{5}$
+\end_inset
+
+); the pressure response of the velocity field is thus very fast when compared
+ to the advection.
+ (Physically: compare typical flow velocities with the speed of sound.) Thus,
+ this is a stiff problem, where the pressure response term limits the maximum
+ possible timestep size.
+\end_layout
+
+\begin_layout Standard
+This suggests that we may internally use a smaller timestep for the stiff
+ coupled subproblems, and then use a single large timestep for the advection
+ subproblems (for numerical stability, pure advection only needs 
+\begin_inset Formula $\mathrm{CFL}<1$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+The stiff coupled part requires solving for 
+\begin_inset Formula $\nabla\cdot\boldsymbol{u}$
+\end_inset
+
+ and 
+\begin_inset Formula $\nabla\rho$
+\end_inset
+
+ at each small timestep (via WLSQM), but global model interpolation is only
+ needed by the advection part.
+\end_layout
+
+\begin_layout Standard
+From the viewpoint of information flow, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rhosource"
+
+\end_inset
+
+ has no preferred direction in space, so symmetric (central) neighborhoods
+ in WLSQM are expected work well.
+\end_layout
+
+\begin_layout Standard
+Likewise, there should be no preferred direction of information flow in
+ equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+, so symmetric neighborhoods (taking the gradient centrally) should work
+ also there.
+\end_layout
+
+\begin_layout Standard
+Only in the advection subproblems 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rho-advect"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-advect"
+
+\end_inset
+
+, the differential operator has a preferred direction, along streamlines.
+ Moreover, the combination 
+\begin_inset Formula $\partial/\partial t+\boldsymbol{u}\cdot\nabla$
+\end_inset
+
+ makes this preferred direction 
+\emph on
+asymmetric in time
+\emph default
+.
+ In physical terms, this operator the transport of a field, by a velocity
+ field 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Hence, when updating an Eulerian description of the target field 
+\begin_inset Formula $\partial/\partial t+\boldsymbol{u}\cdot\nabla$
+\end_inset
+
+ operates on, one should only look at information that is 
+\emph on
+yet to arrive
+\emph default
+ to the point under consideration; information that has 
+\emph on
+already passed
+\emph default
+ the point should have no effect on the update.
+\end_layout
+
+\begin_layout Itemize
+for Euler flows, 
+\emph on
+a priori
+\emph default
+ there is not much difference between stationary obstacles and axially moving
+ obstacles, because the tangential obstacle BC is of the perfect-slip type.
+\end_layout
+
+\begin_layout Itemize
+but also 
+\emph on
+a priori
+\emph default
+, from the viewpoint of the structure model, the addition of the nonlinear
+ term into the flow model (compared with potential flow) may change the
+ pressure field drastically.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+indeed, the velocity fields of Euler flows typically look completely different
+ from those of potential flows.
+ Although the Euler model neglects viscosity, it already captures the asymmetry
+ between upstream and downstream (which comes from the advection term) that
+ is an important feature of actual physical flows.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+the solver needs a way to save/load flow fields to provide for custom ICs
+\end_layout
+
+\begin_layout Itemize
+practical notes on using the WLSQM solver for this:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+make a generic advection solver, use that as a component
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ doesn't have to be one of the 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+; it can be chosen freely
+\end_layout
+
+\begin_layout Itemize
+the problem instances are fully independent, so even in the same problem
+ set, 
+\emph on
+each instance can be expressed in a different coordinate system
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+we can thus use the local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ system for each 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ on a boundary
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+if the obstacle does not rotate (or undergoes only small vibrations), the
+ point clouds for the boundary problems can be preprocessed (to generate
+ the matrices)
+\end_layout
+
+\begin_layout Itemize
+in the case of small vibrations, use the reference configuration
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+from the solution of the boundary problems, we really only need 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+from the 
+\begin_inset Quotes eld
+\end_inset
+
+fi
+\begin_inset Quotes erd
+\end_inset
+
+ array returned by the solver, copy just the function value into (the appropriat
+e position in) the global array holding the function values at 
+\series bold
+all
+\series default
+ discretization nodes
+\end_layout
+
+\begin_layout Itemize
+the derivatives in the 
+\begin_inset Quotes eld
+\end_inset
+
+fi
+\begin_inset Quotes erd
+\end_inset
+
+ array are expressed in the 
+\begin_inset Quotes eld
+\end_inset
+
+wrong
+\begin_inset Quotes erd
+\end_inset
+
+ coordinate system (local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ instead of 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Itemize
+we 
+\emph on
+could
+\emph default
+ convert if needed.
+ It's just a rotation; the gradient itself is invariant although its components
+ are not...
+\end_layout
+
+\begin_layout Itemize
+...but we don't really need the gradient info at the boundary nodes (unless
+ we want to visualize it)
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+set up the inside-domain nodes the usual way
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+the sets 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ may contain boundary nodes
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ needs only function value data, this is available directly also for boundary
+ nodes
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+set up the boundary nodes so that each problem instance has its 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ on the boundary, and 
+\series bold
+all
+\series default
+ 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ inside the domain
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+the sets 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ contain no boundary nodes
+\end_layout
+
+\begin_layout Itemize
+use the local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinate system to express 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+; we can choose 
+\begin_inset Formula $x_{i}=(0,0)$
+\end_inset
+
+ for each problem instance
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+at each timestep: 
+\series bold
+###NO, don't use this algorithm — correct algorithm provided further below.
+ But the general notes here are fine.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+first update advection for the inside-domain DOFs
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+on the RHS, both the domain and the boundaries use 
+\series bold
+old
+\series default
+ data, as they should in an explicit time-integration scheme
+\end_layout
+
+\begin_layout Itemize
+use semi-Lagrangean advection via interpolation by the global surrogate
+ model
+\end_layout
+
+\begin_layout Itemize
+the global model is generated using the local models for only the inside-domain
+ DOFs, but the boundary information is fed there via the 
+\begin_inset Formula $x_{k}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+thus the global model optimally approximates the boundary data (in the least-squ
+ares sense), so the interpolation is correct also near boundaries
+\end_layout
+
+\begin_layout Itemize
+in the streamline traceback, must check for ray intersections with boundary
+ segments; if hit, copy the value from that point (or resample and proceed
+ upstream for the remaining time)
+\end_layout
+
+\begin_layout Itemize
+in MacCormack correction, in the clamping step for numerical stabilization,
+ take the min and max of the old data over all 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ from the (pre-computed) neighborhood of the node whose model the (
+\begin_inset Quotes eld
+\end_inset
+
+nearest
+\begin_inset Quotes erd
+\end_inset
+
+-type) interpolator picked.
+ (The interpolator must return this information for each point 
+\begin_inset Formula $x[m]$
+\end_inset
+
+ in the output array.) This saves a relatively expensive search for the 
+\begin_inset Formula $k$
+\end_inset
+
+ closest nodes from the point at which the interpolant was computed.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+then update the boundary values with 
+\begin_inset Formula $\partial f/\partial n$
+\end_inset
+
+ as known (from BC), 
+\begin_inset Formula $f$
+\end_inset
+
+ as unknown
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+at this step, the data inside the domain has already been updated, so 
+\series bold
+all
+\series default
+ 
+\begin_inset Formula $f_{k}$
+\end_inset
+
+ for the boundary update are 
+\series bold
+new
+\series default
+ data, as they should!
+\end_layout
+
+\begin_layout Itemize
+this takes advantage of the local coordinate systems so that locally, 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Formula $\partial f/\partial y$
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+ is known — this is supported by the solver
+\end_layout
+
+\begin_layout Itemize
+this approach satisfies the boundary condition consistently at each value
+ of 
+\begin_inset Formula $t$
+\end_inset
+
+ seen by the discretization.
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+BCs: the advection subproblems 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rho-advect"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-advect"
+
+\end_inset
+
+ for both 
+\begin_inset Formula $\rho$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ require (only) inflow BCs.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Obstacles must be handled sensibly.
+ When the streamline traceback ray hits an obstacle, stop the traceback,
+ and sample the velocity field at that point.
+ Either return that value (fast), or continue in the new upstream direction
+ for the remaining time of the trace (maybe more accurate).
+ Repeat until trace complete; sample the velocity field at the final point
+ and return that value.
+\end_layout
+
+\begin_layout Itemize
+In the streamline traceback, we can treat the whole area outside the bounding
+ box of the computational region as free stream, with 
+\begin_inset Formula $\boldsymbol{u}=\boldsymbol{u}_{\infty}$
+\end_inset
+
+ and 
+\begin_inset Formula $\rho=\rho_{\infty}$
+\end_inset
+
+.
+ This way we can dynamically handle parts of the outer boundary that may
+ alternate between in- and outflow due to oscillating flow patterns inside
+ the domain.
+\end_layout
+
+\begin_layout Itemize
+Obviously, any information that exits the computational domain is lost.
+ The purpose of the previous point is to provide sensible 
+\begin_inset Quotes eld
+\end_inset
+
+dummy data
+\begin_inset Quotes erd
+\end_inset
+
+ for any inflow occurring at the edges, provided that the computational
+ domain is large enough to capture the actually interesting behavior.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+IC for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+In order for the original problem to make physical sense, we must arbitrarily
+ choose 
+\series bold
+some
+\series default
+ valid flow field to begin with.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Due to how semi-Lagrangean advection works, we cannot initialize the flow
+ velocity to zero inside the domain.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The streamline traceback of SLA is based on the flow velocity 
+\emph on
+at the node to be updated
+\emph default
+.
+ If the velocity there is zero, SLA sees the situation as no flow occurring
+ 
+\series bold
+to
+\series default
+ that point.
+\end_layout
+
+\begin_layout Itemize
+Considering the analytical properties of inviscid flows, this is actually
+ somewhat sensible (an inviscid flow initially at rest remains at rest;
+ see Lighthill's book).
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Thus we need a nonzero flow field to use as an IC.
+\end_layout
+
+\begin_layout Itemize
+Because Euler flow is nonlinear, the safest option is to start with a physically
+ valid flow field.
+\end_layout
+
+\begin_layout Itemize
+OTOH, a zero IC for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ 
+\emph on
+might
+\emph default
+ also work, since beside the advection subproblem, there is also the pressure
+ response subproblem that 
+\series bold
+will
+\series default
+ see the inflow.
+ The kinematically forced inflow at the boundary will cause 
+\begin_inset Formula $\nabla\cdot\boldsymbol{u}<0$
+\end_inset
+
+ in the first inside-domain layer of nodes (because 
+\begin_inset Formula $\partial u_{x}/\partial x<0$
+\end_inset
+
+), causing 
+\begin_inset Formula $\partial\rho/\partial t>0$
+\end_inset
+
+ there.
+ Then, at the next timestep, in the third layer of nodes (on the other side
+ of the density peak) 
+\begin_inset Formula $\partial\rho/\partial x<0$
+\end_inset
+
+, whence 
+\begin_inset Formula $u_{x}>0$
+\end_inset
+
+.
+ This should cause a compressive pressure wave to propagate across the domain,
+ causing the flow velocity to become nonzero, thus starting up the advection.
+ Try this first.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+To bootstrap, we solve a steady-state potential flow problem, 
+\begin_inset Formula $\boldsymbol{u}=\nabla\phi$
+\end_inset
+
+, with 
+\begin_inset Formula $\nabla\cdot\nabla\phi=0$
+\end_inset
+
+.
+ We can use WLSQM via the heat equation:
+\begin_inset Formula 
+\[
+\frac{\partial\phi}{\partial t}+\nabla\cdot\nabla\phi=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+At all outer boundaries of the domain, use the free-stream BC: 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}=\widehat{\boldsymbol{n}}\cdot\nabla\phi=\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}_{\infty}$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+In practice, at left and right, 
+\begin_inset Formula $u_{x}=u_{\infty}$
+\end_inset
+
+; at top and bottom, 
+\begin_inset Formula $u_{y}=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+But we actually must prescribe 
+\begin_inset Formula $\partial\phi/\partial n$
+\end_inset
+
+.
+ The outer edges are aligned with the coordinate axes, so just use 
+\begin_inset Formula $\partial\phi/\partial x=u_{\infty}$
+\end_inset
+
+ (left and right); 
+\begin_inset Formula $\partial\phi/\partial y=0$
+\end_inset
+
+ (top and bottom).
+\end_layout
+
+\begin_layout Itemize
+At the boundary, leave 
+\begin_inset Formula $\phi$
+\end_inset
+
+ as unknown and let WLSQM compute its value.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+At obstacle boundaries, use the no-penetration BC: 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}=\widehat{\boldsymbol{n}}\cdot\nabla\phi=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Use local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinate systems and set up WLSQM with 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Formula $\partial\phi/\partial y=0$
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+IC for the bootstrap problem: uniform flow field ignoring obstacles, 
+\begin_inset Formula $\boldsymbol{u}=\boldsymbol{u}_{\infty}$
+\end_inset
+
+, where 
+\begin_inset Formula $\boldsymbol{u}_{\infty}=(cu_{\infty},su_{\infty})$
+\end_inset
+
+; i.e.
+ 
+\begin_inset Formula $\phi(x,y)=cu_{\infty}x+su_{\infty}y$
+\end_inset
+
+.
+ The problem is numerically easy, so this should rather quickly converge
+ to the final state (that accounts for the obstacles).
+\end_layout
+
+\begin_layout Itemize
+The final state of the bootstrap problem is a steady-state approximation
+ for incompressible and irrotational flow.
+ We assume that our flow is 
+\begin_inset Quotes eld
+\end_inset
+
+close enough
+\begin_inset Quotes erd
+\end_inset
+
+ to incompressible so that this approximation is physically at least somewhat
+ sensible to use as an initial state for the original problem.
+\end_layout
+
+\begin_layout Itemize
+This model also already gives us a lift prediction, if we want one.
+\end_layout
+
+\begin_layout Itemize
+In the paper vibration case, the undisturbed obstacle geometry is flat and
+ the flow is axial, so we can actually skip this bootstrap step and just
+ directly use a uniform free-stream flow field as the IC for the original
+ problem.
+ But in the general case (e.g.
+ flow around a cylinder; better for testing the flow solver component),
+ we need to bootstrap if we want a nonzero initial flowfield.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+IC for 
+\begin_inset Formula $\rho$
+\end_inset
+
+:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+First, note that in a steady-state (
+\begin_inset Formula $\partial\boldsymbol{u}/\partial t\equiv0$
+\end_inset
+
+) incompressible flow in the absence of body forces, velocity along each
+ streamline is constant (Bernoulli's principle, 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://en.wikipedia.org/wiki/Bernoulli%27s_principle"
+
+\end_inset
+
+ ), 
+\begin_inset Formula $(\boldsymbol{u}\cdot\nabla)\boldsymbol{u}\equiv0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+A steady state for 
+\begin_inset Formula $\rho$
+\end_inset
+
+ obviously exists.
+ From equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rho-direct"
+
+\end_inset
+
+, taking 
+\begin_inset Formula $\partial\rho/\partial t\rightarrow0$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\[
+\boldsymbol{u}\cdot\nabla\rho=-\rho\nabla\cdot\boldsymbol{u}\;.
+\]
+
+\end_inset
+
+Alternatively, we may write this as
+\begin_inset Formula 
+\[
+\boldsymbol{u}\cdot\left(\frac{1}{\rho}\nabla\rho\right)=-\nabla\cdot\boldsymbol{u}\;,
+\]
+
+\end_inset
+
+or
+\begin_inset Formula 
+\[
+(\boldsymbol{u}\cdot\nabla)(\ln\rho)=-\nabla\cdot\boldsymbol{u}\;.
+\]
+
+\end_inset
+
+In the absence of body forces, potential flow is divergence-free, 
+\begin_inset Formula $\nabla\cdot\boldsymbol{u}\equiv0$
+\end_inset
+
+, so 
+\begin_inset Formula $(\boldsymbol{u}\cdot\nabla)(\ln\rho)=0$
+\end_inset
+
+.
+ In this situation, 
+\emph on
+density remains constant along streamlines.
+\end_layout
+
+\begin_layout Itemize
+From 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-direct"
+
+\end_inset
+
+, using 
+\begin_inset Formula $\partial\boldsymbol{u}/\partial t\equiv0$
+\end_inset
+
+ and 
+\begin_inset Formula $(\boldsymbol{u}\cdot\nabla)\boldsymbol{u}\equiv0$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\[
+0=\boldsymbol{g}-\frac{\alpha}{\rho}\nabla\rho\;,
+\]
+
+\end_inset
+
+whence
+\begin_inset Formula 
+\[
+\frac{1}{\alpha}\boldsymbol{g}=\frac{1}{\rho}\nabla\rho=\nabla(\ln\rho)\;.
+\]
+
+\end_inset
+
+We thus obtain 
+\begin_inset Formula $\nabla(\ln\rho)$
+\end_inset
+
+ algebraically.
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\boldsymbol{g}\equiv0$
+\end_inset
+
+, we can choose 
+\begin_inset Formula $\ln\rho=\mathrm{const.}$
+\end_inset
+
+ and hence 
+\begin_inset Formula $\rho=\mathrm{const.}$
+\end_inset
+
+ as the corresponding density IC, as is indeed expected for incompressible
+ flow.
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\boldsymbol{g}\not\equiv0$
+\end_inset
+
+, let us assume that the gravitational field 
+\begin_inset Formula $\boldsymbol{g}$
+\end_inset
+
+ is uniform.
+ We can start from the 
+\begin_inset Quotes eld
+\end_inset
+
+downmost
+\begin_inset Quotes erd
+\end_inset
+
+ point in the domain, set a value for 
+\begin_inset Formula $\rho$
+\end_inset
+
+ there, and then linearly increase 
+\begin_inset Formula $\ln\rho$
+\end_inset
+
+ moving 
+\begin_inset Quotes eld
+\end_inset
+
+upward
+\begin_inset Quotes erd
+\end_inset
+
+ in the gravitational field.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Doing this accounts for hydrostatic pressure.
+ Maybe not necessary to include nonzero 
+\begin_inset Formula $\boldsymbol{g}$
+\end_inset
+
+ in our application?
+\end_layout
+
+\begin_layout Itemize
+This is not completely rigorous; taking 
+\begin_inset Formula $(\boldsymbol{u}\cdot\nabla)\boldsymbol{u}\equiv0$
+\end_inset
+
+ we have already assumed the absence of body forces.
+ Thus this is an ad hoc approximation, applicable when the body forces are
+ 
+\begin_inset Quotes eld
+\end_inset
+
+small
+\begin_inset Quotes erd
+\end_inset
+
+.
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Itemize
+##### We can solve a Poisson problem (via applying WLSQM to the heat equation)
+ to obtain 
+\begin_inset Formula $\ln\rho$
+\end_inset
+
+.
+ Apply 
+\begin_inset Formula $\nabla\cdot(\dots)$
+\end_inset
+
+ to both sides:
+\begin_inset Formula 
+\[
+\nabla\cdot\nabla(\ln\rho)=\frac{1}{\alpha}\nabla\cdot\boldsymbol{g}=0\;,
+\]
+
+\end_inset
+
+where the last equality follows because the gravitational field is uniform.
+ As the boundary conditions, we can use
+\begin_inset Formula 
+\[
+\widehat{\boldsymbol{n}}\cdot\nabla(\ln\rho)=0\;,
+\]
+
+\end_inset
+
+describing that far away from the obstacle, the flow returns to its free-stream
+ state (no disturbances in 
+\begin_inset Formula $\ln\rho$
+\end_inset
+
+).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+How about the obstacle boundary?
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+##### IC for 
+\begin_inset Formula $\rho$
+\end_inset
+
+: take 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ as given (from its IC).
+ Bootstrap the density field 
+\begin_inset Formula $\rho$
+\end_inset
+
+ as constant.
+ Time-integrate only 
+\begin_inset Formula $\rho$
+\end_inset
+
+ until it converges.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This is a linear advection-reaction problem.
+ The equation is hyperbolic.
+\end_layout
+
+\begin_layout Itemize
+Does the integration converge toward the steady state? Physically, maybe,
+ given that the inflow BCs remain constant.
+ The field 
+\begin_inset Formula $\rho$
+\end_inset
+
+ is transported by the flow, and changes locally in linear response to 
+\begin_inset Formula $\nabla\cdot\boldsymbol{u}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Summary: for 
+\begin_inset Formula $\boldsymbol{g}\equiv0$
+\end_inset
+
+, the IC for 
+\begin_inset Formula $\rho$
+\end_inset
+
+ is 
+\begin_inset Formula $\rho=\mathrm{const.}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+BCs: physics dictates 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot(\boldsymbol{u}-\boldsymbol{u}_{\mathrm{obst}})\equiv0$
+\end_inset
+
+ (for all 
+\begin_inset Formula $t$
+\end_inset
+
+) at obstacles.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+For simplicity, let us first consider stationary obstacles, with 
+\begin_inset Formula $\boldsymbol{u}_{\mathrm{obst}}\equiv0$
+\end_inset
+
+, and 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}$
+\end_inset
+
+, 
+\begin_inset Formula $\widehat{\boldsymbol{n}}$
+\end_inset
+
+ constant in time.
+ Consider the coupled subproblems.
+ Let us start with the pressure subproblem for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+, written at the obstacle boundary:
+\begin_inset Formula 
+\[
+\frac{\partial\boldsymbol{u}}{\partial t}\vert_{\Gamma_{N}}=\boldsymbol{g}-\frac{\alpha}{\rho}\nabla\rho\;.
+\]
+
+\end_inset
+
+Since 
+\begin_inset Formula $u_{n}\equiv0$
+\end_inset
+
+ along the whole boundary, also 
+\begin_inset Formula $\partial_{\tau}u_{n}\equiv0$
+\end_inset
+
+, and we have
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial u_{\tau}}{\partial t}\vert_{\Gamma_{N}} & =g_{\tau}-\frac{\alpha}{\rho}\widehat{\boldsymbol{\tau}}\cdot\nabla\rho\;,\\
+0=\frac{\partial u_{n}}{\partial t}\vert_{\Gamma_{N}} & =g_{n}-\frac{\alpha}{\rho}\widehat{\boldsymbol{n}}\cdot\nabla\rho\;.
+\end{align*}
+
+\end_inset
+
+The first equation gives an update formula for 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ at the boundary, whereas the second gives (a trivial update for 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ and) a constraint that must be satisfied by 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\boldsymbol{g}\equiv0$
+\end_inset
+
+, the constraint simplifies into
+\begin_inset Formula 
+\[
+(\widehat{\boldsymbol{n}}\cdot\nabla\rho)\vert_{\Gamma_{N}}=0\;.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+All these relations hold at the beginning of the timestep, 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+In practice, to mitigate discretization error (especially at curved boundaries),
+ on input it is preferable to use a trick: take 
+\begin_inset Formula $u_{\tau}=\mathrm{sgn}(\widehat{\boldsymbol{\tau}}\cdot\boldsymbol{u})\left|\boldsymbol{u}\right|$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{n}=0$
+\end_inset
+
+ (instead of applying coordinate system conversion to the actual 
+\begin_inset Formula $(u_{x},u_{y})$
+\end_inset
+
+ representation).
+\end_layout
+
+\begin_layout Itemize
+If the representation of 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ at the boundaries is stored in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates, this input conversion is equivalent to a do-nothing.
+\end_layout
+
+\begin_layout Itemize
+On output, use the updated 
+\begin_inset Formula $u_{\tau}^{*}$
+\end_inset
+
+, and set 
+\begin_inset Formula $u_{n}^{*}=0$
+\end_inset
+
+, before applying conversion to 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates (now using the coordinate conversion formulas).
+\end_layout
+
+\begin_layout Itemize
+When updating 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+, we evaluate 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}\cdot\nabla\rho$
+\end_inset
+
+ by WLSQM.
+ At the boundary, 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}\cdot\nabla\rho$
+\end_inset
+
+ is conveniently available in the local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ representation.
+\end_layout
+
+\begin_layout Itemize
+To prescribe 
+\begin_inset Formula $\partial\rho/\partial n=0$
+\end_inset
+
+, use local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates for the boundary nodes (also for the density field), which
+ allows setting 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Formula $\partial\rho/\partial y=0$
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+ in the solver.
+ WLSQM then outputs the appropriate value for 
+\begin_inset Formula $\rho$
+\end_inset
+
+ that makes the field satisfy 
+\begin_inset Formula $\partial\rho/\partial n=0$
+\end_inset
+
+ at the boundary.
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+alternative, bad idea: Approximate by copying the value of 
+\begin_inset Formula $\rho$
+\end_inset
+
+ from slightly inside the domain (in the direction of 
+\begin_inset Formula $\widehat{\boldsymbol{n}}$
+\end_inset
+
+), making the normal derivative approximately zero...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Just to be sure, consider also the source/sink subproblem for 
+\begin_inset Formula $\rho$
+\end_inset
+
+ at the obstacle boundary:
+\begin_inset Formula 
+\[
+\frac{\partial\rho}{\partial t}\vert_{\Gamma_{N}}=-\rho\nabla\cdot\boldsymbol{u}=-\rho(\frac{\partial u_{\tau}}{\partial\tau}+\frac{\partial u_{n}}{\partial n})
+\]
+
+\end_inset
+
+The (physically appropriate) BCs tell us nothing about the components of
+ 
+\begin_inset Formula $\nabla\cdot\boldsymbol{u}$
+\end_inset
+
+; thus this equation produces no new constraints.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This also holds in the case of moving obstacles.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Summary: for the coupled subproblems, with 
+\begin_inset Formula $\boldsymbol{g}\equiv0$
+\end_inset
+
+, the obstacle boundary conditions 
+\series bold
+for stationary obstacles
+\series default
+ are
+\begin_inset Formula 
+\[
+\frac{\partial u_{\tau}}{\partial t}\vert_{\Gamma_{N}}=-\frac{\alpha}{\rho}\widehat{\boldsymbol{\tau}}\cdot\nabla\rho\;,
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+u_{n}=0\;,
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+(\widehat{\boldsymbol{n}}\cdot\nabla\rho)\vert_{\Gamma_{N}}=0\;.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+In fact, if the second and third equation are applied first, the first equation
+ is then just the PDE itself (the coupled subproblem for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+), written at the obstacle boundary.
+\end_layout
+
+\begin_layout Itemize
+The second equation is the original BC for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+The third equation is a consequence of 
+\begin_inset Formula $u_{n}=\text{\mathrm{const.}}$
+\end_inset
+
+ (whence 
+\begin_inset Formula $\partial u_{n}/\partial t=0$
+\end_inset
+
+) and the PDE 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+In the solver, at the boundary, 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}\cdot\nabla\rho$
+\end_inset
+
+ is conveniently available in the local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ representation.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Conversion of vectors from 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ components to 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ components.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Once we have the new tangential velocity 
+\begin_inset Formula $u_{\tau}^{*}$
+\end_inset
+
+, in order to obtain the new 
+\begin_inset Formula $u_{x}^{*}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{y}^{*}$
+\end_inset
+
+, we have the linear equation system
+\begin_inset Formula 
+\begin{align*}
+cu_{x}^{*}+su_{y}^{*} & =u_{\tau}^{*}\;,\\
+-su_{x}^{*}+cu_{y}^{*} & =u_{n}^{*}\;,
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $u_{n}^{*}=0$
+\end_inset
+
+.
+ In matrix form,
+\begin_inset Formula 
+\[
+\boldsymbol{A}\boldsymbol{x}=\boldsymbol{b}\;,
+\]
+
+\end_inset
+
+where
+\begin_inset Formula 
+\[
+\boldsymbol{A}=\left[\begin{array}{rr}
+c & s\\
+-s & c
+\end{array}\right]\;,\quad\boldsymbol{x}=\left[\begin{array}{c}
+u_{x}^{*}\\
+u_{y}^{*}
+\end{array}\right]\;,\quad\boldsymbol{b}=\left[\begin{array}{c}
+u_{\tau}^{*}\\
+u_{n}^{*}
+\end{array}\right]
+\]
+
+\end_inset
+
+Taking note that since 
+\begin_inset Formula $\boldsymbol{A}$
+\end_inset
+
+ represents a rotation, it is orthogonal, 
+\begin_inset Formula $\boldsymbol{A}^{-1}=\boldsymbol{A}^{\mathrm{T}}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\boldsymbol{A}^{\mathrm{T}}\boldsymbol{A}=\left[\begin{array}{rr}
+c & -s\\
+s & c
+\end{array}\right]\left[\begin{array}{rr}
+c & s\\
+-s & c
+\end{array}\right]=\left[\begin{array}{rr}
+c^{2}+s^{2} & cs-sc\\
+sc-cs & s^{2}+c^{2}
+\end{array}\right]=\left[\begin{array}{rr}
+1 & 0\\
+0 & 1
+\end{array}\right]\;,
+\]
+
+\end_inset
+
+so in general,
+\begin_inset Formula 
+\[
+\left[\begin{array}{c}
+u_{x}^{*}\\
+u_{y}^{*}
+\end{array}\right]=\boldsymbol{x}=\boldsymbol{A}^{-1}\boldsymbol{b}=\boldsymbol{A}^{\mathrm{T}}\boldsymbol{b}=\left[\begin{array}{rr}
+c & -s\\
+s & c
+\end{array}\right]\left[\begin{array}{c}
+u_{\tau}^{*}\\
+u_{n}^{*}
+\end{array}\right]
+\]
+
+\end_inset
+
+Thus, explicitly for the velocity,
+\begin_inset Formula 
+\[
+u_{x}^{*}=cu_{\tau}^{*}\;,\quad u_{y}^{*}=su_{\tau}^{*}\;,
+\]
+
+\end_inset
+
+since 
+\begin_inset Formula $u_{n}^{*}=0$
+\end_inset
+
+ by the boundary condition 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}\vert_{\Gamma_{N}}=0$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Consider now 
+\series bold
+moving obstacles
+\series default
+.
+ (Rotation, translation and deformation are allowed.) The local time derivative
+ of the flow velocity field in arbitrary orthonormal (
+\begin_inset Formula $\tau,n$
+\end_inset
+
+) coordinates, in the case where the coordinate system is allowed to rotate,
+ 
+\begin_inset Formula $\theta=\theta(t)$
+\end_inset
+
+, becomes
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\boldsymbol{u}}{\partial t} & =\frac{\partial}{\partial t}(u_{\tau}\widehat{\boldsymbol{\tau}}+u_{n}\widehat{\boldsymbol{n}})\\
+ & =\frac{\partial u_{\tau}}{\partial t}\widehat{\boldsymbol{\tau}}+u_{\tau}\frac{\partial\widehat{\boldsymbol{\tau}}}{\partial t}+\frac{\partial u_{n}}{\partial t}\widehat{\boldsymbol{n}}+u_{n}\frac{\partial\widehat{\boldsymbol{n}}}{\partial t}\\
+ & =\frac{\partial u_{\tau}}{\partial t}\widehat{\boldsymbol{\tau}}+u_{\tau}\frac{\partial}{\partial t}\left[\begin{array}{r}
+\cos\theta\\
+\sin\theta
+\end{array}\right]+\frac{\partial u_{n}}{\partial t}\widehat{\boldsymbol{n}}+u_{n}\frac{\partial}{\partial t}\left[\begin{array}{r}
+-\sin\theta\\
+\cos\theta
+\end{array}\right]\\
+ & =\frac{\partial u_{\tau}}{\partial t}\widehat{\boldsymbol{\tau}}+u_{\tau}\left[\begin{array}{r}
+-\sin\theta\\
+\cos\theta
+\end{array}\right]\frac{\partial\theta}{\partial t}+\frac{\partial u_{n}}{\partial t}\widehat{\boldsymbol{n}}+u_{n}\left[\begin{array}{r}
+-\cos\theta\\
+-\sin\theta
+\end{array}\right]\frac{\partial\theta}{\partial t}\\
+ & =\frac{\partial u_{\tau}}{\partial t}\widehat{\boldsymbol{\tau}}+u_{\tau}\widehat{\boldsymbol{n}}\frac{\partial\theta}{\partial t}+\frac{\partial u_{n}}{\partial t}\widehat{\boldsymbol{n}}+u_{n}(-\widehat{\boldsymbol{\tau}})\frac{\partial\theta}{\partial t}\\
+ & =\left(\frac{\partial u_{\tau}}{\partial t}+u_{n}\frac{\partial\theta}{\partial t}\right)\widehat{\boldsymbol{\tau}}+\left(\frac{\partial u_{n}}{\partial t}-u_{\tau}\frac{\partial\theta}{\partial t}\right)\widehat{\boldsymbol{n}}\;.
+\end{align*}
+
+\end_inset
+
+The function 
+\begin_inset Formula $\partial\theta/\partial t$
+\end_inset
+
+ is considered known.
+\end_layout
+
+\begin_layout Itemize
+With 
+\begin_inset Formula $\boldsymbol{g}\equiv0$
+\end_inset
+
+, we obtain the tangential and normal components of equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{align*}
+\widehat{\boldsymbol{\tau}}\cdot\frac{\partial\boldsymbol{u}}{\partial t}=\frac{\partial u_{\tau}}{\partial t}+u_{n}\frac{\partial\theta}{\partial t} & =-\frac{\alpha}{\rho}\widehat{\boldsymbol{\tau}}\cdot\nabla\rho\;,\\
+\widehat{\boldsymbol{n}}\cdot\frac{\partial\boldsymbol{u}}{\partial t}=\frac{\partial u_{n}}{\partial t}-u_{\tau}\frac{\partial\theta}{\partial t} & =-\frac{\alpha}{\rho}\widehat{\boldsymbol{n}}\cdot\nabla\rho\;.
+\end{align*}
+
+\end_inset
+
+Accounting for the fact that at the boundary, 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot(\boldsymbol{u}-\boldsymbol{u}_{\mathrm{obst}})\equiv0$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $u_{n}=u_{n,\mathrm{obst}}$
+\end_inset
+
+ (known!), and rearranging terms, we have
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial u_{\tau}}{\partial t} & =-u_{n,\mathrm{obst}}\frac{\partial\theta}{\partial t}-\frac{\alpha}{\rho}\widehat{\boldsymbol{\tau}}\cdot\nabla\rho\;,\\
+\widehat{\boldsymbol{n}}\cdot\nabla\rho & =\frac{\rho}{\alpha}\left(u_{\tau}\frac{\partial\theta}{\partial t}-\frac{\partial u_{n,\mathrm{obst}}}{\partial t}\right)\;.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This accounts for both normal-direction acceleration and rotation of the
+ obstacle.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This reduces correctly.
+ If the obstacle does not move (
+\begin_inset Formula $\theta$
+\end_inset
+
+ constant in time (but still local to each point on the surface!), 
+\begin_inset Formula $u_{n,\mathrm{obst}}\equiv0$
+\end_inset
+
+), we again have 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho=0$
+\end_inset
+
+.
+ Note also 
+\begin_inset Formula $u_{n}=u_{n,\mathrm{obst}}=0$
+\end_inset
+
+.
+ The first equation reduces to the previous PDE for the tangential velocity
+ component 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The LHS will be obtained for the same point of time 
+\begin_inset Formula $t$
+\end_inset
+
+ from which data is fed to the RHS.
+ If we use 
+\begin_inset Quotes eld
+\end_inset
+
+old
+\begin_inset Quotes erd
+\end_inset
+
+ data at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The vectors 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{n}}$
+\end_inset
+
+ refer to the 
+\begin_inset Quotes eld
+\end_inset
+
+old
+\begin_inset Quotes erd
+\end_inset
+
+ (
+\begin_inset Formula $\tau,n$
+\end_inset
+
+) coordinate system at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+The result is also expressed in the 
+\begin_inset Quotes eld
+\end_inset
+
+old
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ system.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+For FSI problems, 
+\begin_inset Formula $\partial\theta/\partial t$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{n,\mathrm{obst}}$
+\end_inset
+
+ may be challenging to obtain for 
+\begin_inset Formula $t>t_{0}$
+\end_inset
+
+ before the timestep is complete (these are needed for RK2 integration of
+ 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+).
+ Must model somehow.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Fixed point iteration possible (IG = use the values at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+), but very slow, since it must iterate between fluid and structure solvers.
+\end_layout
+
+\begin_layout Itemize
+Trivial model (values from the structural model remain constant across the
+ timestep) also possible.
+ Fast, but not very accurate.
+ Maybe good enough?
+\end_layout
+
+\begin_layout Itemize
+Structure solver must in any case provide not only 
+\begin_inset Formula $\boldsymbol{u}_{\mathrm{obst}}$
+\end_inset
+
+ (velocity, not displacement!) and 
+\begin_inset Formula $\theta$
+\end_inset
+
+, but also 
+\begin_inset Formula $\partial\theta/\partial t$
+\end_inset
+
+ and 
+\begin_inset Formula $\partial\boldsymbol{u}_{\mathrm{obst}}/\partial t$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+If the structural discretization uses a first-order form with displacement
+ and velocity DOFs, 
+\begin_inset Formula $\theta$
+\end_inset
+
+ and 
+\begin_inset Formula $\partial\theta/\partial t$
+\end_inset
+
+ are easy to obtain.
+ The acceleration can be computed for each structural DOF from the first-order
+ ODE system (to get it as accurately as possible).
+ The result can be converted to obstacle acceleration in a format that the
+ fluid solver understands.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+If we want to have 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho$
+\end_inset
+
+ at the end of the timestep, we can (after applying the explicit time integratio
+n) just re-evaluate the RHS of the above expression, using the new 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\vert_{t=t_{0}+\Delta t}$
+\end_inset
+
+ instead of the old 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\vert_{t=t_{0}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Obviously, then 
+\begin_inset Formula $t=t_{0}+\Delta t$
+\end_inset
+
+ also in all terms on the RHS (use the updated solution fields!).
+\end_layout
+
+\begin_layout Itemize
+This is 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho$
+\end_inset
+
+ at the beginning of the next timestep, so we need to compute it anyway.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+For 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, provided that the rotation increment 
+\begin_inset Formula $\Delta\theta$
+\end_inset
+
+ during the timestep is small, we can use the 
+\begin_inset Formula $u_{n}=0$
+\end_inset
+
+, 
+\begin_inset Formula $u_{\tau}=\mathrm{sgn}(\widehat{\boldsymbol{\tau}}\cdot\boldsymbol{u})\left|\boldsymbol{u}\right|$
+\end_inset
+
+ trick (i.e.
+ just rotate the flow vector, keeping it tangential, now with the updated
+ surface).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Doesn't matter whether we use 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}\vert_{t=t_{0}+\Delta t}$
+\end_inset
+
+ or 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}\vert_{t=t_{0}}$
+\end_inset
+
+, since we only take 
+\begin_inset Formula $\mathrm{sgn(\dots)}$
+\end_inset
+
+, and the rotation is small.
+\end_layout
+
+\begin_layout Itemize
+In practice, we may performance-optimize further.
+ If 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ at the boundary is stored in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates, this is equivalent to a do-nothing!
+\end_layout
+
+\begin_layout Itemize
+We simply re-interpret 
+\begin_inset Formula $(u_{\tau},u_{n})$
+\end_inset
+
+ as if it was already expressed in the updated 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates; this effectively rotates the vector into the new 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates.
+\end_layout
+
+\begin_layout Itemize
+Only if the 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ representation of 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ is needed at the end of the timestep, 
+\begin_inset Formula $t=t_{0}+\Delta t$
+\end_inset
+
+, we must use 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}\vert_{t=t_{0}+\Delta t}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\vert_{t=t_{0}+\Delta t}$
+\end_inset
+
+ in the coordinate system conversion.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Some obstacles may remain stationary (no advection with flow) but undergo
+ small vibrations (in response to the flow or otherwise) around a reference
+ configuration.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Each surface segment oscillates around its local reference position and
+ orientation.
+ In this case we can probably get away with not actually updating the point
+ clouds into the new 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ system at each timestep, since the distances and directions are always
+ close to those in the 
+\begin_inset Quotes eld
+\end_inset
+
+local reference (
+\begin_inset Formula $\tau,n$
+\end_inset
+
+) system
+\begin_inset Quotes erd
+\end_inset
+
+ (computed for the reference configuration).
+\end_layout
+
+\begin_layout Itemize
+This gives major savings in computation time, because the boundary point
+ clouds can be preprocessed just like for classical rigid stationary obstacles.
+ 
+\end_layout
+
+\begin_layout Itemize
+This makes the fluid solver just as fast as for the rigid obstacle case.
+ Useful for realtime applications in FSI of structures undergoing small
+ vibrations?
+\end_layout
+
+\begin_layout Itemize
+In the fluid model, the obstacle then remains geometrically stationary,
+ but its vibration is seen by the no-penetration boundary conditions, thereby
+ affecting the flow.
+ This is an adaptation (for Euler flows) of the approach that was used for
+ potential flows in our earlier studies.
+\end_layout
+
+\begin_layout Itemize
+This can be used in the papermaking application having small transverse
+ deflections.
+ The axial motion of the paper web is not seen by the Euler flow surrounding
+ it.
+\end_layout
+
+\begin_layout Itemize
+Even for a Navier–Stokes flow, in this application the structural geometry
+ remains stationary in the Eulerian frame, and only the 
+\begin_inset Quotes eld
+\end_inset
+
+zero relative velocity
+\begin_inset Quotes erd
+\end_inset
+
+ BC is affected (since the obstacle surface moves axially).
+\end_layout
+
+\begin_layout Itemize
+Could test this with a simpler problem, e.g.
+ a kinematically oscillating rigid cylinder.
+ This gives a one-way coupling, with a trivial structural model driving
+ the fluid model.
+ (With applications to 2D musical instruments and/or spatial audio processing?
+ Record the numerical pressure response at some point(s) in the domain.
+ Probably too expensive computationally, though; Helmholtz is much cheaper
+ than an Euler flow.)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+For compressible Navier–Stokes, doing this is even easier: then at the obstacle
+ surface, 
+\begin_inset Formula $\boldsymbol{u}-\boldsymbol{u}_{\mathrm{obst}}\equiv0$
+\end_inset
+
+; this fixes both components of 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+.
+ Add the 
+\begin_inset Formula $\nu\nabla\cdot\nabla\boldsymbol{u}$
+\end_inset
+
+ diffusion term to the subproblem that was used to derive the boundary condition
+s.
+ Obtain a condition for 
+\begin_inset Formula $\nabla\rho$
+\end_inset
+
+.
+ Something like:
+\begin_inset Formula 
+\[
+\frac{\partial\boldsymbol{u}}{\partial t}=-\frac{\alpha}{\rho}\nabla\rho+\nu\nabla\cdot\nabla\boldsymbol{u}\;,
+\]
+
+\end_inset
+
+whence
+\begin_inset Formula 
+\[
+\frac{\partial\boldsymbol{u}_{\mathrm{obst}}}{\partial t}=-\frac{\alpha}{\rho}\nabla\rho+\nu\nabla\cdot\nabla\boldsymbol{u}_{\mathrm{obst}}\;,
+\]
+
+\end_inset
+
+and by rearranging,
+\begin_inset Formula 
+\[
+\nabla\rho=\frac{\rho}{\alpha}\left(\nu\nabla\cdot\nabla\boldsymbol{u}_{\mathrm{obst}}-\frac{\partial\boldsymbol{u}_{\mathrm{obst}}}{\partial t}\right)\;.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Note that 
+\begin_inset Formula $\boldsymbol{u}_{\mathrm{obst}}$
+\end_inset
+
+ is not a rigid-body motion, since the obstacle will deform while vibrating.
+\end_layout
+
+\begin_layout Itemize
+To evaluate the laplacian, it may be convenient to use 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates, because then the axis vectors 
+\begin_inset Formula $\widehat{\boldsymbol{e}}_{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{e}}_{y}$
+\end_inset
+
+ are constant in space.
+ The result can then be rotated into the local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates.
+\end_layout
+
+\begin_layout Itemize
+The 
+\begin_inset Formula $\partial\boldsymbol{u}_{\mathrm{obst}}/\partial t$
+\end_inset
+
+ term can be expressed in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates as before.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+Inflow boundaries.
+ Here we have 
+\begin_inset Formula $\boldsymbol{u}=\boldsymbol{u}_{\infty}$
+\end_inset
+
+, whence 
+\begin_inset Formula $\partial\boldsymbol{u}/\partial t=\partial\boldsymbol{u}_{\infty}/\partial t=0$
+\end_inset
+
+.
+ Thus
+\begin_inset Formula 
+\[
+0=\frac{\partial\boldsymbol{u}}{\partial t}=\boldsymbol{g}-\frac{\alpha}{\rho}\nabla\rho\;,
+\]
+
+\end_inset
+
+from which (if 
+\begin_inset Formula $\boldsymbol{g}\equiv0$
+\end_inset
+
+)
+\begin_inset Formula 
+\[
+\nabla\rho=0\;.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+No-inflow free-stream boundaries (top, bottom, right): maybe we can just
+ ignore these?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Use the PDE to update the solution as if the node was inside the domain.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Consider now the advection subproblems.
+ 
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Itemize
+For a stationary obstacle, from the first subproblem for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-pressure"
+
+\end_inset
+
+,
+\begin_inset Formula 
+\[
+0\equiv\frac{\partial}{\partial t}\left(\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}\right)=\widehat{\boldsymbol{n}}\cdot\frac{\partial\boldsymbol{u}}{\partial t}=\widehat{\boldsymbol{n}}\cdot\left(\boldsymbol{g}-\alpha\frac{1}{\rho}\nabla\rho\right)
+\]
+
+\end_inset
+
+Hence
+\begin_inset Formula 
+\[
+\widehat{\boldsymbol{n}}\cdot\nabla\rho=\frac{\rho}{\alpha}\,\widehat{\boldsymbol{n}}\cdot\boldsymbol{g}\;,
+\]
+
+\end_inset
+
+which gives an additional BC for 
+\begin_inset Formula $\rho$
+\end_inset
+
+.
+ For a moving obstacle, this becomes a bit more complicated:
+\begin_inset Formula 
+\begin{align*}
+0\equiv\frac{\partial}{\partial t}(\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}) & =\frac{\partial\widehat{\boldsymbol{n}}}{\partial t}\cdot\boldsymbol{u}+\widehat{\boldsymbol{n}}\cdot\frac{\partial\boldsymbol{u}}{\partial t}\\
+ & =\beta\widehat{\boldsymbol{\tau}}\cdot\boldsymbol{u}+\widehat{\boldsymbol{n}}\cdot\frac{\partial\boldsymbol{u}}{\partial t}\\
+ & =\beta\widehat{\boldsymbol{\tau}}\cdot\boldsymbol{u}+\widehat{\boldsymbol{n}}\cdot\left(\boldsymbol{g}-\alpha\frac{1}{\rho}\nabla\rho\right)\;,
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\beta$
+\end_inset
+
+ depends on the rate of rotation of the obstacle surface.
+ This seems a complicated way to do it...
+\end_layout
+
+\begin_layout Itemize
+Alternative try: 
+\end_layout
+
+\end_inset
+
+For 
+\begin_inset Formula $\rho$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:rho-advect"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\[
+\frac{\partial\rho}{\partial t}=-\boldsymbol{u}\cdot\nabla\rho=-(u_{\tau}\widehat{\boldsymbol{\tau}}+u_{n}\widehat{\boldsymbol{n}})\cdot\nabla\rho\;,
+\]
+
+\end_inset
+
+but because 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\boldsymbol{u}=u_{n}\equiv0$
+\end_inset
+
+ at the obstacle boundary, the second term vanishes, leaving only
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\rho}{\partial t}\vert_{\Gamma_{N}} & =-u_{\tau}\widehat{\boldsymbol{\tau}}\cdot\nabla\rho\\
+ & =-(cu_{x}+su_{y})\left(c\widehat{\boldsymbol{e}}_{x}+s\widehat{\boldsymbol{e}}_{y}\right)\cdot\nabla\rho\\
+ & =-\left[(c^{2}u_{x}+csu_{y})\widehat{\boldsymbol{e}}_{x}+(csu_{x}+s^{2}u_{y})\widehat{\boldsymbol{e}}_{y}\right]\cdot\nabla\rho\\
+ & =-\left[(c^{2}u_{x}+csu_{y})\frac{\partial\rho}{\partial x}+(csu_{x}+s^{2}u_{y})\frac{\partial\rho}{\partial y}\right]\;.
+\end{align*}
+
+\end_inset
+
+We have obtained a separate update formula for the boundary nodes.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\series bold
+But we don't need it — we already have the BC update above.
+ (See algorithm below.)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+On the other hand, the first line says this is 1D advection of the field
+ 
+\begin_inset Formula $\rho$
+\end_inset
+
+, along the local tangent direction of the boundary:
+\begin_inset Formula 
+\[
+\frac{\partial\rho}{\partial t}+u_{\tau}\widehat{\boldsymbol{\tau}}\cdot\nabla\rho=0\;.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Thus it is equivalent to treat it as such in the semi-Lagrangean advection
+ procedure.
+ Compute 2D advection inside the domain; compute 1D advection along the
+ boundary at the obstacle boundaries.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+A small error will be introduced due to discretization, especially at curved
+ boundaries.
+\end_layout
+
+\begin_layout Itemize
+How to prevent the discretization error from corrupting 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+ in the pressure subproblem?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+It may be enough that the pressure subproblem corrects for it by imposing
+ 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho=0$
+\end_inset
+
+?
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+We may simply impose that already here
+\series default
+, considering that the next update for the coupled subproblem (stiff subproblem)
+ would do it anyway.
+ If the result is always overwritten, it makes no sense to bother advecting
+ 
+\begin_inset Formula $\rho$
+\end_inset
+
+ along the boundary.
+\end_layout
+
+\begin_layout Itemize
+We can do the same for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+.
+ Enforce the boundary conditions already here; the advection along the boundary
+ does not matter, because the next update of the coupled subproblem overwrites
+ it.
+\end_layout
+
+\begin_layout Itemize
+Thus the complete 
+\series bold
+solver algorithm
+\series default
+ for one timestep becomes:
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+1) advect (for large timestep), ignore BCs except at inflow boundaries
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+2) reset time counter (how much of the large timestep processed) for the
+ stiff part 
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+3) update boundary nodes (using BCs from the coupled subproblem) with the
+ currently latest available data
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+4) if counter says the whole large timestep has been processed, DONE
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+5) update the stiff part, inside-domain nodes
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+6) jump to step 3
+\end_layout
+
+\begin_layout Itemize
+in practice, must account for symmetric Strang splitting (the above is just
+ first-order Marchuk–Yanenko).
+ Process the stiff part for 
+\begin_inset Formula $\Delta t/2$
+\end_inset
+
+; then advect for 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+, then again process the stiff part for 
+\begin_inset Formula $\Delta t/2$
+\end_inset
+
+.
+ Snapshot the solution fields for output.
+ Repeat.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+advection with MacCormack is 
+\begin_inset Formula $O((\Delta t)^{2})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+stiff part could be integrated using RK2, also 
+\begin_inset Formula $O((\Delta t)^{2})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+boundary nodes can easily get the old value, but how about the 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ update that gets only 
+\begin_inset Formula $\partial u_{\tau}/\partial t$
+\end_inset
+
+ and needs to integrate in time? It seems we must interleave the RK2 integration
+ of the inside-domain part with the boundary update?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Let's do this...
+ RK2:
+\begin_inset Formula 
+\begin{align*}
+\boldsymbol{k}_{1} & =\boldsymbol{f}(\boldsymbol{u}_{n},\,t_{n})\;,\\
+\boldsymbol{k}_{2} & =\boldsymbol{f}(\boldsymbol{u}_{n}+\beta\,\Delta t\,\boldsymbol{k}_{1},\,t_{n}+\beta\,\Delta t)\;,\\
+\boldsymbol{u}_{n+1} & =\boldsymbol{u}_{n}+\Delta t\left[(1-\frac{1}{2\beta})\boldsymbol{k}_{1}+\frac{1}{2\beta}\boldsymbol{k}_{2}\right]\;,
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\beta\in(0,1]$
+\end_inset
+
+.
+ Classical choices 
+\begin_inset Formula $\beta=1/2$
+\end_inset
+
+ (explicit midpoint method), 
+\begin_inset Formula $\beta=2/3$
+\end_inset
+
+ (Ralston's method), 
+\begin_inset Formula $\beta=1$
+\end_inset
+
+ (Heun's method / explicit trapezoid rule).
+\end_layout
+
+\begin_layout Itemize
+Exiting advection step, entering stiff part update.
+\end_layout
+
+\begin_layout Itemize
+At the beginning of a timestep, enforce boundary conditions for 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho$
+\end_inset
+
+ at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Compute 
+\begin_inset Formula $\boldsymbol{k}_{1}$
+\end_inset
+
+ simultaneously in the interior and on the boundaries
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This needs data only from 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+We have also 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\boldsymbol{k}_{1}$
+\end_inset
+
+ contains 
+\begin_inset Formula $\partial u_{\tau}/\partial t$
+\end_inset
+
+ at 
+\begin_inset Formula $t=t_{0}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Repeat for 
+\begin_inset Formula $\boldsymbol{k}_{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+As input, we have 
+\begin_inset Quotes eld
+\end_inset
+
+candidate data
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $\boldsymbol{u}_{n}+\beta\,\Delta t\,\boldsymbol{k}_{1}$
+\end_inset
+
+ (with 
+\begin_inset Formula $\beta=1$
+\end_inset
+
+, this is the forward Euler prediction)
+\end_layout
+
+\begin_layout Itemize
+Enforce boundary conditions for 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho$
+\end_inset
+
+ at 
+\begin_inset Formula $t=t_{0}+\beta\,\Delta t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\boldsymbol{k}_{2}$
+\end_inset
+
+ contains an approximation of 
+\begin_inset Formula $\partial u_{\tau}/\partial t$
+\end_inset
+
+ at 
+\begin_inset Formula $t_{0}+\beta\,\Delta t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+How about FSI? Must model the behavior of the structure across the timestep
+ before we actually have it...
+ (
+\begin_inset Formula $\boldsymbol{u}_{\mathrm{obst}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\theta$
+\end_inset
+
+ not yet available at 
+\begin_inset Formula $t_{0}+\beta\,\Delta t$
+\end_inset
+
+)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+RK2 also outputs updated 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ behaves otherwise like an inside-domain DOF, but with a different update
+ formula.
+\end_layout
+
+\begin_layout Itemize
+After computing the last 
+\begin_inset Formula $\boldsymbol{u}_{n+1}$
+\end_inset
+
+ for this stiff part update, enforce boundary conditions for 
+\begin_inset Formula $u_{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{n}}\cdot\nabla\rho$
+\end_inset
+
+ at 
+\begin_inset Formula $t_{0}+\Delta t$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+May be important, because the advection step comes next
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+
+\series bold
+The stuff below here is not needed.
+\end_layout
+
+\begin_layout Itemize
+From the advection subproblem for 
+\begin_inset Formula $\boldsymbol{u}$
+\end_inset
+
+, equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:u-advect"
+
+\end_inset
+
+, we can write
+\begin_inset Formula 
+\[
+\frac{\partial\boldsymbol{u}}{\partial t}=-\boldsymbol{u}\cdot\nabla\boldsymbol{u}=-(u_{\tau}\widehat{\boldsymbol{\tau}}+u_{n}\widehat{\boldsymbol{n}})\cdot\nabla\boldsymbol{u}\;.
+\]
+
+\end_inset
+
+To be completely unambiguous, let us use index notation:
+\begin_inset Formula 
+\[
+\frac{\partial u_{i}}{\partial t}=-u_{j}\partial_{j}u_{i}=-(u_{\tau}\partial_{\tau}+u_{n}\partial_{n})u_{i}\;.
+\]
+
+\end_inset
+
+Due to BCs, 
+\begin_inset Formula $u_{n}\equiv0$
+\end_inset
+
+ at the boundary.
+ For 
+\begin_inset Formula $i=\{\tau,n\}$
+\end_inset
+
+, this gives two update formulas in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates:
+\begin_inset Formula 
+\[
+\frac{\partial u_{\tau}}{\partial t}\vert_{\Gamma_{N}}=-u_{\tau}\partial_{\tau}u_{\tau}
+\]
+
+\end_inset
+
+(representing 1D advection of the tangential component along the boundary,
+ as is physically expected) and
+\begin_inset Formula 
+\[
+\frac{\partial u_{n}}{\partial t}\vert_{\Gamma_{N}}=-u_{\tau}\partial_{\tau}u_{n}\;.
+\]
+
+\end_inset
+
+But since 
+\begin_inset Formula $u_{n}\equiv0$
+\end_inset
+
+ along the whole boundary, also 
+\begin_inset Formula $\partial_{\tau}u_{n}\equiv0$
+\end_inset
+
+ and hence
+\begin_inset Formula 
+\[
+\frac{\partial u_{n}}{\partial t}\vert_{\Gamma_{N}}=0\;,
+\]
+
+\end_inset
+
+which just confirms that the normal velocity remains at zero.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+For rotating obstacles, this becomes more complicated, because 
+\begin_inset Formula $\widehat{\boldsymbol{\tau}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\widehat{\boldsymbol{n}}$
+\end_inset
+
+ no longer remain constant.
+ The local 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinate system rotates with the obstacle, and it becomes important to
+ distinguish whether we use the 
+\begin_inset Quotes eld
+\end_inset
+
+old
+\begin_inset Quotes erd
+\end_inset
+
+ (at 
+\begin_inset Formula $t$
+\end_inset
+
+) or the 
+\begin_inset Quotes eld
+\end_inset
+
+new
+\begin_inset Quotes erd
+\end_inset
+
+ (at 
+\begin_inset Formula $t+\Delta t$
+\end_inset
+
+) local coordinate system.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Consider 1D advection along the boundary.
+ Now we don't have direct access to the tangential velocity field 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+, but we can compute it as 
+\begin_inset Formula $u_{\tau}=cu_{x}+su_{y}$
+\end_inset
+
+.
+ Since the old solution fulfills the no-penetration BC, it will also hold
+ that 
+\begin_inset Formula $-su_{x}+cu_{y}=u_{n}=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Thus a way to correct for small error 
+\begin_inset Formula $u_{n}=O(\varepsilon)$
+\end_inset
+
+ arising from discretization: take the magnitude 
+\begin_inset Formula $\left|\boldsymbol{u}\right|$
+\end_inset
+
+ and use that as 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+, correcting for the sign, 
+\begin_inset Formula $\mathrm{sgn}(u_{\tau})=\mathrm{sgn}(\widehat{\boldsymbol{\tau}}\cdot\boldsymbol{u})$
+\end_inset
+
+.
+ Do the same when converting back.
+\end_layout
+
+\begin_layout Itemize
+Explicitly, take 
+\begin_inset Formula $u_{\tau}=\mathrm{sgn}(\widehat{\boldsymbol{\tau}}\cdot\boldsymbol{u})\left|\boldsymbol{u}\right|$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{n}=0$
+\end_inset
+
+ on input (do not actually use the coordinate conversion formulas).
+ On output, use the updated 
+\begin_inset Formula $u_{\tau}^{*}$
+\end_inset
+
+, and set 
+\begin_inset Formula $u_{n}^{*}=0$
+\end_inset
+
+, before applying conversion to 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates (now using the coordinate conversion formulas).
+\end_layout
+
+\begin_layout Itemize
+Maybe compute 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ as a field in a small neighborhood and use semi-Lagrangean advection along
+ the boundary direction?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+We already have fields for 
+\begin_inset Formula $u_{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{y}$
+\end_inset
+
+ that we can interpolate.
+ Compute 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ at the appropriate point using the interpolated 
+\begin_inset Formula $u_{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $u_{y}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Alternatively: converting the RHS partially to 
+\begin_inset Formula $(x,y)$
+\end_inset
+
+ coordinates, we have
+\begin_inset Formula 
+\begin{align}
+\frac{\partial u_{\tau}}{\partial t} & =-u_{\tau}(c\frac{\partial}{\partial x}+s\frac{\partial}{\partial y})(cu_{x}+su_{y})\nonumber \\
+ & =-u_{\tau}\left[c^{2}\frac{\partial u_{x}}{\partial x}+cs\left(\frac{\partial u_{y}}{\partial x}+\frac{\partial u_{x}}{\partial y}\right)+s^{2}\frac{\partial u_{y}}{\partial y}\right]\;.\label{eq:update-utau}
+\end{align}
+
+\end_inset
+
+The parenthetical expression can be evaluated using WLSQM.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+But this 
+\begin_inset Quotes eld
+\end_inset
+
+fights
+\begin_inset Quotes erd
+\end_inset
+
+ the physical direction of information flow, because in WLSQM we use symmetric
+ neighborhoods to generate the derivatives.
+ Thus numerical stability can be bad.
+\end_layout
+
+\begin_layout Itemize
+The rest is better to keep in 
+\begin_inset Formula $(\tau,n)$
+\end_inset
+
+ coordinates.
+ We have the numerical value of the old 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+.
+ We then compute the time derivative of this 
+\begin_inset Formula $u_{\tau}$
+\end_inset
+
+ using the above equation, and perform the time integration to obtain the
+ new value 
+\begin_inset Formula $u_{\tau}^{*}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+For curved obstacles, we must update this slightly, since 
+\begin_inset Formula $c$
+\end_inset
+
+ and 
+\begin_inset Formula $s$
+\end_inset
+
+ are then no longer constant in space.
+ But maybe this is ok for piecewise linear obstacles with the nodes placed
+ at segment midpoints (or anywhere except at a corner)?
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Standard
+The advection problems can be handled by the semi-Lagrangean approach with
+ MacCormack correction to obtain second-order accuracy.
+ Global patched surrogate model interpolation gives access to the required
+ interpolated values.
+\end_layout
+
+\begin_layout Standard
+The clamping required for MacCormack can be achieved in a fast solver by
+ using the data values from the (pre-computed) neighborhood of the node
+ whose model the interpolator picked.
+ (The interpolator must return this information!) This approach saves an
+ (expensive) search for the 
+\begin_inset Formula $k$
+\end_inset
+
+ closest nodes from the point at which the interpolant was computed.
+\end_layout
+
+\begin_layout Standard
+To match the accuracy, for the time integration, we choose (parametric)
+ RK2.
+ It has second-order accuracy, and it is computationally light, requiring
+ only two stages.
+\end_layout
+
+\begin_layout Itemize
+For the initial flowfield, we can achieve no-penetration by solving a potential
+ flow problem.
+ To do this using WLSQM, convert the Poisson problem (for the velocity potential
+) to the time-dependent diffusion problem (heat equation) by adding the
+ time-dependent term, set zero Neumann BCs at the obstacles, and integrate
+ until the steady state is approximately reached.
+\end_layout
+
+\begin_layout Itemize
+Thus, assume that the old solution fulfills the no-penetration BC.
+\end_layout
+
+\begin_layout Itemize
+Fit the model.
+ This enables interpolation, needed for the semi-Lagrangean approach.
+\end_layout
+
+\begin_layout Itemize
+The advection step — which strictly requires only inflow BCs — will introduce
+ a small error (nonzero normal velocity component) especially near curved
+ parts of the boundary (discretized into straight segments).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Can we simply re-align the velocity at the boundary nodes (turn the vector
+ until it is aligned), and then re-fit only the affected neighborhoods (those
+ having at least one obstacle node)?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+(Requires a per-problem-instance flag array in the solver, to switch off
+ solving for instances that need no updating.)
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_body
+\end_document

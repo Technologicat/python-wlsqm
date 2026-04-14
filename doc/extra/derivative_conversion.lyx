@@ -1,0 +1,504 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman palatino
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\cite_engine natbib_authoryear
+\use_bibtopic false
+\paperorientation portrait
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Converting global derivatives to local derivatives
+\end_layout
+
+\begin_layout Author
+Juha Jeronen
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+TECHNICAL NOTE
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+This document covers the global to local derivative conversions needed in
+ finite element analysis of PDEs, when the basis functions are defined in
+ terms of the local coordinates on the reference element.
+\end_layout
+
+\begin_layout Standard
+First and second derivatives are discussed.
+ First derivatives are sufficient for weak forms of second-order problems;
+ second derivatives are required for fourth-order problems.
+\end_layout
+
+\begin_layout Standard
+The idea is that the original PDE problem is written in terms of the global
+ coordinates.
+ In order to be able to apply the derivatives to the basis functions, which
+ are defined in terms of the local coordinates on the reference element,
+ the derivatives must be expressed in local coordinates.
+\end_layout
+
+\begin_layout Section
+First derivatives
+\end_layout
+
+\begin_layout Standard
+See 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "CSC2002"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Hughes2000"
+
+\end_inset
+
+ for more information.
+\end_layout
+
+\begin_layout Subsection
+Transformations
+\end_layout
+
+\begin_layout Standard
+The coordinate transformation Jacobian in 2D of 
+\begin_inset Formula $(\xi,\eta)\mapsto(\; x(\xi,\eta)\,,\; y(\xi,\eta)\;)$
+\end_inset
+
+ is
+\begin_inset Formula \begin{equation}
+J=\left[\begin{array}{cc}
+{\displaystyle \frac{\partial x}{\partial\xi}} & {\displaystyle \frac{\partial y}{\partial\xi}}\\
+{\displaystyle \frac{\partial x}{\partial\eta}} & {\displaystyle \frac{\partial y}{\partial\eta}}\end{array}\right]\;.\label{eq:J}\end{equation}
+
+\end_inset
+
+Note the convention; this is the transpose of the standard Jacobian for
+ reasons of convenience.
+\end_layout
+
+\begin_layout Standard
+By the inverse function theorem, its inverse at the point 
+\begin_inset Formula $(\; x(\xi,\eta)\,,\; y(\xi,\eta)\;)$
+\end_inset
+
+ is
+\begin_inset Formula \begin{equation}
+J^{-1}=\left[\begin{array}{cc}
+{\displaystyle \frac{\partial\xi}{\partial x}} & {\displaystyle \frac{\partial\eta}{\partial x}}\\
+{\displaystyle \frac{\partial\xi}{\partial y}} & {\displaystyle \frac{\partial\eta}{\partial y}}\end{array}\right]\;.\label{eq:Jinv}\end{equation}
+
+\end_inset
+
+We use the chain rule.
+ Let 
+\begin_inset Formula $f=f(\xi,\eta)$
+\end_inset
+
+ once differentiable.
+ Then
+\begin_inset Formula \begin{align}
+\frac{\partial f}{\partial x} & =\frac{\partial\xi}{\partial x}\frac{\partial f}{\partial\xi}+\frac{\partial\eta}{\partial x}\frac{\partial f}{\partial\eta}\;.\label{eq:chainrule-x}\\
+\frac{\partial f}{\partial y} & =\frac{\partial\xi}{\partial y}\frac{\partial f}{\partial\xi}+\frac{\partial\eta}{\partial y}\frac{\partial f}{\partial\eta}\;.\label{eq:chainrule-y}\end{align}
+
+\end_inset
+
+Hence, we can use the inverse Jacobian 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Jinv"
+
+\end_inset
+
+ to convert.
+ In vector notation, we have
+\begin_inset Formula \begin{equation}
+\nabla_{(x,y)}f=J^{-1}\nabla_{(\xi,\eta)}f\;,\label{eq:nablaconversion}\end{equation}
+
+\end_inset
+
+where the subscripted nablas refer to gradients taken in the coordinate
+ system identified by the subscript.
+\end_layout
+
+\begin_layout Subsection
+Computing it in practice
+\end_layout
+
+\begin_layout Standard
+The coordinate transform 
+\begin_inset Formula $(\xi,\eta)\mapsto(x,y)$
+\end_inset
+
+ is known analytically (from the Galerkin interpolation of coordinates).
+ We can thus compute the forward Jacobian 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:J"
+
+\end_inset
+
+ analytically at each desired point on each element.
+ Taking its matrix inverse (separately at each desired point), we obtain
+ values for 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Jinv"
+
+\end_inset
+
+, which can then be fed into 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nablaconversion"
+
+\end_inset
+
+.
+ The obtained values are exact up to floating point rounding errors.
+\end_layout
+
+\begin_layout Standard
+The local derivatives of each basis function 
+\begin_inset Formula $N_{j}(\xi,\eta)$
+\end_inset
+
+ are also known analytically; these can be inserted to 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:nablaconversion"
+
+\end_inset
+
+ directly.
+\end_layout
+
+\begin_layout Section
+Second derivatives
+\end_layout
+
+\begin_layout Standard
+In the case where second derivatives are present, in addition to the inverse
+ Jacobian, we will need the inverse Hessian of the coordinate mapping.
+\end_layout
+
+\begin_layout Subsection
+Transformations
+\end_layout
+
+\begin_layout Standard
+Recall the chain rule, 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:chainrule-x"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:chainrule-y"
+
+\end_inset
+
+.
+ To obtain 
+\begin_inset Formula $\partial^{2}f/\partial x^{2}$
+\end_inset
+
+, we apply 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:chainrule-x"
+
+\end_inset
+
+ to itself:
+\begin_inset Formula \begin{align*}
+\frac{\partial^{2}f}{\partial x^{2}} & =\frac{\partial}{\partial x}\left[\frac{\partial f}{\partial x}\right]=\frac{\partial}{\partial x}\left[\frac{\partial f}{\partial\xi}\frac{\partial\xi}{\partial x}+\frac{\partial f}{\partial\eta}\frac{\partial\eta}{\partial x}\right]\\
+ & =\frac{\partial}{\partial x}\left[\frac{\partial f}{\partial\xi}\frac{\partial\xi}{\partial x}\right]+\frac{\partial}{\partial x}\left[\frac{\partial f}{\partial\eta}\frac{\partial\eta}{\partial x}\right]\\
+ & =\frac{\partial}{\partial x}\left[\frac{\partial f}{\partial\xi}\right]\frac{\partial\xi}{\partial x}+\frac{\partial f}{\partial\xi}\frac{\partial}{\partial x}\left[\frac{\partial\xi}{\partial x}\right]\\
+ & +\frac{\partial}{\partial x}\left[\frac{\partial f}{\partial\eta}\right]\frac{\partial\eta}{\partial x}+\frac{\partial f}{\partial\eta}\frac{\partial}{\partial x}\left[\frac{\partial\eta}{\partial x}\right]\\
+ & =\left[\frac{\partial^{2}f}{\partial\xi^{2}}\frac{\partial\xi}{\partial x}+\frac{\partial^{2}f}{\partial\xi\partial\eta}\frac{\partial\eta}{\partial x}\right]\frac{\partial\xi}{\partial x}+\frac{\partial f}{\partial\xi}\frac{\partial^{2}\xi}{\partial x^{2}}\\
+ & +\left[\frac{\partial^{2}f}{\partial\xi\partial\eta}\frac{\partial\xi}{\partial x}+\frac{\partial^{2}f}{\partial\eta^{2}}\frac{\partial\eta}{\partial x}\right]\frac{\partial\eta}{\partial x}+\frac{\partial f}{\partial\eta}\frac{\partial^{2}\eta}{\partial x^{2}}\end{align*}
+
+\end_inset
+
+Cleaning up, we have
+\begin_inset Formula \begin{equation}
+\frac{\partial^{2}f}{\partial x^{2}}=\left[\frac{\partial\xi}{\partial x}\right]^{2}\frac{\partial^{2}f}{\partial\xi^{2}}+2\frac{\partial\xi}{\partial x}\frac{\partial\eta}{\partial x}\frac{\partial^{2}f}{\partial\xi\partial\eta}+\left[\frac{\partial\eta}{\partial x}\right]^{2}\frac{\partial^{2}f}{\partial\eta^{2}}+\frac{\partial^{2}\xi}{\partial x^{2}}\frac{\partial f}{\partial\xi}+\frac{\partial^{2}\eta}{\partial x^{2}}\frac{\partial f}{\partial\eta}\;.\label{eq:d2fdx2}\end{equation}
+
+\end_inset
+
+Similarly (by repeating the above for 
+\begin_inset Formula $y$
+\end_inset
+
+, or simply by replacing each 
+\begin_inset Formula $x$
+\end_inset
+
+ by 
+\begin_inset Formula $y$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:d2fdx2"
+
+\end_inset
+
+), we have
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula \begin{equation}
+\frac{\partial^{2}f}{\partial y^{2}}=\left[\frac{\partial\xi}{\partial y}\right]^{2}\frac{\partial^{2}f}{\partial\xi^{2}}+2\frac{\partial\xi}{\partial y}\frac{\partial\eta}{\partial y}\frac{\partial^{2}f}{\partial\xi\partial\eta}+\left[\frac{\partial\eta}{\partial y}\right]^{2}\frac{\partial^{2}f}{\partial\eta^{2}}+\frac{\partial^{2}\xi}{\partial y^{2}}\frac{\partial f}{\partial\xi}+\frac{\partial^{2}\eta}{\partial y^{2}}\frac{\partial f}{\partial\eta}\;.\label{eq:d2fdy2}\end{equation}
+
+\end_inset
+
+Finally, for the mixed second derivative, we take 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:chainrule-x"
+
+\end_inset
+
+ and differentiate it with respect to 
+\begin_inset Formula $y$
+\end_inset
+
+.
+ We assume 
+\begin_inset Formula $C^{2}$
+\end_inset
+
+ continuity within each element so that the order of the differentiations
+ does not matter.
+ We have 
+\begin_inset Formula \begin{align*}
+\frac{\partial^{2}f}{\partial x\partial y} & =\frac{\partial}{\partial y}\left[\frac{\partial f}{\partial x}\right]=\frac{\partial}{\partial y}\left[\frac{\partial f}{\partial\xi}\frac{\partial\xi}{\partial x}+\frac{\partial f}{\partial\eta}\frac{\partial\eta}{\partial x}\right]\\
+ & =\frac{\partial}{\partial y}\left[\frac{\partial f}{\partial\xi}\frac{\partial\xi}{\partial x}\right]+\frac{\partial}{\partial y}\left[\frac{\partial f}{\partial\eta}\frac{\partial\eta}{\partial x}\right]\\
+ & =\frac{\partial}{\partial y}\left[\frac{\partial f}{\partial\xi}\right]\frac{\partial\xi}{\partial x}+\frac{\partial f}{\partial\xi}\frac{\partial}{\partial y}\left[\frac{\partial\xi}{\partial x}\right]\\
+ & +\frac{\partial}{\partial y}\left[\frac{\partial f}{\partial\eta}\right]\frac{\partial\eta}{\partial x}+\frac{\partial f}{\partial\eta}\frac{\partial}{\partial y}\left[\frac{\partial\eta}{\partial x}\right]\\
+ & =\left[\frac{\partial^{2}f}{\partial\xi^{2}}\frac{\partial\xi}{\partial y}+\frac{\partial^{2}f}{\partial\xi\partial\eta}\frac{\partial\eta}{\partial y}\right]\frac{\partial\xi}{\partial x}+\frac{\partial f}{\partial\xi}\frac{\partial^{2}\xi}{\partial x\partial y}\\
+ & +\left[\frac{\partial^{2}f}{\partial\xi\partial\eta}\frac{\partial\xi}{\partial y}+\frac{\partial^{2}f}{\partial\eta^{2}}\frac{\partial\eta}{\partial y}\right]\frac{\partial\eta}{\partial x}+\frac{\partial f}{\partial\eta}\frac{\partial^{2}\eta}{\partial x\partial y}\end{align*}
+
+\end_inset
+
+Again, cleaning up, we obtain
+\begin_inset Formula \begin{equation}
+\frac{\partial^{2}f}{\partial x\partial y}=\frac{\partial\xi}{\partial x}\frac{\partial\xi}{\partial y}\frac{\partial^{2}f}{\partial\xi^{2}}+\left[\frac{\partial\xi}{\partial x}\frac{\partial\eta}{\partial y}+\frac{\partial\xi}{\partial y}\frac{\partial\eta}{\partial x}\right]\frac{\partial^{2}f}{\partial\xi\partial\eta}+\frac{\partial\eta}{\partial x}\frac{\partial\eta}{\partial y}\frac{\partial^{2}f}{\partial\eta^{2}}+\frac{\partial^{2}\xi}{\partial x\partial y}\frac{\partial f}{\partial\xi}+\frac{\partial^{2}\eta}{\partial x\partial y}\frac{\partial f}{\partial\eta}\;.\label{eq:d2fdxdy}\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Computing it in practice
+\end_layout
+
+\begin_layout Standard
+The inverse Hessian can be approximated by wlsqm (see separate document
+ on the method).
+ In a small neighbourhood of each point where we wish to obtain the inverse
+ Hessian, we compute a few points 
+\begin_inset Formula $(x_{j},y_{j})=(\; x(\xi_{j},\eta_{j})\,,\; y(\xi_{j},\eta_{j})\;)$
+\end_inset
+
+ in the forward direction, obtaining a point cloud of samples.
+\end_layout
+
+\begin_layout Standard
+We then switch the roles of input and output in the point cloud: 
+\begin_inset Formula $(\xi_{j},\eta_{j})=(\;\xi(x_{j},y_{j})\,,\;\eta(x_{j},y_{j})\;)$
+\end_inset
+
+.
+ This is trivial because it is just a data set with a 1:1 correspondence
+ between input and output.
+ Splitting into two, this gives us the data sets 
+\begin_inset Formula $\xi_{j}=\xi(x_{j}\,,\, y_{j})$
+\end_inset
+
+ and 
+\begin_inset Formula $\eta_{j}=\eta(x_{j}\,,\, y_{j})$
+\end_inset
+
+.
+ Note that the expressions for the functions 
+\begin_inset Formula $\xi$
+\end_inset
+
+ and 
+\begin_inset Formula $\eta$
+\end_inset
+
+ are not known, but are not needed.
+\end_layout
+
+\begin_layout Standard
+We can then apply wlsqm to the data sets 
+\begin_inset Formula $(\, x_{j},\, y_{j},\,\xi(x_{j},y_{j})\,)$
+\end_inset
+
+ and 
+\begin_inset Formula $(\, x_{j},\, y_{j},\,\eta(x_{j},y_{j})\,)$
+\end_inset
+
+ to obtain approximations of the second derivatives of the unknown functions
+ 
+\begin_inset Formula $\xi(x,y)$
+\end_inset
+
+ and 
+\begin_inset Formula $\eta(x,y)$
+\end_inset
+
+ at each desired point.
+\end_layout
+
+\begin_layout Standard
+The values obtained for the inverse Hessian using this method contain some
+ approximation error.
+ This comes from the Taylor series fitting of wlsqm.
+ Thus the 
+\begin_inset Quotes eld
+\end_inset
+
+small neighbourhood
+\begin_inset Quotes erd
+\end_inset
+
+ should be small enough to get reasonable derivative approximations, but
+ not so small that rounding errors will dominate.
+\end_layout
+
+\begin_layout Standard
+Also, more regular spacings of the points seem to give better derivatives.
+ For this reason, the solver uses a 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ meshgrid in 
+\begin_inset Formula $(\xi,\eta)$
+\end_inset
+
+ coordinates.
+ As for the size, in practice 
+\begin_inset Formula $\varepsilon=10^{-4}$
+\end_inset
+
+ for the radius of the neighbourhood along 
+\begin_inset Formula $\xi$
+\end_inset
+
+ (and same along 
+\begin_inset Formula $\eta$
+\end_inset
+
+) seems a good value.
+\end_layout
+
+\begin_layout Standard
+Finally, the local first and second derivatives of each basis function 
+\begin_inset Formula $N_{j}(\xi,\eta)$
+\end_inset
+
+ are known analytically; these can be inserted to the formulas 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:d2fdx2"
+
+\end_inset
+
+--
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:d2fdxdy"
+
+\end_inset
+
+ directly.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "refs"
+options "plainnat"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
