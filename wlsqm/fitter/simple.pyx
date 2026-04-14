@@ -609,6 +609,7 @@ Return value:
 cdef int generic_fit_basic( int dimension, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D, double[::view.generic] fk, double[::1] xiManyD, double xi1D, double[::1] fi,
                                            double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int debug ) except -1 nogil:
 
+    cdef int TASKID = 0  # serial path, so the only "task" has id 0 (selects work buffer 0 in impl.solve)
 
     # Create the Case, allocating memory and initializing the DOF mapping arrays.
     #
@@ -639,7 +640,7 @@ cdef int generic_fit_basic( int dimension, double[::view.generic,::view.contiguo
     # use the preprocessed A to perform the fit
     cdef double* my_fi = &fi[0]
     infra.Case_set_fi( case, my_fi )  # populate knowns
-    impl.solve( case, fk, sens, do_sens, 0 )
+    impl.solve( case, fk, sens, do_sens, TASKID )
     infra.Case_get_fi( case, my_fi )  # write solution into user-given array fi
 
     # Destroy the Case.
@@ -657,6 +658,7 @@ cdef int generic_fit_basic( int dimension, double[::view.generic,::view.contiguo
 cdef int generic_fit_iterative( int dimension, double[::view.generic,::view.contiguous] xkManyD, double[::view.generic] xk1D, double[::view.generic] fk, double[::1] xiManyD, double xi1D, double[::1] fi,
                                                double[::view.generic,::view.contiguous] sens, int do_sens, int order, long long knowns, int weighting_method, int max_iter, int debug ) except -1 nogil:
 
+    cdef int TASKID = 0  # serial path; only one task, so work buffer 0
 
     cdef double xi, yi, zi
     if dimension == 1:
@@ -677,7 +679,7 @@ cdef int generic_fit_iterative( int dimension, double[::view.generic,::view.cont
 
     cdef double* my_fi = &fi[0]
     infra.Case_set_fi( case, my_fi )  # populate knowns
-    cdef int iterations_taken = impl.solve_iterative( case, fk, sens, do_sens, 0, max_iter, xkManyD, xk1D )
+    cdef int iterations_taken = impl.solve_iterative( case, fk, sens, do_sens, TASKID, max_iter, xkManyD, xk1D )
     infra.Case_get_fi( case, my_fi )  # write solution into user-given array fi
 
     infra.Case_del( case )
@@ -724,10 +726,14 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
                                                 int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int debug ) except -1 nogil:
 
 
+    cdef int TASKID    = 0  # serial path -> only one task -> work buffer 0
+    cdef int NTASKS    = 1  # serial path -> CaseManager only needs one task slot
+    cdef int ITERATIVE = 0  # flag passed to CaseManager_new / Case_new: this is the BASIC fit, not iterative refinement
+
     # Create the CaseManager to handle centralized memory allocation.
     #
     cdef int ncases = nk.shape[0]
-    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, 0, ncases, 1 )
+    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, ITERATIVE, ncases, NTASKS )
 
     # We have to explicitly dummy out the parameters for the "wrong" number of space dimensions, since we may have gotten
     # dummy parameters ourselves and hence cannot index into them. Thus we need to switch on dimension here.
@@ -746,12 +752,12 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
                 yi = xiManyD[j,1]
                 zi = xiManyD[j,2]
                 # this will automatically add the case to the manager, so we don't need to save the returned pointer
-                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, 0, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         else: # dimension == 2:
             for j in range(ncases):
                 xi = xiManyD[j,0]
                 yi = xiManyD[j,1]
-                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, 0, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )  # done adding cases
 
         # Solve the cases. This updates the internal fi arrays of the Case instances.
@@ -765,9 +771,9 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
             impl.preprocess_A( case, debug )
             infra.Case_set_fi( case, my_fi )  # populate knowns (in managed mode, must come after CaseManager_commit())
             if sens is None:  # must check since None cannot be sliced
-                impl.solve( case, fk[j,:nkj], None, do_sens, 0 )
+                impl.solve( case, fk[j,:nkj], None, do_sens, TASKID )
             else:
-                impl.solve( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, 0 )
+                impl.solve( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID )
 
         # Write the solution into user-given fi array.
         #
@@ -785,7 +791,7 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
         #
         for j in range(ncases):
             xi = xi1D[j]
-            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, 0, manager, host=<infra.Case*>0 )
+            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )  # done adding cases
 
         # Solve the cases. This updates the internal fi arrays of the Case instances.
@@ -799,9 +805,9 @@ cdef int generic_fit_basic_many( int dimension, double[::view.generic,::view.gen
             impl.preprocess_A( case, debug )
             infra.Case_set_fi( case, my_fi )
             if sens is None:  # must check since None cannot be sliced
-                impl.solve( case, fk[j,:nkj], None, do_sens, 0 )
+                impl.solve( case, fk[j,:nkj], None, do_sens, TASKID )
             else:
-                impl.solve( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, 0 )
+                impl.solve( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID )
 
         # Write the solution into user-given fi array.
         #
@@ -841,13 +847,16 @@ cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view
                                                     double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
                                                     int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int debug ) except -1 nogil:
 
+    cdef int TASKID    = 0  # serial path -> only one task -> work buffer 0
+    cdef int NTASKS    = 1  # serial path -> CaseManager only needs one task slot
+    cdef int ITERATIVE = 1  # flag passed to CaseManager_new / Case_new: this is the iterative-refinement variant
 
     cdef int max_iterations_taken = 0
 
     # Create the CaseManager to handle centralized memory allocation.
     #
     cdef int ncases = nk.shape[0]
-    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, 1, ncases, 1 )
+    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, ITERATIVE, ncases, NTASKS )
 
     # Create the Cases, adding them to the manager.
     #
@@ -865,12 +874,12 @@ cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view
                 yi = xiManyD[j,1]
                 zi = xiManyD[j,2]
                 # this will automatically add the case to the manager, so we don't need to save the returned pointer
-                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, 1, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         else: # dimension == 2:
             for j in range(ncases):
                 xi = xiManyD[j,0]
                 yi = xiManyD[j,1]
-                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, 1, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )  # done adding cases
 
         # solve
@@ -884,9 +893,9 @@ cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view
             impl.preprocess_A( case, debug )
             infra.Case_set_fi( case, my_fi )
             if sens is None:  # must check since None cannot be sliced
-                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], None, do_sens, 0, max_iter, xkManyD[j,:nkj,:], None )
+                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], None, do_sens, TASKID, max_iter, xkManyD[j,:nkj,:], None )
             else:
-                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, 0, max_iter, xkManyD[j,:nkj,:], None )
+                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID, max_iter, xkManyD[j,:nkj,:], None )
             if iterations_taken > max_iterations_taken:
                 max_iterations_taken = iterations_taken
 
@@ -900,7 +909,7 @@ cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view
         #
         for j in range(ncases):
             xi = xi1D[j]
-            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, 1, manager, host=<infra.Case*>0 )
+            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )
 
         # solve
@@ -914,9 +923,9 @@ cdef int generic_fit_iterative_many( int dimension, double[::view.generic,::view
             impl.preprocess_A( case, debug )
             infra.Case_set_fi( case, my_fi )
             if sens is None:  # must check since None cannot be sliced
-                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], None, do_sens, 0, max_iter, None, xk1D[j,:nkj] )
+                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], None, do_sens, TASKID, max_iter, None, xk1D[j,:nkj] )
             else:
-                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, 0, max_iter, None, xk1D[j,:nkj] )
+                iterations_taken = impl.solve_iterative( case, fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID, max_iter, None, xk1D[j,:nkj] )
             if iterations_taken > max_iterations_taken:
                 max_iterations_taken = iterations_taken
 
@@ -944,11 +953,12 @@ cdef int generic_fit_basic_many_parallel( int dimension, double[::view.generic,:
                                                          double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
                                                          int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int ntasks, int debug ) except -1 nogil:
 
+    cdef int ITERATIVE = 0  # flag passed to CaseManager_new / Case_new: this is the BASIC fit, not iterative refinement
 
     # Create the CaseManager to handle centralized memory allocation.
     #
     cdef int ncases = nk.shape[0]
-    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, 0, ncases, ntasks )
+    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, ITERATIVE, ncases, ntasks )
 
     # We have to explicitly dummy out the parameters for the "wrong" number of space dimensions, since we may have gotten
     # dummy parameters ourselves and hence cannot index into them. Thus we need to switch on dimension here.
@@ -971,12 +981,12 @@ cdef int generic_fit_basic_many_parallel( int dimension, double[::view.generic,:
                 yi = xiManyD[j,1]
                 zi = xiManyD[j,2]
                 # this will automatically add the case to the manager, so we don't need to save the returned pointer
-                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, 0, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         else: # dimension == 2:
             for j in range(ncases):
                 xi = xiManyD[j,0]
                 yi = xiManyD[j,1]
-                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, 0, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )  # done adding cases
 
         # Solve the cases. This updates the internal fi arrays of the Case instances.
@@ -1011,7 +1021,7 @@ cdef int generic_fit_basic_many_parallel( int dimension, double[::view.generic,:
         #
         for j in range(ncases):
             xi = xi1D[j]
-            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, 0, manager, host=<infra.Case*>0 )
+            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )  # done adding cases
 
         # Solve the cases. This updates the internal fi arrays of the Case instances.
@@ -1056,6 +1066,7 @@ cdef int generic_fit_iterative_many_parallel( int dimension, double[::view.gener
                                                              double[::view.generic,::view.generic,::view.contiguous] sens, int do_sens,
                                                              int[::view.generic] order, long long[::view.generic] knowns, int[::view.generic] weighting_method, int max_iter, int ntasks, int debug ) except -1 nogil:
 
+    cdef int ITERATIVE = 1  # flag passed to CaseManager_new / Case_new: this is the iterative-refinement variant
 
     # we need an ntasks-sized array to find max_iterations_taken, since the solving now proceeds in parallel
     cdef int* max_iterations_taken = <int*>malloc( ntasks*sizeof(int) )
@@ -1066,7 +1077,7 @@ cdef int generic_fit_iterative_many_parallel( int dimension, double[::view.gener
     # Create the CaseManager to handle centralized memory allocation.
     #
     cdef int ncases = nk.shape[0]
-    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, 1, ncases, ntasks )
+    cdef infra.CaseManager* manager = infra.CaseManager_new( dimension, do_sens, ITERATIVE, ncases, ntasks )
 
     # Create the Cases, adding them to the manager.
     #
@@ -1084,12 +1095,12 @@ cdef int generic_fit_iterative_many_parallel( int dimension, double[::view.gener
                 yi = xiManyD[j,1]
                 zi = xiManyD[j,2]
                 # this will automatically add the case to the manager, so we don't need to save the returned pointer
-                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, 1, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, zi, nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         else: # dimension == 2:
             for j in range(ncases):
                 xi = xiManyD[j,0]
                 yi = xiManyD[j,1]
-                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, 1, manager, host=<infra.Case*>0 )
+                infra.Case_new( dimension, order[j], xi, yi, 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )  # done adding cases
 
         # solve
@@ -1120,7 +1131,7 @@ cdef int generic_fit_iterative_many_parallel( int dimension, double[::view.gener
         #
         for j in range(ncases):
             xi = xi1D[j]
-            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, 1, manager, host=<infra.Case*>0 )
+            infra.Case_new( dimension, order[j], xi, 0., 0., nk[j], knowns[j], weighting_method[j], do_sens, ITERATIVE, manager, host=<infra.Case*>0 )
         infra.CaseManager_commit( manager )
 
         # solve

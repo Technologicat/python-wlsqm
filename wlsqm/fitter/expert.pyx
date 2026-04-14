@@ -529,6 +529,7 @@ where order is the array that was passed to __init__().
         # the solve loop
         #
         cdef int j, nkj, taskid
+        cdef int TASKID = 0  # single-task serial fallback when ntasks == 1 — the only "task" has id 0 (work buffer 0)
         cdef int total_max_iterations_taken=0     # max across tasks (when solving in parallel, will be filled at the end)
         cdef int* max_iterations_taken = <int*>0  # max for each task
         cdef int iterations_taken=0               # current value in current task
@@ -560,10 +561,10 @@ where order is the array that was passed to __init__().
                     if do_sens:
                         for j in range(ncases):  # don't bother with OpenMP for single-task case
                             nkj = nk[j]
-                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, 0 )
+                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID )
                     else:
                         for j in range(ncases):
-                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nk[j]], NO_SENS, do_sens, 0 )
+                            expert_solve_one_basic( manager.cases[j], &fi[j,0], fk[j,:nk[j]], NO_SENS, do_sens, TASKID )
 
                     # get solution
                     for j in range(ncases):
@@ -624,26 +625,26 @@ where order is the array that was passed to __init__().
                         if dimension >= 2:
                             for j in range(ncases):  # don't bother with OpenMP for single-task case
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, 0, max_iter, xkManyD[j,:nkj,:], dummy1D )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID, max_iter, xkManyD[j,:nkj,:], dummy1D )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
                         else: # dimension == 1:
                             for j in range(ncases):
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, 0, max_iter, dummyManyD, xk1D[j,:nkj] )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], sens[j,:nkj,:], do_sens, TASKID, max_iter, dummyManyD, xk1D[j,:nkj] )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
                     else: # not do_sens:
                         if dimension >= 2:
                             for j in range(ncases):
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, 0, max_iter, xkManyD[j,:nkj,:], dummy1D )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, TASKID, max_iter, xkManyD[j,:nkj,:], dummy1D )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
                         else: # dimension == 1:
                             for j in range(ncases):
                                 nkj = nk[j]
-                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, 0, max_iter, dummyManyD, xk1D[j,:nkj] )
+                                iterations_taken = expert_solve_one_iterative( manager.cases[j], &fi[j,0], fk[j,:nkj], NO_SENS, do_sens, TASKID, max_iter, dummyManyD, xk1D[j,:nkj] )
                                 if iterations_taken > total_max_iterations_taken:
                                     total_max_iterations_taken = iterations_taken
 
