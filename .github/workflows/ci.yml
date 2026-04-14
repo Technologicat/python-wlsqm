@@ -63,6 +63,18 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libomp
 
+      # Activate the MSVC toolchain on Windows so that meson picks up
+      # `cl.exe` instead of the runner's default MinGW-w64 gcc. The latter
+      # links our .pyd files against libgcc_s_seh-1.dll and libgomp-1.dll,
+      # which are not on the Python process's DLL search path at runtime
+      # (they live in MinGW's bin directory), resulting in "DLL load
+      # failed" on import. MSVC-built extensions link only against the
+      # universal CRT and vcomp140.dll, all of which are always on PATH
+      # for a 64-bit Python process. scipy/numpy use the same approach on
+      # their CI.
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+
       - name: Install build and test dependencies
         run: pip install meson-python meson ninja Cython numpy scipy pytest
 
