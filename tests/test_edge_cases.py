@@ -7,7 +7,6 @@ the neighbor function values, not garbage.
 """
 
 import numpy as np
-import pytest
 
 import wlsqm
 

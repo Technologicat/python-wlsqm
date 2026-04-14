@@ -13,7 +13,6 @@ called many times with different `fk`. This file verifies that:
 """
 
 import numpy as np
-import pytest
 
 import wlsqm
 

@@ -67,7 +67,10 @@ ignore = [
     "E306",   # expected blank line before nested def — same
     "E402",   # module level import not at top — conditional/deferred imports
     "E501",   # line too long — advisory, not enforced
+    "E701",   # multiple statements on one line (colon) — fine in numerical code
+    "E702",   # multiple statements on one line (semicolon) — same; visual pairing of related updates
     "E731",   # lambda assignment — closures are idiomatic in this codebase
+    "E741",   # ambiguous variable name — `I`, `l`, `O` are standard in numerical code (identity matrix, index vector, ...)
     # flake8-simplify
     "SIM102",  # collapsible if — nested ifs often represent distinct semantic guards
     # Note: SIM103 (return condition directly) is intentionally NOT ignored here.
@@ -86,7 +89,29 @@ ignore = [
 
 [tool.cython-lint]
 max-line-length = 200
-ignore = ["E115", "E201", "E202", "E221", "E231", "E302", "W293", "W391"]
+ignore = [
+    "E114",  # indentation is not a multiple of 4 (comment) — comment columns chosen for alignment with code, not tab stops
+    "E115",
+    "E116",  # unexpected indentation (comment) — same reason
+    "E117",  # over-indented comment — same reason as E114
+    "E127",  # continuation line over-indented for visual indent — visual alignment of multi-line signatures is the project style
+    "E201",
+    "E202",
+    "E221",
+    "E222",  # multiple spaces after operator — column-aligned assignments (e.g. `cdef int x   = 1 / cdef int foo = 2`) are the project style
+    "E231",
+    "E261",  # at least two spaces before inline comment — single-space inline comments are common in numerical code
+    "E262",  # inline comment should start with '# ' — `#   more text` is used for column-aligned dimensional-scope annotations in infra.pxd
+    "E265",  # block comment should start with '# ' — commented-out code and section markers
+    "E301",  # expected 1 blank line — semantic spacing
+    "E302",  # expected 2 blank lines before def — 1 blank line is the project style
+    "E303",  # too many blank lines — three-blank-line paragraph separators at major section breaks
+    "E305",  # expected 2 blank lines after class/function definition — mirror of E302, same reason
+    "E501",  # line too long — advisory, not enforced (max-line-length = 200 is already generous for long cdef signatures)
+    "E741",  # ambiguous variable name — `I`, `l`, `O` are standard in numerical code (identity matrix, index vector, ...)
+    "W293",
+    "W391",
+]
 
 [tool.cibuildwheel]
 build = "cp311-* cp312-* cp313-* cp314-*"

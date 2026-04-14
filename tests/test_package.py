@@ -2,8 +2,6 @@
 
 import re
 
-import numpy as np
-import pytest
 
 import wlsqm
 from wlsqm.utils.lapackdrivers import ScalingAlgo

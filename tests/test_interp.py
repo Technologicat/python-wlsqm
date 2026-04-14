@@ -8,7 +8,6 @@ at the fit origin.
 """
 
 import numpy as np
-import pytest
 
 import wlsqm
 

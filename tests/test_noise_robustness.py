@@ -18,7 +18,6 @@ Everything here is seeded (seed=42 as elsewhere) so failures reproduce.
 """
 
 import numpy as np
-import pytest
 
 import wlsqm
 

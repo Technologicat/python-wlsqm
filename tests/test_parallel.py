@@ -11,7 +11,6 @@ that regression.
 """
 
 import numpy as np
-import pytest
 
 import wlsqm
 

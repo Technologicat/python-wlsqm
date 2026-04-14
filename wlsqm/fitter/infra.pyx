@@ -461,8 +461,10 @@ cdef int CaseManager_allocate( CaseManager* self ) except -1 nogil:
             for j in range(self.ncases):
                 Case_allocate( self.cases[j] )
 
-        except:
+        except BaseException:
             # on error, leave the CaseManager in the state it was in before this method was called.
+            # BaseException (not Exception) to also run the rollback on KeyboardInterrupt / SystemExit;
+            # we always re-raise, so there is no silent-swallow risk.
             CaseManager_deallocate( self )
             raise
 
@@ -617,7 +619,9 @@ cdef Case* Case_new( int dimension, int order, double xi, double yi, double zi, 
         with gil:
             try:
                 CaseManager_add( self.manager, self )  # this may raise if the buffer is full
-            except:
+            except BaseException:
+                # Clean up the partially-constructed Case before re-raising. BaseException
+                # (not Exception) so that KeyboardInterrupt / SystemExit also free self.
                 free( self )
                 raise
     else:
@@ -816,7 +820,8 @@ cdef int Case_allocate( Case* self ) except -1 nogil:
 
             else:  # unmanaged mode - instantiate our own Allocator. The Allocator constructor will raise MemoryError if it runs out of memory.
                 mal = Allocator_new( mode=ALLOC_MODE_ONEBIGBUFFER, total_size_bytes=sizes.total )
-        except:
+        except BaseException:
+            # Clean up the partially-constructed Case before re-raising.
             free( self )
             raise
     self.mal = mal

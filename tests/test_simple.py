@@ -7,7 +7,6 @@ well inside machine precision.
 """
 
 import numpy as np
-import pytest
 
 import wlsqm
 

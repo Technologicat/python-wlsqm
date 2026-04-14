@@ -210,7 +210,7 @@ def testmany2d():
     with SimpleTimer(label=("    done in ")) as s:
         solver.prep_interpolate()
     print( "interpolating global model to %d points" % (len(Xlin)) )
-    with SimpleTimer(label=("    done in ")) as s:
+    with SimpleTimer(label=("    done in ")) as s:  # noqa: F841 -- consistent `as s` pattern across every timed block in this file; s is kept for interactive inspection (e.g. s.elapsed) even though this particular call site does not reference it
         W2,dummy = solver.interpolate( x, mode='continuous', r=r )  # slow, continuous
 #        W2,dummy = solver.interpolate( x, mode='nearest' )  # fast, surprisingly accurate if a reasonable number of points (and continuous-looking although technically has jumps over Voronoi cell boundaries)
     W2 = np.reshape( W2, shp )
@@ -269,7 +269,7 @@ def testmany2d():
 
 
     print( "    uninit" )
-    with SimpleTimer(label=("        done in ")) as s:
+    with SimpleTimer(label=("        done in ")) as s:  # noqa: F841 -- consistent `as s` pattern across every timed block in this file
         del solver
 
 
@@ -280,7 +280,7 @@ def test3d():
     # config
     #########################
 
-    axislims = [0., 1., 0., 1.]  # [xmin, xmax, ymin, ymax], for plotting
+    axislims = [0., 1., 0., 1.]  # noqa: F841 -- [xmin, xmax, ymin, ymax]; kept as inline documentation of the viewport, consistent with test2d() and the other test functions in this file
     nvis = 101  # number of visualization points per axis
 
     # Let's manufacture a solution (for which we know the derivatives analytically):
