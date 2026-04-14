@@ -21,7 +21,7 @@ JJ 2016-11-30
 import numpy as np  # needed by interpolate_fit() in Python API
 
 cimport wlsqm.fitter.defs     as defs      # C constants
-cimport wlsqm.fitter.polyeval as polyeval  # evaluation of Taylor expansions and general polynomials
+cimport wlsqm.fitter.polyeval as polyeval  # evaluation of local polynomial models (and general polynomials)
 
 # Module-level C constants, replacing old compile-time `DEF` constants.
 cdef double onesixth = 1./6.
@@ -304,7 +304,7 @@ cdef int interpolate_3D( infra.Case* case, double[::view.generic,::view.contiguo
     # shifting the coefficients to their new positions in the array
     # and accounting for exponents that "drop down" in the differentiation.
     #
-    # We must also account for the constant factors in the Taylor expansion,
+    # We must also account for the factorial normalization of the monomial basis,
     # since fi[] contains only the DOF value data (and the DOFs are the
     # function value and derivatives at the point xi).
     #
@@ -700,7 +700,7 @@ cdef int interpolate_2D( infra.Case* case, double[::view.generic,::view.contiguo
     # shifting the coefficients to their new positions in the array
     # and accounting for exponents that "drop down" in the differentiation.
     #
-    # We must also account for the constant factors in the Taylor expansion,
+    # We must also account for the factorial normalization of the monomial basis,
     # since fi[] contains only the DOF value data (and the DOFs are the
     # function value and derivatives at the point xi).
     #
@@ -882,7 +882,7 @@ cdef int interpolate_1D( infra.Case* case, double[::view.generic] x, double* out
     # shifting the coefficients to their new positions in the array
     # and accounting for exponents that "drop down" in the differentiation.
     #
-    # We must also account for the constant factors in the Taylor expansion,
+    # We must also account for the factorial normalization of the monomial basis,
     # since fi[] contains only the DOF value data (and the DOFs are the
     # function value and derivatives at the point xi).
     #

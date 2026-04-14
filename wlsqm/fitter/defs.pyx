@@ -53,7 +53,7 @@ Examples:
         IMPORTANT: the DOF values returned by the fitter are "partially baked" such that the DOF value directly corresponds to the value of the corresponding derivative.
                    This is for convenience of evaluating derivatives at the model reference point.
 
-                   E.g. fi[:,i2_X2] is the coefficient of d2f/dx2 in a Taylor series expansion of f around the reference point xi.
+                   E.g. fi[:,i2_X2] is the value of d2f/dx2 at the reference point xi, as estimated by the local WLSQM polynomial model fitted around xi. (NOT an analytic derivative — a least-squares estimate over the local neighborhood.)
                    (The ":" is here meant to refer to the reference point xi for all local models; see  wlsqm.fitter.simple.fit_2D_many()  for a description of the "fi" array.)
 
 JJ 2016-11-30

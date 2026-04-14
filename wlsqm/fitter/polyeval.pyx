@@ -2,7 +2,24 @@
 #
 # WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.
 #
-# Evaluation of Taylor expansions and general polynomials up to 4th order in 1D, 2D and 3D.
+# Evaluation of local polynomial models (and general polynomials) up to 4th
+# order in 1D, 2D and 3D.
+#
+# A note on naming: the `taylor_1D/2D/3D` functions are NOT evaluating a
+# Taylor series, despite the name. What they evaluate is a polynomial
+# expressed in the same monomial basis that a Taylor expansion around the
+# origin (xi, yi, zi) would use — constant, first derivatives, second
+# derivatives divided by 2!, and so on. The numerical values of the
+# coefficients come from a weighted least-squares fit over a local
+# neighborhood of data points (see wlsqm.fitter.impl), NOT from
+# differentiating any analytic function at the origin. The basis happens to
+# look like one, so the storage layout in `fi` does too, but the error
+# behavior of the resulting model is much better than Taylor truncation
+# would predict, thanks to the averaging effect of the least-squares fit.
+# The function names are kept for API compatibility with downstream Cython
+# code that has already imported them.
+#
+# See `doc/wlsqm_gen.pdf` for the theory.
 #
 # JJ 2016-11-30
 
@@ -35,10 +52,14 @@ cdef double one24th  = 1./24.
 # for interpolating both the function value and the derivatives of the model.
 
 
-# Evaluate an up to 4th order Taylor series expansion in 3D space, with its origin at (xi,yi,zi).
+# Evaluate an up to 4th order local polynomial model in 3D space, with its
+# origin at (xi,yi,zi).
 #
-# This version uses "partially baked" coefficients, already accounting for the constant factors in the Taylor series!
-# (This allows expressing the derivative information at the point xi in the raw coefficient data.)
+# This version uses "partially baked" coefficients, already accounting for
+# the factorial normalization of the monomial basis (so, for example, the
+# stored value at the i3_X2 slot is d2f/dx2 at xi — the 1/2! is baked into
+# the evaluator, not into fi — which is why the raw entries of `fi` read
+# naturally as derivative values).
 #
 # The implementation uses a symmetric Horner-like form with fused multiply-adds.
 # (Note however that some of the symmetry is lost due to the way the partial results are summed.)
@@ -47,10 +68,13 @@ cdef double one24th  = 1./24.
 # fi    : in, coefficient array ("order" determines the number of entries, no separate size parameter needed)
 #         The ordering of the coefficients follows the numbering of the i3_* constants in wlsqm.fitter.defs.
 #         Here fi[ i3_F_c ] is f at xi, fi[ i3_X ] is df/fx at xi, fi[ i3_Y ] is df/dy at xi, fi[ i3_X2 ] is d2f/dx2 at xi, ...
+#         (These correspond to the derivatives of f ONLY to the accuracy of
+#          the underlying WLSQM fit — they are least-squares-optimal over
+#          the neighborhood, not exact analytic derivatives.)
 # xi    : in, origin of the model, x component
 # yi    : in, origin of the model, y component
 # zi    : in, origin of the model, z component
-# x     : in, the points where to evaluate the Taylor expansion
+# x     : in, the points where to evaluate the polynomial
 # out   : out, array of size (x.shape[0],); the result
 #
 # Return value: 0 on success, anything else indicates failure
@@ -502,10 +526,12 @@ cdef int general_3D( int order, double* fi, double xi, double yi, double zi, dou
     return 0
 
 
-# Evaluate an up to 4th order Taylor series expansion in the plane, with its origin at (xi,yi).
+# Evaluate an up to 4th order local polynomial model in the plane, with its
+# origin at (xi,yi). See the 3D version above for the naming rationale.
 #
-# This version uses "partially baked" coefficients, already accounting for the constant factors in the Taylor series!
-# (This allows expressing the derivative information at the point xi in the raw coefficient data.)
+# This version uses "partially baked" coefficients, already accounting for
+# the factorial normalization of the monomial basis (so the raw entries of
+# `fi` read as derivative values at the origin).
 #
 # The implementation uses a symmetric Horner-like form with fused multiply-adds.
 # (Note however that some of the symmetry is lost due to the way the partial results are summed.)
@@ -516,7 +542,7 @@ cdef int general_3D( int order, double* fi, double xi, double yi, double zi, dou
 #         Here fi[ i2_F_c ] is f at xi, fi[ i2_X ] is df/fx at xi, fi[ i2_Y ] is df/dy at xi, fi[ i2_X2 ] is d2f/dx2 at xi, ...
 # xi    : in, origin of the model, x component
 # yi    : in, origin of the model, y component
-# x     : in, the points where to evaluate the Taylor expansion
+# x     : in, the points where to evaluate the polynomial
 # out   : out, array of size (x.shape[0],); the result
 #
 # Return value: 0 on success, anything else indicates failure
@@ -830,7 +856,8 @@ cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.
     return 0
 
 
-# Evaluate an up to 4th order Taylor series expansion on the real axis, with its origin at (xi).
+# Evaluate an up to 4th order local polynomial model on the real axis, with
+# its origin at (xi). See the 3D version above for the naming rationale.
 #
 # The implementation uses Horner's form with fused multiply-adds.
 #
@@ -839,7 +866,7 @@ cdef int general_2D( int order, double* fi, double xi, double yi, double[::view.
 #         The ordering of the coefficients follows the numbering of the i1_* constants in wlsqm.fitter.defs.
 #         Here fi[ i1_F_c ] is f at xi, fi[ i1_X ] is df/dx at xi, fi[ i1_X2 ] is d2f/dx2 at xi, ...
 # xi    : in, origin of the model
-# x     : in, the points where to evaluate the Taylor expansion
+# x     : in, the points where to evaluate the polynomial
 # out   : out, array of size (x.shape[0],); the result
 #
 # Return value: 0 on success, anything else indicates failure

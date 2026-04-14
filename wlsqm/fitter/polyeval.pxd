@@ -2,7 +2,10 @@
 #
 # WLSQM (Weighted Least SQuares Meshless): a fast and accurate meshless least-squares interpolator for Python, for scalar-valued data defined as point values on 1D, 2D and 3D point clouds.
 #
-# Evaluation of Taylor expansions and general polynomials up to 4th order in 1D, 2D and 3D.
+# Evaluation of local polynomial models (and general polynomials) up to 4th
+# order in 1D, 2D and 3D. The `taylor_*` function names are historical —
+# the coefficients come from a weighted least-squares fit, not from
+# analytic differentiation. See the .pyx source for the naming rationale.
 #
 # C API definitions.
 #

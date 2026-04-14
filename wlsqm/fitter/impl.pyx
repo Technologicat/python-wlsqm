@@ -117,7 +117,7 @@ cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] 
                 max_d2 = d2
             w[k] = d2  # store the squared distances for now, we'll convert them to weights in a second pass (once we have  max_d2  which we need anyway)
 
-            # Distance coefficients (these multiply the derivatives in the Taylor series)
+            # Distance coefficients for the monomial basis (rows of the WLSQM fit matrix A — these multiply the derivative-slot values of the local polynomial model in each neighbor's equation)
             #
             c[ k*no + defs.i3_F_c    ] = 1.
 
@@ -175,7 +175,7 @@ cdef void make_c_3D( infra.Case* case, double[::view.generic,::view.contiguous] 
                 max_d2 = d2
             w[k] = d2
 
-            # Distance coefficients (these multiply the derivatives in the Taylor series)
+            # Distance coefficients for the monomial basis (rows of the WLSQM fit matrix A — these multiply the derivative-slot values of the local polynomial model in each neighbor's equation)
             #
             c[ k*no + defs.i3_F_c   ] = 1.
 
@@ -329,7 +329,7 @@ cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] 
                 max_d2 = d2
             w[k] = d2  # store the squared distances for now, we'll convert them to weights in a second pass (once we have  max_d2  which we need anyway)
 
-            # Distance coefficients (these multiply the derivatives in the Taylor series)
+            # Distance coefficients for the monomial basis (rows of the WLSQM fit matrix A — these multiply the derivative-slot values of the local polynomial model in each neighbor's equation)
             #
             c[ k*no + defs.i2_F_c    ] = 1.         # c^(0)_k  in the documentation
 
@@ -365,7 +365,7 @@ cdef void make_c_2D( infra.Case* case, double[::view.generic,::view.contiguous] 
                 max_d2 = d2
             w[k] = d2
 
-            # Distance coefficients (these multiply the derivatives in the Taylor series)
+            # Distance coefficients for the monomial basis (rows of the WLSQM fit matrix A — these multiply the derivative-slot values of the local polynomial model in each neighbor's equation)
             #
             c[ k*no + defs.i2_F_c   ] = 1.         # c^(0)_k  in the documentation
 
@@ -483,7 +483,7 @@ cdef void make_c_1D( infra.Case* case, double[::view.generic] xk ) noexcept nogi
                 max_d2 = dx2
             w[k] = dx2  # store the squared distances for now, we'll convert them to weights in a second pass (once we have  max_d2  which we need anyway)
 
-            # Distance coefficients (these multiply the derivatives in the Taylor series)
+            # Distance coefficients for the monomial basis (rows of the WLSQM fit matrix A — these multiply the derivative-slot values of the local polynomial model in each neighbor's equation)
             #
             c[ k*no + defs.i1_F_c  ] = 1.
             c[ k*no + defs.i1_X_c  ] = dx
