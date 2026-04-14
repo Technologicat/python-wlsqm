@@ -11,7 +11,7 @@ import numpy as np
 
 import wlsqm
 
-from .conftest import poly1d_order2, poly2d_order2, poly3d_order2
+from conftest import poly1d_order2, poly2d_order2, poly3d_order2
 
 
 def test_interp_2d_function_value_matches_analytical(rng):

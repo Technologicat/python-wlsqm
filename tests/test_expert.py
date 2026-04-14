@@ -16,7 +16,7 @@ import numpy as np
 
 import wlsqm
 
-from .conftest import poly2d_order2, poly3d_order2
+from conftest import poly2d_order2, poly3d_order2
 
 
 def _make_expert_2d(ncases, nk_per_case, order=2, algorithm=None, ntasks=1):

@@ -119,22 +119,29 @@ skip = "*-win32 *-manylinux_i686 *-musllinux*"
 test-requires = ["pytest", "numpy", "scipy"]
 test-command = "pytest {project}/tests -v"
 
-# macOS wheels ship without OpenMP. We could `brew install libomp` in a
-# `[tool.cibuildwheel.macos] before-all` step and let delocate-wheel bundle
-# libomp.dylib into the wheel, but Homebrew's current libomp (22.x) has a
-# minimum macOS target (15.0) newer than cibuildwheel's default arm64 target
-# (11.0). delocate-wheel correctly refuses to bundle it because the resulting
-# wheel would lie about its compatibility.
+# macOS: ship parallel wheels by installing conda-forge's `llvm-openmp`
+# via a standalone micromamba in `before-all`. Apple Clang does not bundle
+# an OpenMP runtime, and Homebrew's current libomp (22.x) has a minimum
+# macOS target of 15.0, so `delocate-wheel` refuses to bundle it (the
+# wheel's default cibuildwheel arm64 target is 11.0 and delocate does not
+# let a wheel lie about its compatibility). conda-forge's llvm-openmp is
+# rebuilt with a conservative deployment target that matches our wheel
+# target, so delocate is happy to bundle the .dylib.
 #
-# We could either (a) bump MACOSX_DEPLOYMENT_TARGET to 15.0, shrinking the
-# supported macOS range by ~4 years, or (b) build libomp from source with a
-# lower target (complex CI). Instead, we lean on meson's
-# `dependency('openmp', required: false)` fallback: without libomp on the
-# build host, meson builds the extension in serial mode. Cython's `prange`
-# degrades to plain `range`, tests still pass, and macOS wheels are slower
-# but portable all the way back to macOS 11. Users who want parallel fits
-# on macOS can install from source: `brew install libomp` and then
-# `pip install --no-binary wlsqm wlsqm`. README.md documents this.
+# This is the same pattern scipy and numpy use on their macOS wheel CI.
+#
+# A serial-mode macOS build is NOT a usable fallback here despite meson's
+# `dependency('openmp', required: false)`, because Cython's `cimport openmp`
+# in simple/impl/expert/lapackdrivers unconditionally emits `#include <omp.h>`
+# in the generated C. Without libomp headers at build time, Apple Clang
+# errors out on the missing omp.h before meson's fallback path can take
+# effect. So we need libomp headers at build time regardless.
+[tool.cibuildwheel.macos]
+before-all = '''
+curl -Ls https://micro.mamba.pm/api/micromamba/osx-arm64/latest | tar -xvj -C /tmp bin/micromamba
+/tmp/bin/micromamba create -y -p /tmp/libomp-env -c conda-forge llvm-openmp
+'''
+environment = { CPPFLAGS = "-Xpreprocessor -fopenmp -I/tmp/libomp-env/include", LDFLAGS = "-L/tmp/libomp-env/lib -Wl,-rpath,/tmp/libomp-env/lib -lomp", DYLD_FALLBACK_LIBRARY_PATH = "/tmp/libomp-env/lib", PKG_CONFIG_PATH = "/tmp/libomp-env/lib/pkgconfig" }
 
 [dependency-groups]
 dev = [

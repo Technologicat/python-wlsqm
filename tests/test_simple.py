@@ -10,7 +10,7 @@ import numpy as np
 
 import wlsqm
 
-from .conftest import (  # noqa: E402
+from conftest import (  # noqa: E402
     poly1d_order2,
     poly2d_order2,
     poly2d_order3,
