@@ -65,6 +65,13 @@ def f5(seq, idfun=None):
 
 
 def main():
+    # Seed the legacy global RNG used by `np.random.sample(...)` calls below
+    # so that the residual-check thresholds are reproducible across runs and
+    # across machines. Without this, each run draws different random
+    # matrices, the conditioning varies wildly, and the per-solver residuals
+    # can swing by orders of magnitude run-to-run.
+    np.random.seed(42)
+
 #    # exact solution is (3/10, 2/5, 0)
 #    A = np.array( ( (2., 1.,  3.),
 #                    (2., 6.,  8.),
@@ -246,15 +253,38 @@ def main():
         drivers.mgeneralfactoredp( fact, ipiv, x5, ntasks )
         results7[j] = (time.time() - t0) / r
 
-        if use_numpy:
-#            print( np.max(np.abs(x - x3)) )  # DEBUG
-#            print( np.max(np.abs(x - x5)) )  # DEBUG
-            print( np.max(np.abs(x2 - x4)) )  # DEBUG
-            assert (np.abs(x - x5) < 1e-10).all(), "Something went wrong, solutions do not match"  # check general solver first
-            assert (np.abs(x - x3) < 1e-10).all(), "Something went wrong, solutions do not match"  # check general solver
-#            assert (np.abs(x - x2) < 1e-5).all(), "Something went wrong, solutions do not match"  # doesn't make sense to compare, DSYSV is more accurate for badly conditioned symmetric matrices
-            assert (np.abs(x2 - x4) < 1e-7).all(), "Something went wrong, solutions do not match"  # check symmetric solvers against each other
-                                                                                                   # (not exactly the same algorithm (DSYTRS2 vs. DSYTRS), so there may be slight deviation)
+        # Verify each solver produced a valid solution.
+        #
+        # The right sanity check for a linear solver is the relative residual
+        # ‖A x − b‖ / ‖b‖, NOT ‖x − x_reference‖. Two valid LAPACK calls on a
+        # moderately ill-conditioned matrix can produce solutions that differ
+        # at, say, 1e-6 — that is a property of the conditioning, not a bug —
+        # while both still have a tiny residual ‖A x − b‖ ~ machine epsilon.
+        # This matters here because msymmetrizep produces matrices with
+        # κ(A) ~ 1e4 at n=117, and the historical (vs-NumPy) check used to
+        # trip nondeterministically as a function of the unseeded RNG.
+        #
+        # Threshold rationale: 1e-8 covers both DGESV and DSYSV across the
+        # whole size range used here (max n ~ 117). DSYSV (Bunch-Kaufman)
+        # tends to produce noticeably larger residuals than DGESV on
+        # indefinite matrices because of its different pivoting strategy,
+        # and the random `(U + U.T) / 2` matrices we generate here are
+        # almost always indefinite and moderately ill-conditioned. 1e-8 is
+        # still 8 orders of magnitude above machine epsilon and tight
+        # enough to catch any realistic regression in the Cython wrappers.
+        #
+        # einsum 'ijk,jk->ik' computes A[:,:,k] @ x[:,k] for each problem
+        # instance k, vectorized.
+        b_norm = np.linalg.norm(b, axis=0)
+        b_norm = np.maximum(b_norm, 1.0)  # guard against the all-zero RHS edge case
+        for label, solver_x in (("msymmetricp",                x2),
+                                ("mgeneralp",                  x3),
+                                ("msymmetricfactorp+factored", x4),
+                                ("mgeneralfactorp+factored",   x5)):
+            residual = np.linalg.norm(np.einsum('ijk,jk->ik', A, solver_x) - b, axis=0) / b_norm
+            worst = residual.max()
+            assert worst < 1e-8, f"{label}: relative residual {worst:.3e} exceeds 1e-8"
+            print(f"        {label} max relative residual: {worst:.3e}")
 
 
 # old, serial only
@@ -304,7 +334,7 @@ def main():
     plt.ylabel('t')
     plt.title('Average time per problem instance, %d parallel tasks' % (ntasks))
     plt.axis('tight')
-    plt.grid(b=True, which='both')
+    plt.grid(visible=True, which='both')
     plt.legend(loc='best')
 
     plt.savefig('figure1_latest.pdf')

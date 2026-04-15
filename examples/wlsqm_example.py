@@ -899,7 +899,7 @@ def test2d():
     ax.plot( (xi[0],), (xi[1],), linestyle='none', marker='x', markeredgecolor='k', markerfacecolor='none' )
     plt.axis('tight')
     axis_marginize(ax, 0.02, 0.02)
-    plt.grid(b=True, which='both')
+    plt.grid(visible=True, which='both')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.subplot(1,2, 2)
@@ -1256,12 +1256,20 @@ def test1d():
 
     plt.axis('tight')
     axis_marginize(ax, 0.02, 0.02)
-    plt.grid(b=True, which='both')
+    plt.grid(visible=True, which='both')
     plt.xlabel('x')
     plt.ylabel('y')
 
 
 def main():
+    # Seed the legacy global RNG used by `np.random.sample(...)` and
+    # `np.random.normal(...)` calls in the test functions below, so that
+    # each run produces the same point clouds, the same noise realizations,
+    # and the same printed error figures. This makes the example
+    # reproducible across runs and across machines, which matters because
+    # the printed "max error" lines are how a reader gauges fit quality.
+    np.random.seed(42)
+
     test3d()
     test2d()
     test1d()

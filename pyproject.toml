@@ -157,6 +157,10 @@ dev = [
     "jedi>=0.19.2",
     "scipy>=1.9",
     "matplotlib",
+    # examples/wlsqm_example.py uses sympy to symbolically differentiate a
+    # manufactured solution and check the wlsqm fit against the analytical
+    # derivatives. Not used by the library itself or by the test suite.
+    "sympy>=1.14.0",
     # Needed in the venv (not just the isolated build env) so meson-python's
     # editable loader can rebuild the extension on import after .pyx/.pxd edits.
     "meson-python>=0.17",
