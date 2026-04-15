@@ -32,13 +32,12 @@ Python 2.7 and 3.4 are no longer supported.
   and dev environments are managed with [PDM](https://pdm-project.org/).
 
 - **Language change on "Taylor series."**
-  - The package's internal storage layout still uses the same slots a Taylor
-  expansion would (e.g. in 2D, `f`, `∂f/∂x`, `∂f/∂y`, `(1/2!) ∂²f/∂x²`,
-  `∂²f/∂x∂y`, `(1/2!) ∂²f/∂y²`, …), but the comments and docstrings no longer
-  call the model a "Taylor series."
+  - The storage layout still uses the same slots a Taylor expansion would (e.g.
+  in 2D, `f`, `∂f/∂x`, `∂f/∂y`, `∂²f/∂x²`, `∂²f/∂x∂y`, `∂²f/∂y²`, …), but the
+  comments and docstrings no longer call the polynomial model a "Taylor series."
   - In the WLSQM method, the coefficients actually come from a least-squares
   fit, not from analytic differentiation. The error behavior is much better than
-  Taylor truncation would predict.
+  the truncation of a Taylor series would predict.
   - The internal C-API function names `taylor_1D/2D/3D` are kept for backwards
   compatibility of downstream `cimport`s — see
   [`wlsqm/fitter/polyeval.pyx`](wlsqm/fitter/polyeval.pyx).
