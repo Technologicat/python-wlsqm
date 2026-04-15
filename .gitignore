@@ -22,3 +22,12 @@ pdm.lock
 wlsqm/fitter/*.html
 wlsqm/utils/*.html
 .claude/
+
+# Regenerable artifact from examples/lapackdrivers_example.py.
+# The PNG sibling IS committed (it's referenced from README.md), but the
+# PDF is just for vector-quality printing and would just churn whenever
+# someone reruns the example.
+lapack_timings.pdf
+# Old name produced by versions of the example before v1.0; kept for
+# back-compat in case anyone has stale copies in their working tree.
+figure1_latest.pdf

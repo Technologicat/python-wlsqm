@@ -6,12 +6,19 @@ JJ 2016-11-02
 """
 
 
+import os
 import time
 
 import numpy as np
 from numpy.linalg import solve as numpy_solve  # for comparison purposes
 
 import matplotlib.pyplot as plt
+
+# Where to write the timing-plot output files. Anchor to the project root
+# (one level up from this script) so the PNG and PDF land in a stable,
+# version-controllable location regardless of where the example was
+# invoked from. README.md embeds `lapack_timings.png` from here.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 
 try:
     import wlsqm.utils.lapackdrivers as drivers
@@ -337,7 +344,10 @@ def main():
     plt.grid(visible=True, which='both')
     plt.legend(loc='best')
 
-    plt.savefig('figure1_latest.pdf')
+    # Save both formats: PNG for embedding in README.md, PDF for printing
+    # / vector-quality reuse. Both go to the project root.
+    plt.savefig(os.path.join(PROJECT_ROOT, 'lapack_timings.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(PROJECT_ROOT, 'lapack_timings.pdf'),           bbox_inches='tight')
 
 
 if __name__ == '__main__':
