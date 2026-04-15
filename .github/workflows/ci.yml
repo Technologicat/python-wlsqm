@@ -44,8 +44,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Full Python matrix on Linux; newest Python only on macOS and Windows.
+        # Rationale: this `test` job exists for fast feedback ahead of the
+        # `build-wheels` job, which runs `cibuildwheel` on every (Python × OS)
+        # combination anyway.  Duplicating the full 12-job matrix here would
+        # re-find the same issues in parallel.  Trimming keeps broad Linux
+        # coverage (where most contributors develop), smoke-tests macOS and
+        # Windows on the newest Python — still exercising the libomp install
+        # (macOS) and MSVC activation (Windows) steps below — and leaves
+        # cibuildwheel as the comprehensive backstop for ABI/build regressions
+        # on older Pythons across all three OSes.
+        os: [ubuntu-latest]
         python-version: ["3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: macos-latest
+            python-version: "3.14"
+          - os: windows-latest
+            python-version: "3.14"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
