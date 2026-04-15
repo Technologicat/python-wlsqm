@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.1 (in progress)
+
+*No user-visible changes yet.*
+
+
 ## v1.0.0 (15 April 2026)
 
 First release under modern Python and modern packaging.
