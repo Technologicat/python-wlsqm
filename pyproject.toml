@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "Fast and accurate weighted least squares meshless interpolator for Python"
 readme = "README.md"
 license = "BSD-2-Clause"
+license-files = ["LICENSE.md"]
 requires-python = ">=3.11"
 authors = [
     {name = "Juha Jeronen", email = "juha.jeronen@jamk.fi"},
