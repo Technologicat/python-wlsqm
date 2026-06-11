@@ -11,9 +11,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.14"
 
@@ -63,9 +63,9 @@ jobs:
             python-version: "3.14"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -87,7 +87,7 @@ jobs:
       # universal CRT and vcomp140.dll, all of which are always on PATH
       # for a 64-bit Python process. scipy/numpy use the same approach on
       # their CI.
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         if: runner.os == 'Windows'
 
       - name: Install build and test dependencies
@@ -107,7 +107,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       # Same MSVC activation as in the test job, and for the same reason:
       # cibuildwheel does NOT automatically activate MSVC for meson-python
@@ -117,15 +117,15 @@ jobs:
       # MinGW-w64 gcc from the runner PATH and the resulting .pyd files
       # link against libgomp-1.dll / libgcc_s_seh-1.dll, which are not
       # present in the wheel test environment.
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         if: runner.os == 'Windows'
 
       # cibuildwheel config lives in pyproject.toml ([tool.cibuildwheel]) —
       # build list, skip list, test-requires, test-command, and the macOS
       # before-all that installs conda-forge llvm-openmp via micromamba.
-      - uses: pypa/cibuildwheel@v3.4
+      - uses: pypa/cibuildwheel@f03ac7617d6cff873ccf24cc0d567ef5ba5a9e6d # v4.0.0
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-${{ matrix.os }}
           path: wheelhouse/*.whl
@@ -134,13 +134,13 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.14"
       - run: pip install build
       - run: python -m build --sdist
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -156,11 +156,11 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: dist/
           merge-multiple: true
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           packages-dir: dist/
