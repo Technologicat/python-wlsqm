@@ -59,3 +59,34 @@ applied to neighbor points (e.g. distance-based decay). wlsqm currently has
 only `WEIGHT_UNIFORM` and `WEIGHT_CENTER`. Adding a user-supplied radial
 weight function would be a natural extension and improves robustness against
 outliers.
+
+## Python 3.15 support, once SciPy ships `cp315` wheels
+
+wlsqm is the one project in the fleet that cannot take 3.15 yet, and the block
+is entirely external. `utils/lapackdrivers.pyx` does
+`from scipy.linalg.cython_lapack cimport ...`, which makes SciPy a *build*
+dependency, not merely a runtime one — so no SciPy on 3.15 means the extensions
+do not compile at all, and neither the `test` job nor `cibuildwheel` can run.
+
+Checked 2026-08-18 against PyPI: `pip install --only-binary=:all: scipy` under
+3.15.0rc1 reports "no matching distribution", and no SciPy release publishes a
+`cp315` wheel. Building SciPy from source inside a manylinux container to get
+around this is not worth it — it needs a Fortran toolchain and BLAS, and the
+whole point of the wheel job is that it is reproducible.
+
+Expect this to clear itself some weeks after 3.15 final, when SciPy cuts a
+release with `cp315` wheels. The check is one command; when it passes, the edit
+is the same one the other two Cython projects already took:
+
+```bash
+pip install --only-binary=:all: --dry-run scipy   # under a 3.15 interpreter
+```
+
+- `pyproject.toml`: add `"Programming Language :: Python :: 3.15"` and
+  `cp315-*` to `[tool.cibuildwheel] build`.
+- `.github/workflows/ci.yml`: add `"3.15"` to the `test` matrix and
+  `allow-prereleases: true` to its `setup-python` step (drop the flag once 3.15
+  is final).
+
+Deferred during the fleet-wide Python 3.15 pass (2026-08-18), where pylu, pydgq,
+chandra and arxiv-api-search all went green.
