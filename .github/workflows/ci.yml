@@ -53,7 +53,7 @@ jobs:
         # combination anyway.  Duplicating the full 12-job matrix here would
         # re-find the same issues in parallel.  Trimming keeps broad Linux
         # coverage (where most contributors develop), smoke-tests macOS and
-        # Windows on the newest Python — still exercising the libomp install
+        # Windows on the newest stable Python — still exercising the libomp install
         # (macOS) and MSVC activation (Windows) steps below — and leaves
         # cibuildwheel as the comprehensive backstop for ABI/build regressions
         # on older Pythons across all three OSes.
