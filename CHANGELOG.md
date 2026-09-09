@@ -2,7 +2,13 @@
 
 ## v1.0.1 (in progress)
 
-*No user-visible changes yet.*
+### New
+
+- **Python 3.15 supported.**
+  - Pre-built wheels on PyPI for Linux, macOS, and Windows, as for 3.11 – 3.14.
+  - SciPy 1.18.1 is the first release to publish `cp315` wheels, so that is what
+    a 3.15 install resolves to. SciPy is a build dependency here, not only a
+    runtime one, so an older pinned SciPy will not work on 3.15.
 
 
 ## v1.0.0 (15 April 2026)
