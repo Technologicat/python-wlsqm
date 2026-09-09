@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.1 (in progress)
+
+*No user-visible changes yet.*
+
+
 ## v1.1.0 (10 September 2026)
 
 ### New
