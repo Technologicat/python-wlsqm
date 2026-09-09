@@ -118,7 +118,12 @@ ignore = [
 [tool.cibuildwheel]
 build = "cp311-* cp312-* cp313-* cp314-* cp315-*"
 skip = "*-win32 *-manylinux_i686 *-musllinux*"
-test-requires = ["pytest", "numpy", "scipy"]
+# Cython is a test dependency, not just a build one: `tests/test_cimport.py`
+# asks `cython -3` to compile a one-line .pyx against each installed .pxd, which
+# is what checks that the Cython-level API actually ships in the wheel. Without
+# Cython here those eight tests skip, and the wheel's .pxd files go untested.
+# Transpilation only — no C compiler is invoked, so this needs no toolchain.
+test-requires = ["pytest", "numpy", "scipy", "Cython"]
 test-command = "pytest {project}/tests -v"
 
 # macOS: ship parallel wheels by installing conda-forge's `llvm-openmp`
