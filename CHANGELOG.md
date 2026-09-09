@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.1 (in progress)
+## v1.1.0 (10 September 2026)
 
 ### New
 
