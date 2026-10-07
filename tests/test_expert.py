@@ -162,3 +162,34 @@ def test_expert_3d_single_case(rng):
     fi = np.zeros((1, wlsqm.number_of_dofs(3, 2)))
     es.solve(fk=fk, fi=fi)
     assert np.allclose(fi[0], fi_expected, atol=1e-10)
+
+
+def test_expert_interpolate_nearest_returns_and_accepts_model_indices(rng):
+    """`interpolate(mode='nearest')` picks the nearest local model for each point, reports which one in
+    `I_out`, and accepts that array back as `I` to skip the search on a re-interpolation.
+
+    The index arrays are what `scipy.spatial.cKDTree.query` returns, `np.intp`. On Windows that is wider
+    than C `long`, so an index view declared `long` refuses the very array the search hands it.
+    """
+    f, _fi_expected = poly2d_order2()
+    npts = 30
+    # Two local models, one either side of the y axis, each fitted to the same exact polynomial.
+    xi_arr = np.array([[-0.5, 0.0], [0.5, 0.0]])
+    xk_arr = np.stack([xi + rng.uniform(-0.3, 0.3, size=(npts, 2)) for xi in xi_arr])
+    fk_arr = np.stack([f(xk) for xk in xk_arr])
+    fi_arr = np.zeros((2, wlsqm.number_of_dofs(2, 2)))
+
+    es = _make_expert_2d(ncases=2, nk_per_case=npts)
+    es.prepare(xi=xi_arr, xk=xk_arr)
+    es.solve(fk=fk_arr, fi=fi_arr)
+    es.prep_interpolate()
+
+    x = np.array([[-0.6, 0.1], [-0.4, -0.1], [0.4, 0.05], [0.6, -0.05]])
+    out, I_out = es.interpolate(x, mode="nearest", diff=wlsqm.i2_F)
+    assert I_out.dtype == np.intp
+    assert list(I_out) == [0, 0, 1, 1]
+    assert np.allclose(out, f(x), atol=1e-10)
+
+    out_again, I_again = es.interpolate(x, mode="nearest", diff=wlsqm.i2_F, I=I_out)
+    assert np.array_equal(out_again, out)
+    assert np.array_equal(I_again, I_out)
