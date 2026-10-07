@@ -2,7 +2,11 @@
 
 ## v1.1.1 (in progress)
 
-*No user-visible changes yet.*
+### Fixed
+
+- **`ExpertSolver.interpolate(mode='nearest')` works on Windows.** The model indices it returns in
+  `I_out`, and accepts back as `I`, are now `np.intp`, the type the nearest-neighbour search produces,
+  where they were C `long`. The two differ in width on Windows.
 
 
 ## v1.1.0 (10 September 2026)

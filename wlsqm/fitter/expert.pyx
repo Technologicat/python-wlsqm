@@ -726,7 +726,7 @@ I    : If mode='nearest': override which local model to use for each point in x,
 
 Return value: tuple (out, I_out) where
         out   = function value (or derivative value, depending on "diff")
-        I_out = if mode='nearest', index of local model used for each point in x (array of shape (nx,), dtype np.int_, i.e. C long).
+        I_out = if mode='nearest', index of local model used for each point in x (array of shape (nx,), dtype np.intp).
                 This can be passed back in as "I".
 
                 if mode='continuous', this is always None (i.e. currently not supported).
@@ -756,16 +756,14 @@ Return value: tuple (out, I_out) where
         #
         cdef int nx = x.shape[0]
         cdef double[::1] out = np.empty( (nx,), dtype=np.float64 )
-        cdef long[::1] I_out
+        cdef Py_ssize_t[::1] I_out
         if mode == 'nearest':
             if I is not None:
                 I_out = None  # if 'I' was given, don't bother copying it to I_out in expert_interpolate_nearest()
             else:
-                # np.int_ matches the Cython `long[::1]` view declared above,
-                # and — unlike the long-removed `np.long` — works on both
-                # NumPy 1.x and 2.x. (On Windows, C `long` is 32-bit; this is
-                # a pre-existing portability caveat noted in TODO_DEFERRED.md.)
-                I_out = np.empty( (nx,), dtype=np.int_ )  # I_out[j] = index of the local model (in self.cases) used to produce out[j]
+                # np.intp is what cKDTree.query returns, and matches the `Py_ssize_t` views on every
+                # platform. C `long` does not: it is 32-bit on Windows, where np.intp is 64-bit.
+                I_out = np.empty( (nx,), dtype=np.intp )  # I_out[j] = index of the local model (in self.cases) used to produce out[j]
 
             expert_interpolate_nearest( dimension, self.tree, manager, x, out, I_out, I, diff, ntasks )
 
@@ -827,12 +825,12 @@ cdef int expert_solve_one_iterative( infra.Case* case, double* fi, double[::view
     return impl.solve_iterative( case, fk, sens, do_sens, taskid, max_iter, xkManyD, xk1D )
 
 
-cdef void expert_interpolate_nearest( int dimension, xi_tree, infra.CaseManager* manager, x, double[::1] out, long[::1] I_out, long[::1] I_in, int diff, int ntasks ):
+cdef void expert_interpolate_nearest( int dimension, xi_tree, infra.CaseManager* manager, x, double[::1] out, Py_ssize_t[::1] I_out, Py_ssize_t[::1] I_in, int diff, int ntasks ):
     # For each point in x, find the local model whose origin is nearest (the nearest point in xi).
     #
     # This search takes the majority of the runtime of this function.
     #
-    cdef long[::1] I  # scipy.spatial.cKDTree.query() returns an array of long
+    cdef Py_ssize_t[::1] I  # scipy.spatial.cKDTree.query() returns an array of np.intp
     if I_in is None:  # usual case
         _distances, I = xi_tree.query( x, k=1 )  # TODO: _distances could be a useful quality metric
     else:  # use the caller-specified model indices (useful when re-interpolating an updated model for the same points x)
