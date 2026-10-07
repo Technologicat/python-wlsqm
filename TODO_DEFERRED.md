@@ -1,8 +1,12 @@
-# Deferred TODO
+# Deferred TODOs
 
 Notes on unrelated items noticed during the v1.0.0 modernization pass. Not blocking v1.0.0; revisit later.
 
+<!-- New items go below this line. -->
+
 ## Matrix scaling: robustness parity with SciPy
+
+*Cluster: input-validation · Cost: M · Gate: none · Filed: 2026-04-14*
 
 - Our hand-rolled scalers in `wlsqm/utils/lapackdrivers.pyx`
   (`rescale_columns_c`, `rescale_rows_c`, `rescale_twopass_c`,
@@ -23,6 +27,8 @@ Notes on unrelated items noticed during the v1.0.0 modernization pass. Not block
 
 ## Issue #5: non-contiguous memoryview ValueError
 
+*Cluster: input-validation · Cost: ? · Gate: none · Filed: 2026-04-14 · See also: GitHub #5*
+
 Open on GitHub: `ValueError: Buffer and memoryview are not contiguous in the
 same dimension`. Reproduce, then decide: clearer error at the Python entry
 point, or fix to accept non-contiguous inputs where cheap. Deferred from the
@@ -30,10 +36,14 @@ main modernization pass.
 
 ## `sudoku_lhs.py` extraction
 
+*Cluster: packaging · Cost: S · Gate: none · Filed: 2026-04-14*
+
 `examples/sudoku_lhs.py` is a small Latin-hypercube helper that could stand
 alone as a tiny package. Not urgent.
 
 ## Documentation / tutorial pass for `doc/`
+
+*Cluster: docs · Cost: L · Gate: none · Filed: 2026-04-14*
 
 `doc/wlsqm.pdf` and `doc/wlsqm_gen.pdf` are the original theory documents.
 Potential arXiv tutorial target — rewrite them with the "surrogate model,
@@ -41,6 +51,8 @@ not Taylor series" framing, and mention that the same method appears in the
 literature under several names (MLS, WLSQM, "diffuse approximation").
 
 ## Windows `long` width in ExpertSolver.interpolate
+
+*Cluster: portability · Cost: S · Gate: none · Filed: 2026-04-14*
 
 `ExpertSolver.interpolate()` in `wlsqm/fitter/expert.pyx` backs its
 `I_out` return array with a Cython `long[::1]` view and an allocation of
@@ -53,6 +65,8 @@ cdef view type and the numpy dtype to a fixed width, e.g. `np.int64_t`
 / `np.int64`.
 
 ## Weighting function support
+
+*Cluster: features · Cost: M · Gate: none · Filed: 2026-04-14*
 
 The literature distinguishes MLS variants mainly by the weighting function
 applied to neighbor points (e.g. distance-based decay). wlsqm currently has
