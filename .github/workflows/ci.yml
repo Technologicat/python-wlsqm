@@ -131,7 +131,7 @@ jobs:
       # cibuildwheel config lives in pyproject.toml ([tool.cibuildwheel]) —
       # build list, skip list, test-requires, test-command, and the macOS
       # before-all that installs conda-forge llvm-openmp via micromamba.
-      - uses: pypa/cibuildwheel@b3395e271a35f73dad77f21802abe9b986dfe299 # v4.3.1
+      - uses: pypa/cibuildwheel@f9b966cfadf4109556cadc5bb39ddb72d0ce664e # v4.3.5
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
